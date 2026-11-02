@@ -12,7 +12,7 @@
 - Lo **schema JSON show v10** riguarda il formato `.cuelist`, non la
   versione dell'applicazione e non va incrementato automaticamente.
 - Il numero CMake `project VERSION` descrive la base numerica
-  `0.9.0`; il suffisso prerelease deriva da `VERSION.txt`.
+  `0.9.1`; eventuali suffissi prerelease derivano da `VERSION.txt`.
   Aggiornare anche CMake soltanto quando cambia la terna major/minor/patch.
 
 ## Procedura per OGNI update
@@ -92,3 +92,9 @@ controllo del changelog non esegue build, ma non la sostituisce.
 presentare a posteriori una storia artificiale; eventuali rettifiche
 vanno dichiarate nella nuova voce. La cronologia Git resta
 il riferimento per i dettagli di ogni PR.
+
+## Transizione a 0.9.1 (2 novembre 2026)
+
+La serie `0.9.0-beta` si conclude alla `beta.32` integrata. La proposta N6.1 `beta.33` è stata rinominata in `0.9.1` prima del merge e non costituisce una release separata. Il cambio della terna semantica richiede `project(TheCuelist VERSION 0.9.1)` e corrispondenza con `VERSION.txt`.
+
+Il numero senza suffisso beta **non attesta certificazione hardware, conformità alle licenze dei terzi o pubblicazione commerciale**: sono gate manuali indipendenti. Non viene creato un tag o uno ZIP solo aggiornando `VERSION.txt`.
