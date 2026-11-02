@@ -3,7 +3,7 @@
 ## Fonti ufficiali
 
 - **`VERSION.txt` nella radice:** unica fonte della versione dell'applicazione.
-  CMake la legge, la valida rispetto al `project(... VERSION 0.9.4)`, la
+  CMake la legge, la valida rispetto al `project(... VERSION 0.9.3)`, la
   passa a `THE_CUELIST_VERSION` e quindi ad About/eseguibile e
   agli script di packaging. **Non creare un secondo file di versione.**
 - **`CHANGELOG.md` nella radice:** documento **cumulativo, non sovrascritto**
@@ -12,7 +12,7 @@
 - Lo **schema JSON show v10** riguarda il formato `.cuelist`, non la
   versione dell'applicazione e non va incrementato automaticamente.
 - Il numero CMake `project VERSION` descrive la base numerica
-  `0.9.4`; eventuali suffissi prerelease derivano da `VERSION.txt`.
+  `0.9.3`; eventuali suffissi prerelease derivano da `VERSION.txt`.
   Aggiornare anche CMake soltanto quando cambia la terna major/minor/patch.
 
 ## Procedura per OGNI update
@@ -106,7 +106,3 @@ Il primo commit integrato come `0.9.1` ha introdotto un errore in `CuelistTests`
 ### Hotfix 0.9.3
 
 La CI della patch 0.9.2 compilava e superava la quasi totalità delle asserzioni; il test About richiedeva tuttavia la vecchia serie 0.9.0-beta. Il test ora verifica la struttura SemVer, non una versione hardcoded. I gate manuali di distribuzione rimangono aperti.
-
-### 0.9.4 — Redesign nativo editor
-
-L'aggiornamento dopo la correzione CI 0.9.3 incrementa la patch secondo SemVer e include N7.1 del redesign. Il nuovo numero non garantisce automaticamente una release pubblica o approvazione dei gate hardware e di licenza.

@@ -13,21 +13,6 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
-## [0.9.4] - 2026-11-02
-
-**Tipo:** redesign nativo V2, fase N7.1 — editor MIDI Piano Roll e OSC Automation meno decorativi.
-
-### Interfaccia
-- Il Piano Roll usa una testata neutra, una singola barra identificativa MIDI color ambra e una gerarchia editoriale compatta. I tasti del pianoforte conservano la distinzione tra neri e bianchi senza pannelli chiari estranei alla palette Midnight Slate.
-- Le note MIDI sostituiscono i pillole arrotondate e sature con rettangoli tecnici; mantengono la lettura della velocity tramite riempimento e indicatore ambra, una selezione visibile e i valori quando lo spazio lo permette. La geometria dei clip e dei target mouse resta invariata.
-- L'editor OSC usa testata neutra, un identificatore viola OSC, corsie eventi piatte, marcatori evento rettangolari e automazioni tecniche con bordo selezione. Colori semantici: viola OSC, ambra selezione, testo neutro. Rimossi gli sfondi pastel e le istruzioni sempre visibili; il footer sintetizza eventi e tracce.
-- Non cambiano toolbar, note, eventi, curve, manipolazione dei punti, Snap, Grid, parametri, Undo/Redo, selezione, clipboard, zoom, resize/docking, sintesi Audio/MIDI/OSC o serializzazione.
-
-### Test e gate
-- Nuovi test nativi JUCE del disegno del Piano Roll (indicatore di velocity, finestra normale e compatta) e dell'editor OSC (eventi e curve a più dimensioni, modello immutato).
-- Prosecuzione della regola: una superficie per zona funzionale, colore come segnale e non decorazione. Nessun mockup HTML né build portable.
-- Prima del merge: Windows CI/CTest e controllo versione verdi; successivamente prove manuali a DPI 100/125/150%, docking/undocking e dispositivo OSC/MIDI reale.
-
 ## [0.9.3] - 2026-11-02
 
 **Tipo:** correzione del test About dopo la transizione alle versioni senza suffisso beta.
