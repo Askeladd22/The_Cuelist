@@ -748,6 +748,61 @@ void uiRefinementTests() {
         check(modal!=nullptr,"Explicit OSC event editing did not open its dialog");
         delete modal;
     });
+    test("N5 flat mixer strips have honest type rails and unchanged controls",[] {
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::midi,"MIDI");
+        addColumn(ui.show,ColumnType::osc,"OSC");
+        addColumn(ui.show,ColumnType::control,"Control");
+        auto* mixer=cueViewFixtures::find<ColumnUtilities>(ui);
+        check(mixer!=nullptr,"Native mixer is missing");
+        const auto before=encodeShow(ui.show);
+        for(const auto dimensions:std::initializer_list<juce::Point<int>>{
+                {1280,820},{1440,900},{1920,1080},{3840,1080}}) {
+            ui.setSize(dimensions.x,dimensions.y);
+            ui.resized();
+            mixer->refresh();
+            auto* lane=mixer->getChildComponent(0);
+            check(lane && lane->getX()==MasterAudioLayout::laneWidth,
+                  "MIDI/OSC mixer lane moved into pinned Master region");
+            const auto masterImage=mixer->createComponentSnapshot(
+                {9,120,1,1});
+            check(masterImage.isValid() &&
+                  masterImage.getPixelAt(0,0)==palette::panel,
+                  "Pinned Master still paints a redundant raised card");
+            for(int c=0;c<4;++c) {
+                auto* strip=lane->getChildComponent(c);
+                check(strip!=nullptr && strip->getWidth()==
+                      ui.show.columns[(size_t)c].collapsed ?
+                      CueGrid::compressedWidth : CueGrid::columnWidth,
+                      "Mixer strip width diverged from Cue Grid geometry");
+                const auto surface=strip->createComponentSnapshot({5,85,1,1});
+                check(surface.isValid() &&
+                      surface.getPixelAt(0,0)==palette::panel,
+                      "Mixer channel still uses a decorative raised card");
+                const auto rail=strip->createComponentSnapshot({20,1,1,1});
+                check(rail.isValid(),"Signal type rail failed to render");
+                const auto colour=rail.getPixelAt(0,0);
+                if(c==0) check(colour.getGreen()>colour.getRed(),
+                              "Audio lane lost its type code");
+                if(c==1) check(colour.getRed()>colour.getGreen(),
+                              "MIDI lane lost its amber type code");
+                if(c==2) check(colour.getBlue()>colour.getGreen(),
+                              "OSC lane lost its purple type code");
+            }
+            auto* audio=lane->getChildComponent(0);
+            check(controlsV3::named(*audio,"columnGainDb") &&
+                  controlsV3::named(*audio,"columnPan") &&
+                  controlsV3::named(*audio,"columnMute") &&
+                  controlsV3::named(*audio,"columnPhase") &&
+                  controlsV3::named(*audio,"columnOutput") &&
+                  controlsV3::named(*audio,"columnMasterSend") &&
+                  controlsV3::named(*lane->getChildComponent(3),"controlColumnEditSet"),
+                  "Flat strip redesign removed a working channel action");
+        }
+        check(encodeShow(ui.show)==before,
+              "N5 visual strip refresh changed the Show or routing");
+    });
+
     test("Master audio is within left column utilities and audio strips are compact", [] {
         MainComponent ui(false); ui.setSize(1500,900);
         auto* utilities=find<ColumnUtilities>(ui);
