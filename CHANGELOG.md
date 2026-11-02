@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.0-beta.30] - 2026-11-02
+
+**Tipo:** redesign nativo V2 / N5.1 — strip del mixer come strumenti operativi, non card decorative.
+
+### Interfaccia
+- **Audio, MIDI, OSC e Control** adottano una superficie piatta condivisa con il mixer, delimitata da separatori sottili anziché da una card rialzata, arrotondata e bordata per ciascuna colonna.
+- L'accento funzionale del **tipo di segnale** resta visibile in una sottile linea superiore (Audio teal, MIDI ambra, OSC viola, Control azzurro); le descrizioni Control sono più concise e prive di evidenziazione teal meramente decorativa.
+- Anche il **Master Audio** perde il contenitore arrotondato rialzato e usa una superficie sobria. Restano visibili l'intestazione MASTER AUDIO, le sezioni MAIN OUT, PAN, MUTE, LIMITER e le misure reali di guadagno e peak.
+- **Geometria e comportamento invariati**: Master fissato nella colonna Cuelist da 318px, altre strip scorrevoli orizzontalmente, fader/meter L/R, pan, mute, polarity, PRE/POST, master send, routing e comandi MIDI/OSC/Control e relativi Learn originali.
+
+### Verifiche
+- Nuovi test JUCE su mixer a 1280×820, 1440×900, 1920×1080 e 3840×1080: superficie piatta, colore dei tipi, separazione dal Master, larghezza delle strip e presenza di controlli reali, con serializzazione Show invariata.
+- Confermato il principio di design: colore solo per funzione/stato e riduzione di contenitori ridondanti, senza riscrittura di motori Audio/MIDI/OSC, BPM/Auto Stop, Inspector, Cue Grid, Timeline o formato JSON v10.
+- Nessuna build portable. Windows CI/CTest e una validazione visiva su Windows/DPI sono necessari prima del merge.
+
 ## [0.9.0-beta.29] - 2026-11-02
 
 **Tipo:** redesign nativo V2 / N4 — Inspector più sobrio e professionale, progettato per l'uso operativo.
