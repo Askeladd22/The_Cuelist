@@ -24,13 +24,13 @@ void timelineV3Tests() {
               "Timeline still has the old ornamental teal header stripe");
         // First row: loaded Audio clip, 1s wide on a 10s ruler, begins x=140.
         // 3px colour-key is distinct from the flat clip body.
-        check(preview.getPixelAt(141,105)!=preview.getPixelAt(152,105) &&
-              preview.getPixelAt(152,105)==palette::input,
+        check(preview.getPixelAt(141,110)!=preview.getPixelAt(152,110) &&
+              preview.getPixelAt(152,110)==palette::input,
               "A loaded Audio clip has lost its neutral body or type rail");
         // Next row: Control configuration should no longer be one big
         // translucent pastel card, but remain an identifiable Control lane.
-        check(preview.getPixelAt(141,143)!=preview.getPixelAt(400,143) &&
-              preview.getPixelAt(400,143)==palette::input,
+        check(preview.getPixelAt(141,152)!=preview.getPixelAt(400,152) &&
+              preview.getPixelAt(400,152)==palette::input,
               "Control lane lost its technical surface or signal key");
         const auto* snap=controlsV3::named(*timeline,"timelineSnapToggle");
         const auto* grid=controlsV3::named(*timeline,"timelineGridVisibility");
