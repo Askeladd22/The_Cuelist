@@ -449,8 +449,10 @@ MainComponent::MainComponent(bool startAudio) {
     panicLearnHotspot.setVisible(false);
     globalMidiLearn.setName("globalMidiLearn");
     globalOscLearn.setName("globalOscLearn");
-    globalMidiLearn.setTooltip("Inline MIDI Learn: choose a parameter, move a control, done.");
-    globalOscLearn.setTooltip("Inline OSC Learn: choose a parameter, send a message, done.");
+    globalMidiLearn.setTooltip("MIDI Learn — select a parameter, then move the MIDI controller. One-click global command.");
+    globalOscLearn.setTooltip("OSC Learn — select a parameter, then send an OSC message. One-click global command.");
+    globalMidiLearn.setColour(juce::TextButton::textColourOffId,palette::amber);
+    globalOscLearn.setColour(juce::TextButton::textColourOffId,palette::purple);
     globalMidiLearn.onClick=[this] {beginQuickLearn(false);};
     globalOscLearn.onClick=[this] {beginQuickLearn(true);};
     controlButton.setName("controlMapping");
@@ -569,6 +571,14 @@ void MainComponent::paint(juce::Graphics& g) {
     // accent from the approved reference (no font or icon replacement).
     label(g,"The",{53,7,38,32},19,palette::text,true);
     label(g,"CUElist",{91,7,105,32},19,palette::teal,true);
+    // Global Learn commands live below the brand, never among the
+    // MIDI/OSC traffic lamps. Subtle shared surface; each is the original
+    // clickable button with its existing active-mode colour.
+    const auto learnBackdrop=OperatorLearnLayout::backdrop().toFloat();
+    g.setColour(palette::panel.withAlpha(.66f));
+    g.fillRoundedRectangle(learnBackdrop,5.f);
+    g.setColour(palette::line.withAlpha(.40f));
+    g.drawRoundedRectangle(learnBackdrop,5.f,.7f);
     // A single enlarged monitoring console, responsive in X only.
     // All positions (including real Learn buttons) originate from one
     // geometry contract; the 72px global header remains unchanged.
@@ -622,7 +632,7 @@ void MainComponent::paint(juce::Graphics& g) {
     meter(telemetry.cpuMeter,systemCpuPercent,palette::teal);
     meter(telemetry.ramMeter,systemRamPercent,palette::amber);
 
-    label(g,"I/O ACTIVITY",telemetry.activityHeading,12,palette::muted,true);
+    label(g,"I/O ACTIVITY",telemetry.activityHeading,14,palette::muted,true);
     const double now=juce::Time::getMillisecondCounterHiRes();
     const std::array<juce::String,4> activityNames{{
         "MIDI RX","MIDI TX","OSC RX","OSC TX"}};
@@ -1142,9 +1152,10 @@ void MainComponent::resized() {
     helpButton.setVisible(false);
     undoButton.setVisible(false);
     redoButton.setVisible(false);
-    const auto telemetryLayout=HeaderTelemetryLayout::atWidth(getWidth());
-    globalMidiLearn.setBounds(telemetryLayout.midiLearn);
-    globalOscLearn.setBounds(telemetryLayout.oscLearn);
+    // Keep direct one-click MIDI/OSC Learn available even at 1024px.
+    // No overlap with the Cuelist tabs (start X=190) or the telemetry.
+    globalMidiLearn.setBounds(OperatorLearnLayout::midi());
+    globalOscLearn.setBounds(OperatorLearnLayout::osc());
     // Collapse-all follows the pinned header after JUCE has computed the
     // actual left scrollbar inset (see placement below).
     const bool allCollapsed=std::all_of(show.columns.begin(),show.columns.end(),
@@ -1832,10 +1843,10 @@ void MainComponent::timerCallback() {
     // there is no currently selected target waiting for its next event.
     globalMidiLearn.setColour(juce::TextButton::buttonColourId,
         (quickLearnMode==QuickLearnMode::midi || controlLearnArmed) ?
-        palette::amber.withAlpha(.55f) : palette::raised);
+        palette::amber.withAlpha(.55f) : palette::amber.withAlpha(.13f));
     globalOscLearn.setColour(juce::TextButton::buttonColourId,
         (quickLearnMode==QuickLearnMode::osc || oscLearnArmed) ?
-        palette::purple.withAlpha(.55f) : palette::raised);
+        palette::purple.withAlpha(.55f) : palette::purple.withAlpha(.13f));
     // 25 Hz UI refresh: only the armed target pulses (~1.8 Hz).
     // Other available controls retain their steady protocol-coloured tint.
     if (quickLearnFunctionId>0 && quickLearnMode!=QuickLearnMode::off &&
