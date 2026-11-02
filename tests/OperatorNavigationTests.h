@@ -243,11 +243,16 @@ void operatorNavigationTests() {
                   t.activity.getRight()+10==t.audio.getX(),
                   "Five operator-monitor groups are too narrow or overlap");
             check(t.activity.contains(t.activityHeading) &&
-                  t.activityHeading.getWidth()>=t.activity.getWidth()-18 &&
+                  t.activityHeading.getRight()<=t.midiLearn.getX() &&
                   t.activityHeading.getBottom()<=t.activityLabels[0].getY() &&
+                  t.activity.contains(t.midiLearn) &&
+                  t.activity.contains(t.oscLearn) &&
+                  !t.midiLearn.intersects(t.oscLearn) &&
+                  !t.midiLearn.intersects(t.activityLabels[0]) &&
+                  !t.oscLearn.intersects(t.activityLabels[1]) &&
                   !t.activityLabels[0].intersects(t.activityLabels[2]) &&
                   !t.activityLabels[1].intersects(t.activityLabels[3]),
-                  "I/O telemetry rows overlap after removing Learn controls");
+                  "I/O Activity heading, Learn and traffic rows overlap");
             check(t.audio.contains(t.audioHeading) &&
                   t.audio.contains(t.audioStatus) &&
                   t.clock.contains(t.timeText) &&
