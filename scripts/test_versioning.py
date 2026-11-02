@@ -11,6 +11,9 @@ class ChangelogGateTest(unittest.TestCase):
         self.assertLess(compare_version("0.8.0-alpha.1", "0.9.0-beta.1"), 0)
         self.assertLess(compare_version("0.9.0-beta.10", "0.9.0"), 0)
         self.assertLess(compare_version("0.9.0-beta.9", "0.9.0-beta.10"), 0)
+        self.assertLess(compare_version("0.9.0-beta.32", "0.9.1"), 0)
+        self.assertLess(compare_version("0.9.0-beta.33", "0.9.1"), 0)
+        self.assertLess(compare_version("0.9.1", "0.9.2"), 0)
         self.assertEqual(compare_version("0.9.0+abc", "0.9.0+other"), 0)
 
     def test_invalid_semver(self):
