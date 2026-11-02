@@ -10,14 +10,14 @@ juce::String timeText(double seconds) {
 }
 void smallButton(juce::Graphics& g, const juce::String& text,
                  juce::Rectangle<int> box, bool enabled, bool danger=false,
-                 bool understated=false) {
+                 bool understated=false,bool hovered=false) {
     const auto colour=danger ? palette::red : palette::muted;
-    const IconButtonState state{enabled,false,false,false,false};
+    const IconButtonState state{enabled,hovered,false,false,false};
     // Secondary grid controls are visually quiet, but retain the exact
     // paint rectangles and original independent mouse hit targets.
     if (understated) {
         g.setColour((danger ? palette::red : palette::raised)
-                       .withAlpha(enabled ? .22f : .10f));
+                       .withAlpha(enabled ? (hovered ? .49f : .22f) : .10f));
         g.fillRoundedRectangle(box.toFloat().reduced(.75f),3.0f);
     } else {
         drawIconButtonSurface(g,box.toFloat(),colour,state);
@@ -93,8 +93,9 @@ void drawLoopIcon(juce::Graphics& g,juce::Rectangle<int> bounds,juce::Colour col
     arrow.addTriangle(tip.x,tip.y,left.x,left.y,right.x,right.y);
     g.fillPath(arrow);
 }
-void playPauseIcon(juce::Graphics& g,juce::Rectangle<int> box,bool pause) {
-    const IconButtonState state{true,false,false,pause,false};
+void playPauseIcon(juce::Graphics& g,juce::Rectangle<int> box,bool pause,
+                   bool hovered=false) {
+    const IconButtonState state{true,hovered,false,pause,false};
     drawIconButtonSurface(g,box.toFloat(),palette::teal,state);
     const auto ink=iconButtonInk(palette::teal,state);
     g.setColour(ink);
@@ -112,9 +113,9 @@ void playPauseIcon(juce::Graphics& g,juce::Rectangle<int> box,bool pause) {
     }
 }
 void transportButton(juce::Graphics& g,juce::Rectangle<int> box,bool stop,
-                     bool enabled,float iconSize=17.5f) {
+                     bool enabled,float iconSize=17.5f,bool hovered=false) {
     const auto accent=stop ? palette::red : palette::teal;
-    const IconButtonState state{enabled,false,false,false,false};
+    const IconButtonState state{enabled,hovered,false,false,false};
     drawIconButtonSurface(g,box.toFloat(),accent,state);
     const auto ink=iconButtonInk(accent,state);
     g.setColour(ink);
@@ -158,6 +159,25 @@ juce::Colour CueGrid::cueColour(int id) {
         case 7:return juce::Colour(0xffffa669);
         default:return juce::Colour();
     }
+}
+void CueGrid::updateHeaderHover(int row,int x,int localY) {
+    const bool valid=row>=0 && row<(int)owner.show.rows.size();
+    const auto action=valid ? headerActionAt(x,localY) : HeaderAction::none;
+    const int newRow=action!=HeaderAction::none ? row : -1;
+    if (hoverHeaderRow==newRow && hoverHeaderAction==action) return;
+    hoverHeaderRow=newRow;
+    hoverHeaderAction=action;
+    // The fixed header is a distinct overlay which paints this grid.
+    // Repaint it explicitly or the hover would not appear while scrolling.
+    owner.cueHeaders.repaint();
+    repaint(0,0,nameWidth,getHeight());
+}
+void CueGrid::clearHeaderHover() {
+    if (hoverHeaderAction==HeaderAction::none) return;
+    hoverHeaderRow=-1;
+    hoverHeaderAction=HeaderAction::none;
+    owner.cueHeaders.repaint();
+    repaint(0,0,nameWidth,getHeight());
 }
 void CueGrid::paint(juce::Graphics& g) {
     g.fillAll(palette::background);
@@ -226,6 +246,10 @@ void CueGrid::paint(juce::Graphics& g) {
         const int y=headerHeight+r*rowHeight;
         const auto& row=show.rows[(size_t)r];
         const bool selected=r==owner.selectedRow,next=r==owner.nextCueIndex();
+        const bool hoverGo=hoverHeaderRow==r && hoverHeaderAction==HeaderAction::go;
+        const bool hoverPlay=hoverHeaderRow==r && hoverHeaderAction==HeaderAction::playPause;
+        const bool hoverStop=hoverHeaderRow==r && hoverHeaderAction==HeaderAction::stop;
+        const bool hoverMenu=hoverHeaderRow==r && hoverHeaderAction==HeaderAction::menu;
         bool playing=false,paused=false;
         if (owner.engine.connected.load()) for (const auto& cell:row.cells) {
             const auto state=owner.engine.getCellPlayback(cell.id);
@@ -275,6 +299,11 @@ void CueGrid::paint(juce::Graphics& g) {
         smallButton(g,"x",{27,y+13,18,20},true,true,true);
         g.setColour(next ? palette::amber : palette::teal);
         g.fillRoundedRectangle(rowGoBounds(y).toFloat(),5.f);
+        if (hoverGo) {
+            g.setColour(palette::text.withAlpha(.76f));
+            g.drawRoundedRectangle(rowGoBounds(y).toFloat().reduced(.9f),
+                                   5.f,1.35f);
+        }
         label(g,"GO",rowGoBounds(y),13,palette::background,true,
               juce::Justification::centred);
         // The title occupies its own first tier, with the three compact
@@ -288,9 +317,9 @@ void CueGrid::paint(juce::Graphics& g) {
                             row.muted ? palette::red : palette::muted;
         label(g,juce::String(r+1).paddedLeft('0',2)+" / "+state,
               rowStatusBounds(y),10,stateInk,true);
-        playPauseIcon(g,rowPlayBounds(y),playing);
-        transportButton(g,rowStopBounds(y),true,true);
-        smallButton(g,"...",rowMenuBounds(y),true,false,true);
+        playPauseIcon(g,rowPlayBounds(y),playing,hoverPlay);
+        transportButton(g,rowStopBounds(y),true,true,17.5f,hoverStop);
+        smallButton(g,"...",rowMenuBounds(y),true,false,true,hoverMenu);
         for (int c=0;c<(int)show.columns.size();++c) {
             const auto& column=show.columns[(size_t)c];
             const auto& cell=row.cells[(size_t)c];
@@ -821,17 +850,33 @@ void PinnedCueHeaders::mouseDoubleClick(const juce::MouseEvent& e) {
         owner.renameTitle(false,row);
 }
 void PinnedCueHeaders::mouseMove(const juce::MouseEvent& e) {
-    // The pinned cue lane overlays the scrolled CueGrid. Query the actual
-    // scroll position and show the untruncated title, without changing any
-    // row selection/drag/transport interaction.
+    // Fixed cue lane and scrolled grid share one transport geometry, with
+    // hover presentation only: never trigger GO/Stop on pointer movement.
     const int gridY=e.y+owner.viewport.getViewPositionY();
     const int row=CueGridGeometry::rowAt(gridY);
     const int localY=CueGridGeometry::rowLocalY(gridY)-CueGrid::rowContentInset;
-    if (e.y>=CueGrid::headerHeight &&
-        CueGrid::rowNameBounds(0).contains(e.x,localY))
+    const bool valid=e.y>=CueGrid::headerHeight &&
+        row>=0 && row<(int)owner.show.rows.size();
+    owner.grid.updateHeaderHover(valid ? row : -1,e.x,localY);
+    if (!valid) { setTooltip({});return; }
+    switch (CueGrid::headerActionAt(e.x,localY)) {
+        case CueGrid::HeaderAction::go:
+            setTooltip("GO — trigger this cue"); return;
+        case CueGrid::HeaderAction::playPause:
+            setTooltip("Play or pause this cue"); return;
+        case CueGrid::HeaderAction::stop:
+            setTooltip("Stop this cue"); return;
+        case CueGrid::HeaderAction::menu:
+            setTooltip("Cue actions: copy, duplicate, colour or delete"); return;
+        default: break;
+    }
+    if (CueGrid::rowNameBounds(0).contains(e.x,localY))
         setTooltip(clippedCueName(owner.show,row));
-    else
-        setTooltip({});
+    else setTooltip({});
+}
+void PinnedCueHeaders::mouseExit(const juce::MouseEvent&) {
+    owner.grid.clearHeaderHover();
+    setTooltip({});
 }
 void PinnedCueHeaders::mouseWheelMove(const juce::MouseEvent& e,
                                       const juce::MouseWheelDetails& wheel) {
