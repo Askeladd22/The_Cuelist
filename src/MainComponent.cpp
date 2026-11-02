@@ -702,10 +702,14 @@ void MainComponent::paint(juce::Graphics& g) {
     if (inspectorVisible) {
     if (quickLearnMode!=QuickLearnMode::off) {
         const int x=geometry.inspectorLeft;
+        // Learn uses the same flat inspector chassis. The protocol colour
+        // remains meaningful state, not an extra decorative card.
         g.setColour(palette::panel);
-        g.fillRoundedRectangle(geometry.inspectorPanel.toFloat(),9.0f);
-        g.setColour(palette::line);
-        g.drawRoundedRectangle(geometry.inspectorPanel.toFloat(),9.0f,1.25f);
+        g.fillRect(geometry.inspectorPanel);
+        g.setColour(palette::line.withAlpha(.52f));
+        g.drawVerticalLine(geometry.inspectorPanel.getX(),
+                           (float)geometry.inspectorPanel.getY(),
+                           (float)geometry.inspectorPanel.getBottom());
         const auto learnColour=quickLearnAccent();
         label(g,quickLearnMode==QuickLearnMode::midi ? "MIDI LEARN" : "OSC LEARN",
               {x+5,98,geometry.inspectorInnerWidth-10,25},19,learnColour,true);
@@ -722,53 +726,65 @@ void MainComponent::paint(juce::Graphics& g) {
             label(g,quickLearnFeedback,
                   {x+5,184,geometry.inspectorInnerWidth-10,20},
                   10,palette::teal,true);
-        label(g,"Available parameters / functions",
-              {x+4,205,geometry.inspectorInnerWidth-8,24},11,learnColour,true);
+        g.setColour(palette::line.withAlpha(.55f));
+        g.drawHorizontalLine(201,(float)x-6,
+                              (float)x+geometry.inspectorInnerWidth+6);
+        label(g,"AVAILABLE TARGETS",
+              {x+4,205,geometry.inspectorInnerWidth-8,24},
+              12,palette::muted,true);
     } else {
+    // An instrument panel, not a stack of floating cards. Real inputs
+    // retain their tested geometry, focus, validation and live callbacks.
     const int inspectorInner=geometry.inspectorInnerWidth;
-    auto panel=geometry.inspectorPanel;
-    g.setColour(palette::panel); g.fillRoundedRectangle(panel.toFloat(),9);
-    g.setColour(palette::line); g.drawRoundedRectangle(panel.toFloat(),9,1.25f);
+    const auto panel=geometry.inspectorPanel;
     const int x=geometry.inspectorLeft;
-    g.setColour(palette::teal); g.fillRoundedRectangle((float)geometry.editorX+13,93.0f,4.0f,49.0f,2.0f);
-    label(g,"INSPECTOR",{x+10,99,200,19},13,palette::teal,true);
+    g.setColour(palette::panel);
+    g.fillRect(panel);
+    g.setColour(palette::line.withAlpha(.52f));
+    g.drawVerticalLine(panel.getX(),(float)panel.getY(),(float)panel.getBottom());
+    label(g,"INSPECTOR",{x+3,99,inspectorInner-6,19},12,palette::muted,true);
     const auto& col=show.columns[selectedColumn];
-    label(g,"CUE "+juce::String(selectedRow+1).paddedLeft('0',2),{x+10,129,140,28},22,palette::text,true);
-    label(g,typeName(col.type),{x+131,134,98,21},11,palette::type((int)col.type),true,juce::Justification::centredRight);
+    label(g,"CUE "+juce::String(selectedRow+1).paddedLeft('0',2),
+          {x+3,129,134,28},22,palette::text,true);
+    label(g,typeName(col.type),{x+133,133,inspectorInner-138,21},11,
+          palette::type((int)col.type),true,
+          juce::Justification::centredRight);
+    g.setColour(palette::line.withAlpha(.56f));
+    g.drawHorizontalLine(158,(float)x-6,(float)x+inspectorInner+6);
+
     g.saveState();
     g.addTransform(geometry.inspectorTransform());
-    // Paint both Inspector cards in the same scaled coordinate system as
-    // their labels and editable controls: CELL was drifting above its card.
-    g.setColour(palette::raised.withAlpha(.52f));
-    g.fillRoundedRectangle(geometry.inspectorCueCard.toFloat(),7.0f);
-    g.fillRoundedRectangle(geometry.inspectorCellCard.toFloat(),7.0f);
-    label(g,"ENTIRE CUE",{x+3,173,inspectorInner-6,20},14,palette::teal,true);
+    // Section labels follow the Inspector's shared scale. No second
+    // rule beside the header divider, and no raised containers.
+    label(g,"CUE PARAMETERS",{x+3,173,inspectorInner-6,20},12,
+          palette::muted,true);
     label(g,"Cue name",{x,204,inspectorInner,18},12,palette::text,true);
     label(g,"Initial BPM",{x,272,inspectorInner,18},12,palette::text,true);
-    g.setColour(palette::line);g.drawHorizontalLine(407,(float)x,(float)x+inspectorInner);
-    label(g,"CELL",{x+3,423,59,20},14,palette::teal,true);
-    label(g,"/  "+col.name,{x+62,423,inspectorInner-68,20},13,palette::text,true);
+    g.setColour(palette::line.withAlpha(.55f));
+    g.drawHorizontalLine(408,(float)x-6,(float)x+inspectorInner+6);
+    label(g,"CELL PARAMETERS",{x+3,423,111,20},12,palette::muted,true);
+    label(g,col.name,{x+116,423,inspectorInner-120,20},12,
+          palette::text,true,juce::Justification::centredRight);
     label(g,"Cell name",{x,454,inspectorInner,18},12,palette::text,true);
-    if(col.type==ColumnType::audio) {
+    if (col.type==ColumnType::audio) {
         label(g,"Gain",{x,532,48,18},12,palette::muted,true);
         label(g,"dB",{x+163,532,43,18},12,palette::muted,true);
     }
-    if(col.type==ColumnType::osc)
-        label(g,"UDP destination in column Utility",{x,645,inspectorInner,18},10,palette::muted);
+    if (col.type==ColumnType::osc)
+        label(g,"UDP destination in column Utility",{x,645,inspectorInner,18},
+              10,palette::muted);
     g.restoreState();
-    // A dedicated cue-scoped notepad; it is never superimposed on the
-    // audio gain, MIDI/OSC editor buttons or row-level switches.
-    const int notesAfterActions=geometry.scaleInspectorControl({0,728,1,25}).getBottom()+8;
-    const int notesTop=std::max(notesAfterActions,geometry.inspectorPanel.getBottom()-167);
-    const int notesHeight=std::max(45,geometry.inspectorPanel.getBottom()-notesTop-5);
-    g.setColour(palette::raised.withAlpha(.52f));
-    g.fillRoundedRectangle((float)x-6,(float)notesTop,(float)inspectorInner+12,
-                           (float)notesHeight,7.0f);
-    g.setColour(palette::line.withAlpha(.8f));
-    g.drawRoundedRectangle((float)x-6,(float)notesTop,(float)inspectorInner+12,
-                           (float)notesHeight,7.0f,1.0f);
-    label(g,"NOTES  /  CUE "+juce::String(selectedRow+1).paddedLeft('0',2),
-          {x+3,notesTop+5,inspectorInner-6,20},11,palette::teal,true);
+
+    // Notes are a real editable field, not a third fake raised panel.
+    // Its position stays downstream of all cue and cell actions.
+    const int notesAfterActions=
+        geometry.scaleInspectorControl({0,728,1,25}).getBottom()+8;
+    const int notesTop=std::max(notesAfterActions,
+                                geometry.inspectorPanel.getBottom()-167);
+    g.setColour(palette::line.withAlpha(.55f));
+    g.drawHorizontalLine(notesTop,(float)x-6,(float)x+inspectorInner+6);
+    label(g,"CUE NOTES",{x+3,notesTop+5,inspectorInner-6,20},12,
+          palette::muted,true);
     }
     }
     label(g,status,{geometry.viewport.getX(),h-35,std::max(1,geometry.editorX-200),25},12,palette::muted);
