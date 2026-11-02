@@ -479,10 +479,6 @@ void ColumnUtilities::paint(juce::Graphics& g) {
     // geometry and operational states.
     g.setColour(palette::panel);
     g.fillRect(layout.card);
-    g.setColour(palette::line.withAlpha(.49f));
-    g.drawHorizontalLine(layout.headerRule.getY(),
-                         (float)layout.card.getX()+10.f,
-                         (float)layout.card.getRight()-10.f);
     g.setColour(palette::type((int)ColumnType::audio).withAlpha(.81f));
     g.fillRect(layout.card.getX(),layout.card.getY(),
                layout.card.getWidth(),2);
