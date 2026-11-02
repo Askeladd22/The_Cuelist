@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.0-beta.26] - 2026-11-02
+
+**Tipo:** redesign nativo V2 — comandi MIDI/OSC Learn separati dalla telemetria.
+
+### Interfaccia
+- I due pulsanti **M Learn** e **O Learn** sono stati spostati fuori da **I/O ACTIVITY**, nella seconda fascia dell'header, **sotto il logo The CUElist** e prima delle schede Cuelist (X=10 e 92, Y=43, 78×26 px).
+- La posizione rimane fissa e sempre raggiungibile anche a 1024 px; entrambi conservano i **callback reali** `beginQuickLearn(false/true)`, gli stati attivi esistenti e l'evidenziazione MIDI ambra / OSC viola. Tooltip più chiari; nessun menu aggiuntivo e nessun clic in più.
+- Il blocco **I/O ACTIVITY** presenta ora esclusivamente MIDI RX/TX e OSC RX/TX, con intestazione più leggibile, nessun controllo sovrapposto e righe di stato distinte.
+- `OperatorLearnLayout` centralizza i bounds degli originali pulsanti e della superficie sottostante; `HeaderTelemetryLayout` non contiene più hitbox Learn. L'header resta **72px** e i tab Cuelist iniziano sempre a X=190.
+
+### Test e compatibilità
+- Regressioni JUCE: comandi Learn ancora presenti, visibili, con le geometrie nativamente assegnate e senza collisioni con logo, Cuelist, tab e telemetria; I/O ora passivo e righe RX/TX senza sovrapposizioni. Verifiche alle larghezze 1024, 1180, 1249/1250, 1440, 1549/1550, 1920 e 3840.
+- Nessuna modifica a logica Quick Learn, mapping MIDI/OSC, engine, routing, controller, clock, CPU/RAM, Master Audio ancorato nella colonna Cuelist, BPM inline o JSON v10. Nessuna build portable.
+- Merge subordinato a Windows CI/CTest verde e a verifica visiva Windows/DPI.
+
 ## [0.9.0-beta.25] - 2026-11-02
 
 **Tipo:** stabilizzazione del redesign nativo V2 e miglioramento leggibilità telemetria.
