@@ -95,4 +95,40 @@ void ltcGeneratorTests() {
         }
         path.deleteFile();
     });
+    test("N6 29.97 DF waveform advances across skipped minute labels",[] {
+        const auto folder=juce::File::getSpecialLocation(
+            juce::File::tempDirectory).getChildFile("TheCuelist-LtcTests");
+        const auto path=folder.getNonexistentChildFile("drop-frame-rollover",".wav");
+        Config cfg;
+        cfg.rate=Rate::drop2997;
+        cfg.start={0,0,59,28};
+        cfg.durationSeconds=.15;
+        check(writeWav(path,cfg).wasOk(),"Could not generate 29.97 DF source");
+        std::shared_ptr<const AudioClip> clip;
+        check(loadClip(path,clip).wasOk() && clip!=nullptr,
+              "Generated 29.97 DF audio cannot be decoded");
+        if (clip) {
+            Timecode tc=cfg.start;
+            for(int frame=0;frame<4;++frame) {
+                const int64_t begin=((int64_t)frame*48000*1001+15000)/30000;
+                const int64_t end=((int64_t)(frame+1)*48000*1001+15000)/30000;
+                const auto bits=frameBits(tc,cfg.rate);
+                // Check real biphase midpoint edges in each emitted frame,
+                // including 00:00:59;29 -> 00:01:00;02.
+                for(int bit=0;bit<80;++bit) {
+                    const auto signAt=[&](int half) {
+                        const auto sample=begin+((int64_t)(2*half+1)*(end-begin))/320;
+                        return clip->samples.getSample(0,(int)sample)>0;
+                    };
+                    check((signAt(bit*2)!=signAt(bit*2+1))==(bits[(size_t)bit]!=0),
+                          "29.97 DF waveform failed biphase or frame-code progression");
+                }
+                increment(tc,cfg.rate);
+                if (frame==1)
+                    check(tc.minute==1 && tc.second==0 && tc.frame==2,
+                          "29.97 DF wave must skip labels ;00 and ;01");
+            }
+        }
+        path.deleteFile();
+    });
 }
