@@ -50,6 +50,7 @@ void test(const char* name, const std::function<void()>& body) {
 #include "ControlDispatchPolicyTests.h"
 #include "MidiSessionPolicyTests.h"
 #include "ControlColumnTests.h"
+#include "LtcGeneratorTests.h"
 #include "StabilityV7Tests.h"
 #include "ArchitectureV8Tests.h"
 int main() {
@@ -78,6 +79,7 @@ int main() {
     controlDispatchPolicyTests();
     midiSessionPolicyTests();
     controlColumnTests();
+    ltcGeneratorTests();
     stabilityV7Tests();
     architectureV8Tests();
     cuelistGuiMockupTests();
