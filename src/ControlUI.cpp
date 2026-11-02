@@ -448,11 +448,13 @@ public:
         effectivePreview.setMultiLine(true);
         effectivePreview.setReadOnly(true);
         effectivePreview.setScrollbarsShown(true);
-        effectivePreview.setVisible(editSet);
-        templateName.setVisible(editSet && editTemplateId==0);
-        templates.setVisible(editSet && editTemplateId==0);
-        saveTemplate.setVisible(editSet && editTemplateId==0);
-        loadTemplate.setVisible(editSet && editTemplateId==0);
+        // Preview and cue-local reusable-Map actions are accessible from the
+        // same More menu in all scopes, not a separate legacy screen.
+        effectivePreview.setVisible(false);
+        templateName.setVisible(false);
+        templates.setVisible(false);
+        saveTemplate.setVisible(false);
+        loadTemplate.setVisible(false);
         templateName.setTextToShowWhenEmpty("Reusable Set name",palette::muted);
         templateName.setName("controlTemplateName");
         templates.setName("controlTemplates");
@@ -556,7 +558,6 @@ public:
                 "MIDI Learn for NEW mapping — move a controller control.",juce::dontSendNotification);
         };
         add.onClick=[this] {
-            if (editSet) { createBinding(false);return; }
             selected=-1;addingMapping=true;editingMapping=true;captured.reset();
             bindingList.deselectAllRows();
             inputKind.setSelectedId(1,juce::dontSendNotification);
@@ -612,18 +613,11 @@ public:
             functionName.setText(f.name,false);
             showRoute(f.destination);
         }
-        if (editSet) {
-            cancelEdit.setVisible(true);
-            for (juce::Component* widget : std::initializer_list<juce::Component*>{
-                    &target,&outputChannel,&outputCc,&oscAddress,&columns,
-                    &minimum,&maximum,&functionName})
-                widget->setEnabled(false);
-        }
         refreshDestinationFields();
         refreshEmptyState();
         updateEffectivePreview();
-        if (!editSet) { editingMapping=false; updateEditorVisibility(); }
-        setSize(860,editSet ? 764 : 790); startTimerHz(10);
+        updateEditorVisibility();
+        setSize(860,790); startTimerHz(10);
     }
     ~ControlPanel() override {
         stopTimer();
@@ -635,7 +629,7 @@ public:
     }
     void paint(juce::Graphics& g) override {
         g.fillAll(palette::panel);
-        if (!editSet) {
+        // All Default, saved and cue-local maps use the same native editor.
             const int w=getWidth();
             label(g,"CONTROL MAPPINGS",{22,12,w-44,36},22,palette::teal,true);
             label(g,"MAP SELECTION",{22,61,420,20},12,palette::muted,true);
@@ -671,54 +665,10 @@ public:
                 label(g,"Select a mapping to edit its input, function and destination.",
                     {22,493,w-44,28},13,palette::muted);
             }
-            return;
-        }
-        label(g,editTemplateId>0 ? "SAVED CONTROL MAP" :
-              editSet ? "CONTROL SET / Q"+juce::String(sourceRow+1) :
-              "DEFAULT MAP / CONTROL MAPPINGS",{20,15,620,31},21,palette::teal,true);
-        g.setColour(palette::line);
-        g.drawHorizontalLine(52,19,(float)getWidth()-19);
-        label(g,"MAP SELECTION",{20,60,350,19},12,palette::teal,true);
-        label(g,"Saved maps live here; Control Column cells assign them to cues.",
-              {320,136,getWidth()-340,24},12,palette::muted);
-
-        g.setColour(palette::line);
-        g.drawHorizontalLine(191,20,(float)getWidth()-20);
-        // Function selection occupies the 198-224px band; do not draw
-        // a section heading over the active combo box.
-        label(g,editSet?"Control Set scope":"Scope",{20,228,179,18},11,palette::muted,true);
-        label(g,"Target",{214,228,178,18},11,palette::muted,true);
-        label(g,"Takeover",{411,228,132,18},11,palette::muted,true);
-        label(g,"Destination column",{556,228,207,18},11,palette::muted,true);
-        label(g,"OUT CH",{20,285,48,18},10,palette::muted,true);
-        label(g,"CC",{78,285,52,18},10,palette::muted,true);
-        label(g,"OSC address",{142,285,184,18},11,palette::muted,true);
-        label(g,"Curve",{441,285,114,18},11,palette::muted,true);
-        label(g,"Min",{573,285,84,18},11,palette::muted,true);
-        label(g,"Max",{672,285,84,18},11,palette::muted,true);
-
-        if (editSet) {
-            label(g,"EFFECTIVE MAPPING",{20,347,330,18},12,palette::teal,true);
-            if (editTemplateId==0)
-                label(g,"REUSABLE CONTROL MAPS",{20,456,330,18},12,palette::teal,true);
-        } else {
-            label(g,"CUE PRESETS",{20,347,250,18},12,palette::teal,true);
-            label(g,"New preset name",{388,347,220,18},11,palette::muted,true);
-        }
-        label(g,editTemplateId>0 ? "MAPPINGS IN SAVED MAP" :
-              editSet?"MAPPINGS IN THIS CONTROL SET":"DEFAULT MAP ASSIGNMENTS",
-              {20,editSet?534:434,380,15},11,palette::teal,true);
-        g.setColour(palette::line);
-        g.drawHorizontalLine(getHeight()-48,20,(float)getWidth()-20);
-        label(g,editTemplateId>0 ?
-            "Named maps are shared by assigned cues; edit with care. Deletion requires no assignments." :
-            editSet ? "Control overrides apply after GO; removing one restores Default Map." :
-            "Default Map always remains active as the lowest-priority fallback.",
-            {20,getHeight()-40,getWidth()-40,23},11,palette::muted);
     }
     void resized() override {
         const int w=getWidth();
-        if (!editSet) {
+        // Common geometry regardless of which Control Map is selected.
             mapChooser.setBounds(22,86,w-352,30);
             newMap.setBounds(w-318,86,112,30);
             cloneMap.setBounds(w-198,86,115,30);
@@ -753,56 +703,6 @@ public:
             minimum.setBounds(415,743,92,28);
             maximum.setBounds(516,743,92,28);
             invert.setBounds(620,742,110,31);
-            return;
-        }
-        mapChooser.setBounds(20,97,w-314,31);
-        newMap.setBounds(w-285,97,125,31);
-        cloneMap.setBounds(w-150,97,130,31);
-        renameMap.setBounds(20,132,139,28);
-        deleteMap.setBounds(168,132,141,28);
-        device.setBounds(20,105,w-177,31);
-        connect.setBounds(w-143,105,123,31);
-        learn.setBounds(20,163,148,32);
-        oscLearn.setBounds(176,163,148,32);
-        oscInputPort.setBounds(269,163,68,32);
-        state.setBounds(337,162,w-357,33);
-        functionChoice.setBounds(20,198,185,26);
-        functionName.setBounds(213,198,228,26);
-        newFunction.setBounds(449,198,140,26);
-        saveRoute.setBounds(597,198,w-617,26);
-
-        scope.setBounds(20,250,176,31);
-        target.setBounds(214,250,178,31);
-        takeover.setBounds(411,250,133,31);
-        columns.setBounds(556,250,w-576,31);
-        outputChannel.setBounds(20,307,48,31);
-        outputCc.setBounds(78,307,54,31);
-        oscAddress.setBounds(142,307,181,31);
-        invert.setBounds(336,307,96,31);
-        curve.setBounds(441,307,115,31);
-        minimum.setBounds(573,307,85,31);
-        maximum.setBounds(672,307,85,31);
-
-        effectivePreview.setBounds(20,372,w-40,72);
-        templateName.setBounds(20,479,169,31);
-        templates.setBounds(198,479,229,31);
-        saveTemplate.setBounds(437,479,137,31);
-        loadTemplate.setBounds(584,479,w-604,31);
-        presets.setBounds(20,370,195,31);
-        assignPreset.setBounds(223,370,153,31);
-        presetName.setBounds(388,370,w-548,31);
-        newPreset.setBounds(w-149,370,129,31);
-
-        saveControllerPreset.setBounds(20,403,173,29);
-        loadControllerPreset.setBounds(201,403,173,29);
-        const int listY=editSet?548:449;
-        const int listHeight=editSet?136:157;
-        bindingList.setBounds(20,listY,w-239,listHeight);
-        emptyBindings.setBounds(30,listY+19,w-259,42);
-        add.setBounds(w-209,listY,189,32);
-        updateSelected.setBounds(w-209,listY+37,189,32);
-        remove.setBounds(w-209,listY+74,189,32);
-        cancelEdit.setBounds(w-209,listY+111,189,32);
     }
 
 private:
@@ -813,7 +713,6 @@ private:
     int sourceRowId=0,sourceColumnId=0;
     int continuousLearn=0; // 0=off, 1=MIDI, 2=OSC
     void updateInputVisibility() {
-        if (editSet) return;
         const bool osc=inputKind.getSelectedId()==4;
         inputAddress.setVisible(editingMapping && osc);
         inputChannel.setVisible(editingMapping && !osc);
@@ -821,7 +720,6 @@ private:
                                inputKind.getSelectedId()!=3);
     }
     void updateEditorVisibility() {
-        if (editSet) return; // Historical per-cue override editor is separate.
         for (juce::Component* widget:std::initializer_list<juce::Component*>{
             &functionChoice,&functionName,&saveRoute,&scope,&target,
             &takeover,&columns,&outputChannel,&outputCc,&oscAddress,
@@ -830,18 +728,96 @@ private:
             widget->setVisible(editingMapping);
         functionName.setVisible(editingMapping &&
                                 functionChoice.getSelectedId()>1);
-        saveRoute.setVisible(editingMapping &&
+        functionName.setEnabled(!editSet);
+        saveRoute.setVisible(editingMapping && !editSet &&
                              functionChoice.getSelectedId()>1);
+        newFunction.setVisible(!editSet);
+        mapMore.setVisible(true);
         updateSelected.setEnabled(editingMapping &&
                                   (addingMapping || selected>=0));
         remove.setEnabled(editingMapping && !addingMapping && selected>=0);
         updateInputVisibility();
         if (editingMapping) refreshDestinationFields();
+        // A local override can change a captured physical input, but shared
+        // function destinations remain read-only as in the original editor.
+        for (juce::Component* widget:std::initializer_list<juce::Component*>{
+                 &target,&columns,&outputChannel,&outputCc,&oscAddress,
+                 &minimum,&maximum,&inputKind,&inputChannel,&inputNumber,
+                 &inputAddress})
+            widget->setEnabled(!editSet);
         resized();
         repaint();
     }
     void showMapMenu() {
-        if (!owner || editSet) return;
+        if (!owner) return;
+        if (editSet) {
+            // Local-only archive operations move into the SAME map menu,
+            // retaining the old Save Set / Apply Set / effective preview.
+            juce::PopupMenu menu;
+            menu.addItem(1,"View effective mapping");
+            menu.addItem(2,"Save local override as reusable Map...");
+            menu.addSeparator();
+            std::vector<int> mapIds;
+            for (const auto& item:owner->show.controls.templates) {
+                mapIds.push_back(item.id);
+                menu.addItem(100+(int)mapIds.size()-1,
+                             "Apply saved Map: "+item.name);
+            }
+            auto safe=juce::Component::SafePointer<ControlPanel>(this);
+            menu.showMenuAsync(
+                juce::PopupMenu::Options().withTargetComponent(&mapMore),
+                [safe,mapIds](int choice) {
+                    if (!safe || !safe->owner) return;
+                    auto& panel=*safe.getComponent();
+                    auto& main=*panel.owner.getComponent();
+                    int row=-1,column=-1;
+                    if (!panel.resolveSource(row,column)) {
+                        panel.state.setText("The local Control Column no longer exists.",
+                                            juce::dontSendNotification);
+                        return;
+                    }
+                    if (choice==1) {
+                        panel.updateEffectivePreview();
+                        juce::AlertWindow::showMessageBoxAsync(
+                            juce::MessageBoxIconType::InfoIcon,
+                            "Effective Control Mapping",
+                            panel.effectivePreview.getText(),"OK",&main);
+                    } else if (choice==2) {
+                        showOperatorTextPrompt(main,main.theme,
+                            "Save Control Map",
+                            "Save this cue's local overrides for reuse.",
+                            "Map name",juce::String(),false,"Save",
+                            [safe](juce::String name) {
+                                if (!safe || !safe->owner) return;
+                                auto& panel=*safe.getComponent();
+                                int r=-1,c=-1;
+                                if (!panel.resolveSource(r,c)) return;
+                                const int id=panel.owner->saveControlSetTemplate(r,c,name);
+                                if (id) {
+                                    panel.refreshTemplates();
+                                    panel.refreshMapChooser();
+                                    panel.state.setText("Control Map saved for reuse.",
+                                                        juce::dontSendNotification);
+                                } else panel.state.setText(panel.owner->status,
+                                                         juce::dontSendNotification);
+                            });
+                    } else if (choice>=100 && choice-100<(int)mapIds.size()) {
+                        const int id=mapIds[(size_t)(choice-100)];
+                        if (main.applyControlSetTemplate(row,column,id)) {
+                            panel.selected=-1;panel.editingMapping=false;
+                            panel.bindingList.deselectAllRows();
+                            panel.bindingList.updateContent();
+                            panel.refreshMapChooser();panel.refreshEmptyState();
+                            panel.updateEditorVisibility();
+                            panel.updateEffectivePreview();
+                            panel.state.setText("Saved Control Map applied.",
+                                                juce::dontSendNotification);
+                        } else panel.state.setText(main.status,
+                                                 juce::dontSendNotification);
+                    }
+                });
+            return;
+        }
         juce::PopupMenu menu;
         const bool saved=editTemplateId>0;
         menu.addItem(1,"Rename Map",saved);
@@ -983,7 +959,7 @@ private:
         captured.reset();
         addingMapping=false;editingMapping=false;selected=-1;
         bindingList.deselectAllRows();
-        if (!editSet) updateEditorVisibility();
+        updateEditorVisibility();
         updateSelected.setEnabled(false);remove.setEnabled(false);
         state.setText("Uncommitted mapping changes discarded.",
                       juce::dontSendNotification);
@@ -1003,29 +979,14 @@ private:
         selected=-1;addingMapping=false;editingMapping=false;
         bindingList.deselectAllRows();
         refreshMapChooser();refreshFunctions();
-        if (editSet) {
-            for (juce::Component* widget:std::initializer_list<juce::Component*>{
-                &functionChoice,&functionName,&scope,&target,&takeover,&columns,
-                &outputChannel,&outputCc,&oscAddress,&invert,&curve,&minimum,
-                &maximum,&add,&updateSelected,&remove,&effectivePreview,
-                &saveTemplate,&loadTemplate,&templateName,&templates})
-                widget->setVisible(true);
-            functionName.setEnabled(false);
-            cancelEdit.setVisible(true);
-            newFunction.setVisible(false);saveRoute.setVisible(false);
-            effectivePreview.setVisible(true);
-            refreshTemplates();
-        } else {
-            functionName.setEnabled(true);
-            effectivePreview.setVisible(false);
-            saveTemplate.setVisible(false);loadTemplate.setVisible(false);
-            templateName.setVisible(false);templates.setVisible(false);
-            newFunction.setVisible(true);
-            updateEditorVisibility();
-        }
+        functionName.setEnabled(!editSet);
+        effectivePreview.setVisible(false);
+        saveTemplate.setVisible(false);loadTemplate.setVisible(false);
+        templateName.setVisible(false);templates.setVisible(false);
+        updateEditorVisibility();
         bindingList.updateContent();bindingList.repaint();
         refreshEmptyState();updateEffectivePreview();
-        setSize(860,editSet ? 764 : 790);
+        setSize(860,790);
         resized();repaint();
         state.setText(editSet?"Cue-local override selected.":
             mapId>0?"Saved map selected.":"Default Map selected.",
@@ -1219,14 +1180,12 @@ private:
         outputCc.setEnabled(t==5 && !editSet);
         oscAddress.setEnabled(!editSet && t==6);
         columns.setEnabled(!editSet && needsColumn);
-        if (!editSet) {
-            outputChannel.setVisible(editingMapping && t==5);
-            outputCc.setVisible(editingMapping && t==5);
-            oscAddress.setVisible(editingMapping && t==6);
-            columns.setVisible(editingMapping && needsColumn);
-            scope.setVisible(editingMapping &&
-                             functionChoice.getSelectedId()==1);
-        }
+        outputChannel.setVisible(editingMapping && t==5);
+        outputCc.setVisible(editingMapping && t==5);
+        oscAddress.setVisible(editingMapping && t==6);
+        columns.setVisible(editingMapping && needsColumn);
+        scope.setVisible(editingMapping && !editSet &&
+                         functionChoice.getSelectedId()==1);
     }
     void refreshEmptyState() {
         emptyBindings.setVisible(getNumRows()==0);
@@ -1245,10 +1204,8 @@ private:
             // the operator may choose another function without reopening
             // the hardware input listener.
             captured=event;
-            if (!editSet) {
-                editingMapping=true;
-                updateEditorVisibility();
-            }
+            editingMapping=true;
+            updateEditorVisibility();
             const auto* entries=currentBindings();
             createBinding(entries && selected>=0 && selected<(int)entries->size(),true);
             if (continuousLearn==1) owner->armControlLearn();
@@ -1494,12 +1451,8 @@ private:
             bindingList.updateContent();bindingList.repaint();
             selected=-1;addingMapping=false;
             bindingList.deselectAllRows();
-            if (!editSet) {
-                editingMapping=false;
-                updateEditorVisibility();
-            } else {
-                updateSelected.setEnabled(false);remove.setEnabled(false);
-            }
+            editingMapping=false;
+            updateEditorVisibility();
             refreshEmptyState();captured.reset();updateEffectivePreview();
             state.setText(update ? "Mapping updated." :
                 editTemplateId>0 ? "Mapping saved to selected reusable map." :
@@ -1562,9 +1515,8 @@ private:
     }
     void selectedRowsChanged(int row) override {
         selected=row;
-        if (!editSet && row>=0) {
+        if (row>=0) {
             editingMapping=true;addingMapping=false;
-            updateEditorVisibility();
         }
         const auto* entries=currentBindings();
         updateSelected.setEnabled(entries && row>=0 && row<(int)entries->size());
@@ -1603,12 +1555,12 @@ private:
         state.setText("Editing #"+juce::String(b.id)+" — input "+b.deviceId+
             " ch"+juce::String(b.channel)+" / "+juce::String(b.number),
             juce::dontSendNotification);
+        updateEditorVisibility();
     }
     void paintListBoxItem(int row,juce::Graphics& g,int width,int height,bool active) override {
         if (!owner || row<0 || row>=getNumRows()) return;
         const auto& b=(*currentBindings())[(size_t)row];
         if (active) g.fillAll(palette::teal.withAlpha(.20f));
-        if (!editSet) {
             juce::String function="Legacy direct";
             for(const auto& f:owner->show.controls.functions)
                 if (f.id==b.functionId) {function=f.name;break;}
@@ -1637,29 +1589,7 @@ private:
                   active?palette::text:palette::muted);
             label(g,dest,{second+8,0,width-second-16,height},12,
                   active?palette::text:palette::muted);
-            return;
-        }
-        juce::String targetName=b.target==ControlTarget::go ? "GO" :
-            b.target==ControlTarget::panic ? "PANIC" :
-            b.target==ControlTarget::masterGain ? "MASTER GAIN" :
-            b.target==ControlTarget::masterPan ? "MASTER PAN" :
-            b.target==ControlTarget::columnPan ? "PAN" :
-            b.target==ControlTarget::columnMute ? "MUTE" :
-            b.target==ControlTarget::columnPolarity ? "PHASE" :
-            b.target==ControlTarget::columnSend ? "L/R SEND" :
-            b.target==ControlTarget::limiterToggle ? "LIMITER" :
-            b.target==ControlTarget::oscFloat ? "OSC" :
-            b.target==ControlTarget::midiCc ? "MIDI CC" : "GAIN";
-        juce::String displayFunctionName=targetName;
-        for (const auto& function:owner->show.controls.functions)
-            if (function.id==b.functionId) {
-                displayFunctionName=function.name+" / "+targetName;break;
-            }
-        label(g,"#"+juce::String(b.id)+"   ch"+juce::String(b.channel)+
-            " "+(b.kind==ControlKind::cc?"CC ":b.kind==ControlKind::note?"NOTE ":"BEND ")+
-            juce::String(b.number)+" → "+displayFunctionName+
-            "  ["+juce::String((int)b.scope)+"]",
-            {7,0,width-14,height},12,active?palette::text:palette::muted);
+
     }
 };
 void MainComponent::openControlPanel(bool editSet,int templateId) {
@@ -1672,8 +1602,7 @@ void MainComponent::openControlPanel(bool editSet,int templateId) {
     }
     juce::DialogWindow::LaunchOptions options;
     options.content.setOwned(new ControlPanel(*this,editSet,templateId));
-    options.dialogTitle=templateId>0 ? "The Cuelist — Reusable Map" :
-        editSet ? "The Cuelist — Control Set" : "The Cuelist — Control Mappings";
+    options.dialogTitle="The Cuelist — Control Mappings";
     options.dialogBackgroundColour=palette::panel;
     options.escapeKeyTriggersCloseButton=true;
     options.useNativeTitleBar=false;

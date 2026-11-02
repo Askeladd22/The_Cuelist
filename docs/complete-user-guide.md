@@ -217,6 +217,12 @@ The **Notes / Cue NN** multiline editor holds technical stage directions, remind
 
 Text input not yet applied to the model is not independently guaranteed to exist in a periodic recovery checkpoint. Save explicitly after editing cue notes and titles.
 
+### Control Map editing: one shared interface
+
+The **Control Mappings** panel is the only native editor for Default Map, saved reusable Control Maps and cue-local Control Column overrides. Click an assigned Control Column cell to open the same editor with its Map preselected. The `...` menu on a cue-local override provides effective mapping preview, saving the local overrides as a reusable Map, and applying an existing saved Map. These actions retain the existing ownership and assignment semantics; opening the editor never changes assignments. Use the Control Column cell's right-click menu to assign or remove Maps.
+
+When editing a cue-local override, function destinations are inherited from project functions and remain read-only. Use MIDI/OSC Learn to capture the replacement physical input. Default and saved Maps retain their regular function editing controls.
+
 ## 7. Audio, mixer and routing
 
 ### 7.1 Audio cells
