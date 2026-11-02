@@ -702,10 +702,14 @@ void MainComponent::paint(juce::Graphics& g) {
     if (inspectorVisible) {
     if (quickLearnMode!=QuickLearnMode::off) {
         const int x=geometry.inspectorLeft;
+        // Learn uses the same flat inspector chassis. The protocol colour
+        // remains meaningful state, not an extra decorative card.
         g.setColour(palette::panel);
-        g.fillRoundedRectangle(geometry.inspectorPanel.toFloat(),9.0f);
-        g.setColour(palette::line);
-        g.drawRoundedRectangle(geometry.inspectorPanel.toFloat(),9.0f,1.25f);
+        g.fillRect(geometry.inspectorPanel);
+        g.setColour(palette::line.withAlpha(.52f));
+        g.drawVerticalLine(geometry.inspectorPanel.getX(),
+                           (float)geometry.inspectorPanel.getY(),
+                           (float)geometry.inspectorPanel.getBottom());
         const auto learnColour=quickLearnAccent();
         label(g,quickLearnMode==QuickLearnMode::midi ? "MIDI LEARN" : "OSC LEARN",
               {x+5,98,geometry.inspectorInnerWidth-10,25},19,learnColour,true);
@@ -722,8 +726,12 @@ void MainComponent::paint(juce::Graphics& g) {
             label(g,quickLearnFeedback,
                   {x+5,184,geometry.inspectorInnerWidth-10,20},
                   10,palette::teal,true);
-        label(g,"Available parameters / functions",
-              {x+4,205,geometry.inspectorInnerWidth-8,24},11,learnColour,true);
+        g.setColour(palette::line.withAlpha(.55f));
+        g.drawHorizontalLine(201,(float)x-6,
+                              (float)x+geometry.inspectorInnerWidth+6);
+        label(g,"AVAILABLE TARGETS",
+              {x+4,205,geometry.inspectorInnerWidth-8,24},
+              12,palette::muted,true);
     } else {
     // An instrument panel, not a stack of floating cards. Real inputs
     // retain their tested geometry, focus, validation and live callbacks.
