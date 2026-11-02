@@ -4,7 +4,7 @@
 #include <cmath>
 
 namespace cuelist {
-// One shared geometry contract for painting, status-button hitboxes,
+// One shared geometry contract for telemetry-only painting,
 // responsive operator menus and the Cuelist tab overflow.
 // The entire console remains within the original 72px global header.
 struct HeaderTelemetryLayout final {
