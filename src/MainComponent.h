@@ -343,6 +343,7 @@ public:
     void requestQuit();
     bool select(int row,int column);
     void importFile(const juce::File&);
+    void generateLtcTrack(int row,int column);
     void importDialog();
     void editMidiClip();
     void editOscClip();

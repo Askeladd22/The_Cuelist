@@ -13,6 +13,22 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.0-beta.31] - 2026-11-02
+
+**Tipo:** Editor Control Map condiviso e generazione audio LTC da celle Audio vuote.
+
+### Funzioni
+- Clic su una Control Column con Map assegnata: apre direttamente il **ControlPanel** originale già utilizzato da Control Mappings, senza passare dal vecchio menu contestuale. Le Map riutilizzabili vengono selezionate per ID; gli override locali mantengono il loro scope. Il menu destro continua a gestire assegnazione, rimozione, salvataggio e Auto Stop. Il Default Map resta distinto.
+- Menu destro di una cella Audio **davvero vuota**: nuova voce **Generate LTC Track**. Dialogo nativo per durata (0,1–600 secondi), timecode iniziale HH:MM:SS:FF e frame rate **24 / 25 / 29.97 drop-frame / 30 fps**.
+- Generatore LTC SMPTE a **80 bit**: tempo in BCD, sync word, correzione della polarità, codifica biphase-mark, frequenza 30000/1001 per 29,97 DF. Salto delle etichette frame 00/01 ai minuti non multipli di dieci; input non validi rifiutati.
+- Output **WAV PCM mono 48 kHz / 16 bit** persistente in Documents/The Cuelist/Generated LTC, importato nel normale percorso Audio (clip, player, mixer, routing, controlli memoria, salvataggio e riapertura). Indipendente dal timecode globale.
+- Sicurezza: nessuna sostituzione di celle già occupate; ricontrollo ID riga/colonna alla conferma asincrona; nessuna sovrascrittura di file; output incompleto o import fallito eliminato. Massimo iniziale 10 minuti per sorgente, per contenere la memoria PCM.
+
+### Verifiche
+- Test SMPTE per 80 bit, sync, BCD, parità, rollover giornaliero, drop-frame 29.97, validazione input e import del WAV tramite il caricatore Audio reale; verifica delle transizioni biphase dei primi 80 bit.
+- Invariati modelli Control Mapping e scope Default/saved/local, motori Audio/MIDI/OSC, Master/Direct routing, Quick Learn, Inspector, editor, metering e schema JSON v10. Nessuna build portable.
+- Merge subordinato a Windows CI/CTest verde e verifica con decodificatore LTC esterno.
+
 ## [0.9.0-beta.30] - 2026-11-02
 
 **Tipo:** redesign nativo V2 / N5.1 — strip del mixer come strumenti operativi, non card decorative.

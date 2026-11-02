@@ -8,7 +8,12 @@ namespace cuelist {
 void MainComponent::editControlSet(int row,int column) {
     if (!select(row,column) || show.columns[(size_t)column].type!=ColumnType::control) return;
     const auto mapId=show.rows[(size_t)row].cells[(size_t)column].assignedMapId;
+    // Saved maps open preselected in the existing Control Mappings panel;
+    // local per-cue overrides use that same ControlPanel instance in local
+    // scope, preserving inherited defaults and the assigned map identity.
     if (mapId>0) openControlPanel(false,mapId);
+    else if (show.columns[(size_t)column].controlLocked)
+        openControlPanel(false);
     else openControlPanel(true);
 }
 

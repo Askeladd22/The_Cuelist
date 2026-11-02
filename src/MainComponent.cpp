@@ -5,6 +5,7 @@
 #include "MidiSessionPolicy.h"
 #include "ProjectSafety.h"
 #include "ProjectMediaLoader.h"
+#include "LtcGenerator.h"
 #include "DeviceIdentity.h"
 #include "OperatorTextPrompt.h"
 #include "PianoRoll.h"
@@ -14,6 +15,7 @@
 #include <cmath>
 #include <algorithm>
 #include <limits>
+#include <cstdlib>
 #if JUCE_WINDOWS
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -1424,6 +1426,88 @@ void MainComponent::showAbout() {
 void MainComponent::message(const juce::String& text) { status=text; repaint(); juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon,"The Cuelist",text,"OK",this); }
 bool MainComponent::memoryFits(const ClipMap& collection) const {
     return withinPcmBudget(collection);
+}
+void MainComponent::generateLtcTrack(int row,int column) {
+    if (row<0 || row>=(int)show.rows.size() ||
+        column<0 || column>=(int)show.columns.size() ||
+        show.columns[(size_t)column].type!=ColumnType::audio ||
+        show.columns[(size_t)column].collapsed ||
+        show.rows[(size_t)row].cells[(size_t)column].file.isNotEmpty() ||
+        hasClip(row,column)) return;  // Must never replace existing media.
+
+    // Stable IDs make the async dialog resilient to row/column reorder.
+    const int rowId=show.rows[(size_t)row].id;
+    const int columnId=show.columns[(size_t)column].id;
+    auto* dialog=new juce::AlertWindow("Generate LTC Track",
+        "Create a mono 48 kHz SMPTE LTC WAV in Documents/The Cuelist/"
+        "Generated LTC. It will be loaded as ordinary Audio.",
+        juce::MessageBoxIconType::NoIcon,this);
+    dialog->setLookAndFeel(&theme);
+    dialog->addTextEditor("duration","10.0","Duration in seconds (0.1–600)");
+    dialog->addTextEditor("timecode","01:00:00:00","Start timecode HH:MM:SS:FF");
+    dialog->addComboBox("rate",{"24 fps","25 fps","29.97 fps (drop-frame)","30 fps"},
+                        "Frame rate");
+    if (auto* rate=dialog->getComboBoxComponent("rate"))
+        rate->setSelectedId(2,juce::dontSendNotification);
+    dialog->addButton("Generate LTC",1);
+    dialog->addButton("Cancel",0);
+    auto safe=juce::Component::SafePointer<MainComponent>(this);
+    dialog->enterModalState(true,juce::ModalCallbackFunction::create(
+        [safe,dialog,rowId,columnId](int result) {
+            if (!safe || result!=1) return;
+            int r=-1,c=-1;
+            for (int i=0;i<(int)safe->show.rows.size();++i)
+                if (safe->show.rows[(size_t)i].id==rowId) {r=i;break;}
+            for (int i=0;i<(int)safe->show.columns.size();++i)
+                if (safe->show.columns[(size_t)i].id==columnId) {c=i;break;}
+            if (r<0 || c<0 || safe->show.columns[(size_t)c].type!=ColumnType::audio ||
+                safe->show.columns[(size_t)c].collapsed ||
+                safe->show.rows[(size_t)r].cells[(size_t)c].file.isNotEmpty() ||
+                safe->hasClip(r,c)) {
+                safe->message("LTC cancelled: the target Audio cell is no longer empty.");
+                return;
+            }
+            const auto duration=dialog->getTextEditorContents("duration").trim();
+            const auto start=dialog->getTextEditorContents("timecode").trim();
+            const char* raw=duration.toRawUTF8();
+            char* end=nullptr;
+            const double seconds=std::strtod(raw,&end);
+            if (duration.isEmpty() || end==raw || *end!='\0' ||
+                !std::isfinite(seconds)) {
+                safe->message("Enter a valid LTC duration in seconds (e.g. 30 or 12.5).");
+                return;
+            }
+            ltc::Config spec;
+            spec.durationSeconds=seconds;
+            const auto* rateBox=dialog->getComboBoxComponent("rate");
+            switch (rateBox ? rateBox->getSelectedId() : 0) {
+                case 1:spec.rate=ltc::Rate::fps24;break;
+                case 2:spec.rate=ltc::Rate::fps25;break;
+                case 3:spec.rate=ltc::Rate::drop2997;break;
+                case 4:spec.rate=ltc::Rate::fps30;break;
+                default:safe->message("Select an LTC frame rate.");return;
+            }
+            if (const auto parsed=ltc::parseTimecode(start,spec.rate,spec.start);
+                parsed.failed()) {safe->message(parsed.getErrorMessage());return;}
+            if (const auto validated=ltc::validate(spec);validated.failed()) {
+                safe->message(validated.getErrorMessage());return;
+            }
+            const auto directory=juce::File::getSpecialLocation(
+                juce::File::userDocumentsDirectory)
+                .getChildFile("The Cuelist").getChildFile("Generated LTC");
+            const auto file=directory.getChildFile("LTC-"+start
+                .replaceCharacter(':','-').replaceCharacter(';','-')+
+                "-"+juce::Uuid().toString()+".wav");
+            if (const auto generated=ltc::writeWav(file,spec);generated.failed()) {
+                safe->message("Could not generate LTC: "+generated.getErrorMessage());
+                return;
+            }
+            if (!safe->select(r,c)) {file.deleteFile();return;}
+            safe->importFile(file); // normal clip loading, memory check and routing
+            // A rejected preload must not leave an unused generated WAV.
+            if (safe->show.rows[(size_t)r].cells[(size_t)c].file!=
+                file.getFullPathName()) file.deleteFile();
+        }),true);
 }
 void MainComponent::importDialog() {
     if (show.columns[selectedColumn].type==ColumnType::osc ||
