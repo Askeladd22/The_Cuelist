@@ -13,6 +13,22 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.5] - 2026-11-02
+
+**Tipo:** redesign nativo V2 — fase N7.2, toolbar responsive e docking editor MIDI/OSC.
+
+### Ergonomia operativa
+- Piano Roll MIDI: nel dock compatto (710–999px), **Undo, Redo, Detach, Collapse e Close** sono coordinati nella prima riga senza sovrapposizioni; Snap, Channel, Velocity, Beat Length, Delete, Zoom − e Zoom + restano disponibili e distinguibili nella seconda. Il profilo esteso conserva le posizioni preesistenti.
+- La posizione dei pulsanti **Collapse/Close del dock principale** usa, quando MIDI è compatto, la stessa geometria condivisa del Piano Roll. In modalità collassata torna alla posizione originale nella fascia da 36px, senza coprire la Timeline.
+- Toolbar OSC: le coordinate dei controlli nativi vengono centralizzate in `EditorToolbarLayout.h`; rimangono invariati i breakpoint, le azioni, gli hitbox e l'organizzazione compatta già verificata.
+- Tooltip più chiari per le azioni MIDI/OSC, per distinguere Snap da Grid, zoom, Undo/Redo, eliminazione e Detach/Reattach senza aggiungere pulsanti fittizi o modificare i callback.
+
+### Test e compatibilità
+- Test JUCE a larghezze 710, 820, 940, 999, 1000 e 1180px: integrità delle dimensioni effettive, assenza di collisioni tra tutti gli hitbox, comandi sempre visibili e stato Detach/Reattach.
+- Test su `MainComponent` a 1180, 1280, 1440 e 1640px: verifica dei veri pulsanti del dock rispetto agli editor e della modalità Collapse/Expand senza sovrapposizioni con la Timeline.
+- **Nessuna modifica** a eventi MIDI/OSC, note, curve, Snap, Grid, Undo/Redo, motori, rendering Audio, generazione LTC, formato `.cuelist` JSON v10, routing e Master Audio.
+- Nessun pacchetto portable. Richiesti Windows CI/CTest verdi e revisione manuale Windows/DPI/32:9 prima di considerare N7.2 definitivamente approvata.
+
 ## [0.9.4] - 2026-11-02
 
 **Tipo:** redesign nativo V2, fase N7.1 — editor MIDI Piano Roll e OSC Automation meno decorativi.

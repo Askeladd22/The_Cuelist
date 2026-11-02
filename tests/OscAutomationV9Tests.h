@@ -1,5 +1,6 @@
 #pragma once
 #include "OscEditor.h"
+#include "EditorToolbarLayout.h"
 #include <cstring>
 
 void oscAutomationV9Tests() {
@@ -31,6 +32,50 @@ void oscAutomationV9Tests() {
               actual.automations[0].points.size()==2 &&
               validateOscClip(actual).wasOk(),
               "N7 visual OSC update mutated events or automation curves");
+    });
+    test("N7.2 OSC toolbar shares native geometry and preserves all commands",[] {
+        using namespace cuelist;
+        OscClipEditor editor(OscClip{},{{0,120,4,4}},
+            [](const OscClip&,const OscClip&,bool){});
+        const auto find=[&](const char* name)->juce::Component* {
+            for(auto* child:editor.getChildren())
+                if(child->getName()==name) return child;
+            return nullptr;
+        };
+        const std::array<const char*,11> names{
+            "oscAddAutomation","oscRemoveMessage","oscDuplicate",
+            "oscGridVisible","oscSnapEnabled","oscGridResolution",
+            "oscZoomOut","oscZoomIn","oscZoomFit",
+            "oscTimeUnit","oscDetach"};
+        for(int width:{710,820,940,949,950,1180}) {
+            editor.setSize(width,280);
+            const auto t=OscEditorToolbarLayout::atWidth(width);
+            const std::array<juce::Rectangle<int>,11> bounds{
+                t.add,t.remove,t.duplicate,t.grid,t.snap,t.resolution,
+                t.zoomOut,t.zoomIn,t.zoomFit,t.unit,t.detach};
+            for(size_t i=0;i<names.size();++i) {
+                auto* c=find(names[i]);
+                check(c && c->isVisible() &&
+                      c->getBounds()==bounds[i] &&
+                      c->getX()>=0 && c->getRight()<=width,
+                      "N7.2 OSC toolbar lost a live action: "+
+                      juce::String(names[i]));
+            }
+            for(size_t i=0;i<bounds.size();++i)
+                for(size_t j=i+1;j<bounds.size();++j)
+                    check(!bounds[i].intersects(bounds[j]),
+                          "N7.2 OSC compact toolbar controls overlap");
+            check(t.compact==(width<950),
+                  "N7.2 OSC toolbar breakpoint drifted from dock profile");
+        }
+        auto* detach=dynamic_cast<juce::TextButton*>(find("oscDetach"));
+        check(detach!=nullptr,"Original OSC Detach action missing");
+        editor.setFloating(true);
+        check(detach->getButtonText()=="Reattach",
+              "OSC Reattach label disappeared");
+        editor.setFloating(false);
+        check(detach->getButtonText()=="Detach",
+              "OSC Detach label disappeared");
     });
     test("OSC dock toolbar never overlaps at desktop and minimum window widths",[] {
         MainComponent ui(false);

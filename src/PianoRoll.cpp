@@ -1,4 +1,5 @@
 #include "PianoRoll.h"
+#include "EditorToolbarLayout.h"
 #include <cmath>
 
 namespace cuelist {
@@ -192,6 +193,14 @@ PianoRollEditor::PianoRollEditor(MidiClip value,OnEdit callback)
     snap.setName("midiSnap"); channel.setName("midiChannel");
     velocity.setName("midiVelocity"); length.setName("midiLength");
     detach.setName("clipEditorDetach"); undo.setName("clipEditorUndo"); redo.setName("clipEditorRedo");
+    remove.setName("midiDeleteNotes");
+    zoomOut.setName("midiZoomOut"); zoomIn.setName("midiZoomIn");
+    detach.setTooltip("Detach the MIDI editor into a floating window, or reattach to the dock.");
+    undo.setTooltip("Undo the previous MIDI edit.");
+    redo.setTooltip("Redo the MIDI edit.");
+    remove.setTooltip("Delete selected MIDI notes.");
+    zoomOut.setTooltip("Zoom out around the current visible beat.");
+    zoomIn.setTooltip("Zoom in around the current visible beat.");
     for (int i=1;i<=16;++i) channel.addItem(juce::String(i),i);
     channel.setSelectedId(1);
     velocity.setSliderStyle(juce::Slider::LinearHorizontal);
@@ -272,15 +281,16 @@ void PianoRollEditor::paint(juce::Graphics& g) {
     g.fillAll(palette::panel);
     // Editorial hierarchy: one title, neutral control labels and a single
     // MIDI protocol rule. All working buttons retain their original bounds.
-    label(g,"MIDI  /  PIANO ROLL",{16,6,290,25},15,palette::text,true);
+    const auto toolbar=MidiEditorToolbarLayout::atWidth(getWidth());
+    label(g,"MIDI  /  PIANO ROLL",toolbar.title,15,palette::text,true);
     g.setColour(palette::amber.withAlpha(.86f));
     g.fillRect(16,30,52,2);
     g.setColour(palette::line.withAlpha(.6f));
     g.drawHorizontalLine(64,16.f,(float)std::max(16,getWidth()-16));
-    label(g,"Snap",{16,38,40,22},11,palette::muted);
-    label(g,"Channel",{142,38,48,22},11,palette::muted);
-    label(g,"Velocity",{270,38,50,22},11,palette::muted);
-    label(g,"Beat",{504,38,42,22},11,palette::muted);
+    label(g,"Snap",toolbar.snapLabel,11,palette::muted);
+    label(g,"Channel",toolbar.channelLabel,11,palette::muted);
+    label(g,"Velocity",toolbar.velocityLabel,11,palette::muted);
+    label(g,"Beat",toolbar.beatLabel,11,palette::muted);
     g.saveState(); g.reduceClipRegion(16,67,getWidth()-32,17);
     const int scroll=viewport.getViewPositionX();
     const int first=std::max(0,(int)std::floor((scroll-keysWidth)/pixelsPerBeat));
@@ -298,12 +308,15 @@ void PianoRollEditor::paint(juce::Graphics& g) {
 }
 void PianoRollEditor::resized() {
     const int w=getWidth(),h=getHeight();
-    snap.setBounds(54,35,80,26); channel.setBounds(190,35,67,26);
-    velocity.setBounds(325,35,166,26); length.setBounds(546,35,96,26);
-    remove.setBounds(std::max(650,w-333),35,89,26);
-    detach.setBounds(w-96,4,86,26);
-    undo.setBounds(w-185,4,74,26); redo.setBounds(w-269,4,74,26);
-    zoomOut.setBounds(w-90,35,32,26); zoomIn.setBounds(w-50,35,32,26);
+    const auto layout=MidiEditorToolbarLayout::atWidth(w);
+    // Compact and desktop profiles use precisely the same controls and
+    // interaction callbacks. Only their native hitboxes are reflowed.
+    snap.setBounds(layout.snap); channel.setBounds(layout.channel);
+    velocity.setBounds(layout.velocity); length.setBounds(layout.length);
+    remove.setBounds(layout.remove);
+    undo.setBounds(layout.undo); redo.setBounds(layout.redo);
+    detach.setBounds(layout.detach);
+    zoomOut.setBounds(layout.zoomOut); zoomIn.setBounds(layout.zoomIn);
     viewport.setBounds(16,85,std::max(20,w-32),std::max(20,h-112));
     if (canvas) updateCanvas();
 }
