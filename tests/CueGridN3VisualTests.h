@@ -129,6 +129,7 @@ void cueGridN3VisualTests() {
 
         MainComponent ui(false);
         addRow(ui.show,"Second cue");
+        for (int i=2;i<17;++i) addRow(ui.show,"Scrolled cue");
         ui.setSize(1440,900);
         auto* pinned=cueViewFixtures::find<PinnedCueHeaders>(ui);
         auto* grid=cueViewFixtures::find<CueGrid>(ui);
@@ -175,6 +176,15 @@ void cueGridN3VisualTests() {
         pinned->mouseExit(cueViewFixtures::event(*pinned,goPoint,goPoint));
         check(pinned->getTooltip().isEmpty() && !differs(idle,snapshot()),
               "Pinned transport hover did not reset after pointer left");
+        pinned->mouseMove(cueViewFixtures::event(*pinned,goPoint,goPoint));
+        juce::Viewport* view=nullptr;
+        for (auto* child:ui.getChildren())
+            if (auto* candidate=dynamic_cast<juce::Viewport*>(child))
+                {view=candidate;break;}
+        check(view!=nullptr,"N3.6 viewport missing");
+        view->setViewPosition(0,120);
+        check(view->getViewPositionY()>0 && pinned->getTooltip().isEmpty(),
+              "Scrolled pinned header retained tooltip for the wrong cue");
         check(encodeShow(ui.show)==model &&
               ui.selectedRow==selected && ui.nextCueIndex()==next,
               "Moving the mouse changed the show, selection or transport");
