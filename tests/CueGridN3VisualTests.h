@@ -130,7 +130,9 @@ void cueGridN3VisualTests() {
         MainComponent ui(false);
         addRow(ui.show,"Second cue");
         for (int i=2;i<17;++i) addRow(ui.show,"Scrolled cue");
-        ui.setSize(1440,900);
+        // Constructor already uses 1440x900. A no-op setSize does not
+        // rebuild the scrolling grid after directly editing the fixture.
+        ui.resized();
         auto* pinned=cueViewFixtures::find<PinnedCueHeaders>(ui);
         auto* grid=cueViewFixtures::find<CueGrid>(ui);
         check(pinned && grid,"Fixed cue view missing");
@@ -183,8 +185,10 @@ void cueGridN3VisualTests() {
                 {view=candidate;break;}
         check(view!=nullptr,"N3.6 viewport missing");
         view->setViewPosition(0,120);
-        check(view->getViewPositionY()>0 && pinned->getTooltip().isEmpty(),
-              "Scrolled pinned header retained tooltip for the wrong cue");
+        check(view->getViewPositionY()>0,
+              "N3.6 fixture did not rebuild the scrollable cue grid");
+        check(pinned->getTooltip().isEmpty(),
+              "Scrolling must clear the previously hovered cue tooltip");
         check(encodeShow(ui.show)==model &&
               ui.selectedRow==selected && ui.nextCueIndex()==next,
               "Moving the mouse changed the show, selection or transport");
