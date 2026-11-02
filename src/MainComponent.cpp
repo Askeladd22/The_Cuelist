@@ -1464,7 +1464,8 @@ void MainComponent::generateLtcTrack(int row,int column) {
     dialog->setLookAndFeel(&theme);
     dialog->addTextEditor("duration","10.0","Duration in seconds (0.1–600)");
     dialog->addTextEditor("timecode","01:00:00:00","Start timecode HH:MM:SS:FF");
-    dialog->addComboBox("rate",{"24 fps","25 fps","29.97 fps (drop-frame)","30 fps"},
+    dialog->addComboBox("rate",{"24 fps","25 fps","29.97 fps (drop-frame)",
+                                 "30 fps","29.97 fps (non-drop)"},
                         "Frame rate");
     if (auto* rate=dialog->getComboBoxComponent("rate"))
         rate->setSelectedId(2,juce::dontSendNotification);
@@ -1504,6 +1505,7 @@ void MainComponent::generateLtcTrack(int row,int column) {
                 case 2:spec.rate=ltc::Rate::fps25;break;
                 case 3:spec.rate=ltc::Rate::drop2997;break;
                 case 4:spec.rate=ltc::Rate::fps30;break;
+                case 5:spec.rate=ltc::Rate::nonDrop2997;break;
                 default:safe->message("Select an LTC frame rate.");return;
             }
             if (const auto parsed=ltc::parseTimecode(start,spec.rate,spec.start);
