@@ -1,5 +1,6 @@
 #pragma once
 #include "GainMeterFader.h"
+#include "MixerControls.h"
 
 void gainMeterFaderTests() {
     test("Fader range geometry round-trips at -inf/+6 and -inf/0 ceilings", [] {
@@ -73,6 +74,64 @@ void gainMeterFaderTests() {
         component.setStereoPeaks(0.00000001f,0.95f);
         near(component.getDisplayedPeakDb(0),-60);
         check(component.getDisplayedPeakDb(1)>-1.0f,"Near-clipping peak not displayed");
+    });
+    test("N5.2 flat meter rails retain live stereo signal and readable fader cap",[] {
+        using namespace cuelist;
+        auto different=[](const juce::Image& a,const juce::Image& b) {
+            if (!a.isValid() || !b.isValid() ||
+                a.getWidth()!=b.getWidth() || a.getHeight()!=b.getHeight())
+                return false;
+            for(int y=0;y<a.getHeight();y+=2)
+                for(int x=0;x<a.getWidth();x+=2)
+                    if(a.getPixelAt(x,y)!=b.getPixelAt(x,y)) return true;
+            return false;
+        };
+        GainMeterFader fader;
+        fader.setSize(92,195);
+        const auto idle=fader.createComponentSnapshot(fader.getLocalBounds());
+        check(idle.isValid() && idle.getPixelAt(18,90)==palette::input,
+              "Expanded L/R meter still has a raised decorative chassis");
+        fader.setStereoPeaks(1.f,.1f);
+        const auto live=fader.createComponentSnapshot(fader.getLocalBounds());
+        check(different(idle,live) && live.getPixelAt(18,90)!=
+              idle.getPixelAt(18,90) &&
+              fader.getDisplayedPeakDb(0)>fader.getDisplayedPeakDb(1),
+              "Live left/right peaks are invisible in the calibrated meter");
+        const auto beforeModel=fader.getGainDb();
+        fader.setGainDb(-12.f,false);
+        check(different(live,fader.createComponentSnapshot(fader.getLocalBounds()))
+              && fader.getGainDb()!=beforeModel,
+              "Fader cap does not follow its actual dB gain");
+        fader.setCompact(true);
+        fader.setSize(34,195);
+        const auto compact=fader.createComponentSnapshot(fader.getLocalBounds());
+        check(compact.isValid() && compact.getWidth()==34,
+              "Collapsed mixer cannot render its compact meter/fader");
+        fader.setStereoPeaks(1.f,.02f);
+        check(different(compact,fader.createComponentSnapshot(fader.getLocalBounds())),
+              "Compact L/R meter lost its real audio telemetry");
+    });
+    test("N5.2 physical PAN shows centre calibration, actual deflection and shared style",[] {
+        using namespace cuelist;
+        juce::Slider pan;
+        configureMixerPan(pan);
+        pan.setSize(49,49);
+        pan.setValue(0.0,juce::dontSendNotification);
+        const auto center=pan.createComponentSnapshot(pan.getLocalBounds());
+        pan.setValue(.78,juce::dontSendNotification);
+        const auto right=pan.createComponentSnapshot(pan.getLocalBounds());
+        bool changed=false;
+        if(center.isValid() && right.isValid())
+            for(int y=0;y<center.getHeight();y+=2)
+                for(int x=0;x<center.getWidth();x+=2)
+                    changed=changed ||
+                        center.getPixelAt(x,y)!=right.getPixelAt(x,y);
+        check(changed && pan.getSliderStyle()==juce::Slider::RotaryVerticalDrag &&
+              &pan.getLookAndFeel()==&sharedMixerPanLookAndFeel(),
+              "PAN centre/detent is unreadable or Master/Column style diverged");
+        check(std::abs(pan.getValue()-.78)<.001 &&
+              pan.getTextValueSuffix().isEmpty(),
+              "Pan graphic unexpectedly modified the underlying control");
     });
     test("pre-master stereo telemetry measures actual summed columns after gain/pan", [] {
         auto show=makeShow();
