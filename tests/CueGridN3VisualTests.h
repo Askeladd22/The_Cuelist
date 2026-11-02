@@ -110,6 +110,76 @@ void cueGridN3VisualTests() {
               "Inline rename must still commit after the two-tier change");
     });
 
+    test("N3.6 cue transport hover targets are exact, distinct and safe",[] {
+        using namespace cuelist;
+        using A=CueGrid::HeaderAction;
+        const auto go=CueGrid::rowGoBounds(0);
+        const auto play=CueGrid::rowPlayBounds(0);
+        const auto stop=CueGrid::rowStopBounds(0);
+        const auto more=CueGrid::rowMenuBounds(0);
+        check(CueGrid::headerActionAt(go.getCentreX(),go.getCentreY())==A::go &&
+              CueGrid::headerActionAt(play.getCentreX(),play.getCentreY())==A::playPause &&
+              CueGrid::headerActionAt(stop.getCentreX(),stop.getCentreY())==A::stop &&
+              CueGrid::headerActionAt(more.getCentreX(),more.getCentreY())==A::menu &&
+              CueGrid::headerActionAt(110,15)==A::none &&
+              CueGrid::headerActionAt(2,5)==A::none &&
+              !go.intersects(play) && !go.intersects(stop) &&
+              !play.intersects(stop) && !stop.intersects(more),
+              "Hover target diverges from the protected transport hitboxes");
+
+        MainComponent ui(false);
+        addRow(ui.show,"Second cue");
+        ui.setSize(1440,900);
+        auto* pinned=cueViewFixtures::find<PinnedCueHeaders>(ui);
+        auto* grid=cueViewFixtures::find<CueGrid>(ui);
+        check(pinned && grid,"Fixed cue view missing");
+        const auto snapshot=[&] {
+            const auto b=CueGrid::rowGoBounds(0);
+            return pinned->createComponentSnapshot(
+                {b.getX(),CueGrid::headerHeight+CueGrid::rowContentInset+b.getY(),
+                 b.getWidth(),b.getHeight()});
+        };
+        auto differs=[](const juce::Image& a,const juce::Image& b) {
+            if (!a.isValid() || !b.isValid() ||
+                a.getWidth()!=b.getWidth() || a.getHeight()!=b.getHeight())
+                return false;
+            for (int y=0;y<a.getHeight();y+=2)
+                for (int x=0;x<a.getWidth();x+=2)
+                    if (a.getPixelAt(x,y)!=b.getPixelAt(x,y)) return true;
+            return false;
+        };
+        const auto model=encodeShow(ui.show);
+        const int selected=ui.selectedRow;
+        const int next=ui.nextCueIndex();
+        const auto idle=snapshot();
+        const auto cueAction=[&](juce::Rectangle<int> bounds) {
+            return juce::Point<float>{
+                (float)bounds.getCentreX(),
+                (float)(CueGrid::headerHeight+CueGrid::rowContentInset+
+                        bounds.getCentreY())};
+        };
+        const auto goPoint=cueAction(go);
+        pinned->mouseMove(cueViewFixtures::event(*pinned,goPoint,goPoint));
+        check(pinned->getTooltip().contains("GO") &&
+              differs(idle,snapshot()),
+              "GO hover lacks visible focus or operator tooltip");
+
+        const std::array<std::pair<juce::Rectangle<int>,juce::String>,3> actions{{
+            {play,"Play"}, {stop,"Stop"}, {more,"Cue actions"}}};
+        for (const auto& action:actions) {
+            const auto cursor=cueAction(action.first);
+            pinned->mouseMove(cueViewFixtures::event(*pinned,cursor,cursor));
+            check(pinned->getTooltip().contains(action.second),
+                  "Cue action hover tooltip is missing or mapped to wrong command");
+        }
+        pinned->mouseExit(cueViewFixtures::event(*pinned,goPoint,goPoint));
+        check(pinned->getTooltip().isEmpty() && !differs(idle,snapshot()),
+              "Pinned transport hover did not reset after pointer left");
+        check(encodeShow(ui.show)==model &&
+              ui.selectedRow==selected && ui.nextCueIndex()==next,
+              "Moving the mouse changed the show, selection or transport");
+    });
+
     test("N3.3 selected row spans empty columns and trailing grid",[] {
         using namespace cuelist;
         MainComponent ui(false);
