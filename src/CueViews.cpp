@@ -331,6 +331,7 @@ void CueGrid::paint(juce::Graphics& g) {
             const auto tone=missing?palette::red:palette::type((int)column.type);
             const bool selectedCell=selected && c==owner.selectedColumn;
             const bool hovered=hoverRow==r && hoverColumn==c;
+            const auto hoveredAction=hovered ? hoverCellAction : CellAction::none;
             const bool drop=dragging && dropRow==r && dropColumn==c;
             if (column.collapsed) {
                 // Empty collapsed lanes are not false clip buttons.
@@ -357,9 +358,9 @@ void CueGrid::paint(juce::Graphics& g) {
             // Empty slots share the row surface. Only actual content,
             // missing media, hover, selection and drag require a surface.
             if (loaded) {
-                g.setColour(tone.withAlpha(.11f));
+                g.setColour(tone.withAlpha(hovered ? .18f : .11f));
                 g.fillRoundedRectangle(box,3.f);
-                g.setColour(tone.withAlpha(.72f));
+                g.setColour(tone.withAlpha(hovered ? .95f : .72f));
                 g.fillRect(x+5,y+9,2,34);
             } else if (missing) {
                 g.setColour(palette::red.withAlpha(.12f));
@@ -377,9 +378,10 @@ void CueGrid::paint(juce::Graphics& g) {
                 g.drawRoundedRectangle(box.reduced(1.f),3.f,
                                        drop || focused ? 1.65f : 1.1f);
             } else if (loaded) {
-                // Keep real media recognizable without outlining every slot.
-                g.setColour(tone.withAlpha(.25f));
-                g.drawRoundedRectangle(box,3.f,.65f);
+                // Keep real media recognizable, with a restrained hover
+                // outline rather than showing extra controls or modal UI.
+                g.setColour(tone.withAlpha(hovered ? .56f : .25f));
+                g.drawRoundedRectangle(box,3.f,hovered ? 1.05f : .65f);
             }
             if (column.type==ColumnType::control) {
                 const ControlSet* set=column.controlLocked?&column.controlDefaultSet:
@@ -454,9 +456,11 @@ void CueGrid::paint(juce::Graphics& g) {
                 // Transport remains identical for usable clips. Disabled
                 // buttons are not painted over empty or missing-media slots.
                 transportButton(g,cellButtonVisualBounds(cellPlayBounds(x,w,y)),
-                                false,true,15.0f);
+                                false,true,15.0f,
+                                hoveredAction==CellAction::play);
                 transportButton(g,cellButtonVisualBounds(cellStopBounds(x,w,y)),
-                                true,true,15.0f);
+                                true,true,15.0f,
+                                hoveredAction==CellAction::stop);
             }
         }
         g.restoreState();
@@ -622,8 +626,23 @@ void CueGrid::mouseMove(const juce::MouseEvent& e) {
         if (overMarker)
             tooltip="Esclusa dall'Auto Stop: continua dopo il prossimo GO quando l'Auto Stop della cue è attivo. Tasto destro per includerla.";
     }
+    CellAction nextAction=CellAction::none;
+    if (valid && !collapsed &&
+        owner.show.columns[(size_t)column].type!=ColumnType::control &&
+        owner.hasClip(row,column)) {
+        const int localX=e.x-columnX(column);
+        const int localY=CueGridGeometry::rowLocalY(e.y)-rowContentInset;
+        nextAction=cellActionAt(localX,localY,columnWidthAt(column));
+        // When hovering an exception marker, keep the original Auto Stop
+        // guidance. Otherwise the loaded clip exposes its actual transport.
+        if (tooltip.isEmpty() && nextAction!=CellAction::none)
+            tooltip=nextAction==CellAction::play
+                ? "Play this "+columnTypeName(owner.show.columns[(size_t)column].type)+" clip"
+                : "Stop this "+columnTypeName(owner.show.columns[(size_t)column].type)+" clip";
+    }
     setTooltip(tooltip);
-    if (hoverRow==nextRow && hoverColumn==nextColumn) return;
+    if (hoverRow==nextRow && hoverColumn==nextColumn &&
+        hoverCellAction==nextAction) return;
     const auto repaintCell=[this](int r,int c) {
         if (r>=0 && c>=0)
             repaint(columnX(c),CueGridGeometry::rowTop(r),
@@ -632,6 +651,7 @@ void CueGrid::mouseMove(const juce::MouseEvent& e) {
     repaintCell(hoverRow,hoverColumn);
     hoverRow=nextRow;
     hoverColumn=nextColumn;
+    hoverCellAction=nextAction;
     repaintCell(hoverRow,hoverColumn);
 }
 void CueGrid::mouseExit(const juce::MouseEvent&) {
@@ -639,6 +659,7 @@ void CueGrid::mouseExit(const juce::MouseEvent&) {
         repaint(columnX(hoverColumn),CueGridGeometry::rowTop(hoverRow),
                 columnWidthAt(hoverColumn),rowHeight);
     hoverRow=hoverColumn=-1;
+    hoverCellAction=CellAction::none;
     setTooltip({});
 }
 void CueGrid::mouseDown(const juce::MouseEvent& e) {
@@ -679,13 +700,14 @@ void CueGrid::mouseDown(const juce::MouseEvent& e) {
     const int localX=e.x-columnX(column),w=columnWidthAt(column);
     const auto& col=owner.show.columns[(size_t)column];
     if (col.type!=ColumnType::control && owner.hasClip(row,column)) {
-        // Invisible disabled transport targets must not block selection of
-        // an empty cell. Loaded clips retain their exact safe hitboxes.
-        if (cellPlayBounds(0,w,0).contains(localX,localY)) {
+        // Use exactly the same transport geometry for click and hover;
+        // empty or missing-media cells cannot intercept hidden buttons.
+        const auto action=cellActionAt(localX,localY,w);
+        if (action==CellAction::play) {
             if (e.getNumberOfClicks()==1) owner.triggerCellAt(row,column);
             return;
         }
-        if (cellStopBounds(0,w,0).contains(localX,localY)) {
+        if (action==CellAction::stop) {
             if (e.getNumberOfClicks()==1) owner.stopCellAt(row,column);
             return;
         }
