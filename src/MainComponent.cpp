@@ -569,6 +569,14 @@ void MainComponent::paint(juce::Graphics& g) {
     // accent from the approved reference (no font or icon replacement).
     label(g,"The",{53,7,38,32},19,palette::text,true);
     label(g,"CUElist",{91,7,105,32},19,palette::teal,true);
+    // Global Learn commands live below the brand, never among the
+    // MIDI/OSC traffic lamps. Subtle shared surface; each is the original
+    // clickable button with its existing active-mode colour.
+    const auto learnBackdrop=OperatorLearnLayout::backdrop().toFloat();
+    g.setColour(palette::panel.withAlpha(.66f));
+    g.fillRoundedRectangle(learnBackdrop,5.f);
+    g.setColour(palette::line.withAlpha(.40f));
+    g.drawRoundedRectangle(learnBackdrop,5.f,.7f);
     // A single enlarged monitoring console, responsive in X only.
     // All positions (including real Learn buttons) originate from one
     // geometry contract; the 72px global header remains unchanged.
@@ -622,7 +630,7 @@ void MainComponent::paint(juce::Graphics& g) {
     meter(telemetry.cpuMeter,systemCpuPercent,palette::teal);
     meter(telemetry.ramMeter,systemRamPercent,palette::amber);
 
-    label(g,"I/O ACTIVITY",telemetry.activityHeading,12,palette::muted,true);
+    label(g,"I/O ACTIVITY",telemetry.activityHeading,14,palette::muted,true);
     const double now=juce::Time::getMillisecondCounterHiRes();
     const std::array<juce::String,4> activityNames{{
         "MIDI RX","MIDI TX","OSC RX","OSC TX"}};
@@ -1142,9 +1150,10 @@ void MainComponent::resized() {
     helpButton.setVisible(false);
     undoButton.setVisible(false);
     redoButton.setVisible(false);
-    const auto telemetryLayout=HeaderTelemetryLayout::atWidth(getWidth());
-    globalMidiLearn.setBounds(telemetryLayout.midiLearn);
-    globalOscLearn.setBounds(telemetryLayout.oscLearn);
+    // Keep direct one-click MIDI/OSC Learn available even at 1024px.
+    // No overlap with the Cuelist tabs (start X=190) or the telemetry.
+    globalMidiLearn.setBounds(OperatorLearnLayout::midi());
+    globalOscLearn.setBounds(OperatorLearnLayout::osc());
     // Collapse-all follows the pinned header after JUCE has computed the
     // actual left scrollbar inset (see placement below).
     const bool allCollapsed=std::all_of(show.columns.begin(),show.columns.end(),
