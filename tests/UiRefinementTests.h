@@ -508,8 +508,16 @@ void uiRefinementTests() {
             controlsV3::named(ui,"inspectorSideToggle"));
         check(oldHelp && guide && more && tab,
               "Guide, More or Inspector grip missing");
-        check(juce::String(THE_CUELIST_VERSION).startsWith("0.9.0-beta."),
-              "About version is not bound to VERSION.txt");
+        // About interpolates THE_CUELIST_VERSION, supplied by CMake from
+        // VERSION.txt. Validate its SemVer shape, never a frozen beta tag.
+        const auto version=juce::String(THE_CUELIST_VERSION);
+        const auto core=version.upToFirstOccurrenceOf("-",false,false)
+                               .upToFirstOccurrenceOf("+",false,false);
+        const auto nums=juce::StringArray::fromTokens(core,".","");
+        bool semver=nums.size()==3;
+        for (const auto& n:nums)
+            semver=semver && n.isNotEmpty() && n.containsOnly("0123456789");
+        check(semver,"About application version is not a valid SemVer string");
         for (const auto size:std::initializer_list<juce::Point<int>>{
                  {1180,820},{1440,900},{1647,895},{1920,1080}}) {
             ui.setSize(size.x,size.y);
