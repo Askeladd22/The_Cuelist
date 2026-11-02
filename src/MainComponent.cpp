@@ -1458,17 +1458,31 @@ void MainComponent::generateLtcTrack(int row,int column) {
         "Generated LTC. It will be loaded as ordinary Audio.",
         juce::MessageBoxIconType::NoIcon,this);
     dialog->setLookAndFeel(&theme);
-    dialog->addTextEditor("duration","10.0","Duration in seconds (0.1–600)");
-    dialog->addTextEditor("timecode","01:00:00:00","Start timecode HH:MM:SS:FF");
+    // With deleteWhenDismissed=true JUCE destroys the AlertWindow BEFORE
+    // invoking the modal callback. Keep edited values in independent state:
+    // dereferencing the dialog inside that callback is a use-after-free.
+    struct DialogValues {
+        juce::String duration="10.0",timecode="01:00:00:00";
+        int rate=2;
+    };
+    auto values=std::make_shared<DialogValues>();
+    dialog->addTextEditor("duration",values->duration,"Duration in seconds (0.1–600)");
+    dialog->addTextEditor("timecode",values->timecode,"Start timecode HH:MM:SS:FF");
+    if (auto* editor=dialog->getTextEditor("duration"))
+        editor->onTextChange=[values,editor] {values->duration=editor->getText();};
+    if (auto* editor=dialog->getTextEditor("timecode"))
+        editor->onTextChange=[values,editor] {values->timecode=editor->getText();};
     dialog->addComboBox("rate",{"24 fps","25 fps","29.97 fps (drop-frame)","30 fps"},
                         "Frame rate");
-    if (auto* rate=dialog->getComboBoxComponent("rate"))
-        rate->setSelectedId(2,juce::dontSendNotification);
+    if (auto* rate=dialog->getComboBoxComponent("rate")) {
+        rate->setSelectedId(values->rate,juce::dontSendNotification);
+        rate->onChange=[values,rate] {values->rate=rate->getSelectedId();};
+    }
     dialog->addButton("Generate LTC",1);
     dialog->addButton("Cancel",0);
     auto safe=juce::Component::SafePointer<MainComponent>(this);
     dialog->enterModalState(true,juce::ModalCallbackFunction::create(
-        [safe,dialog,rowId,columnId](int result) {
+        [safe,values,rowId,columnId](int result) {
             if (!safe || result!=1) return;
             int r=-1,c=-1;
             for (int i=0;i<(int)safe->show.rows.size();++i)
@@ -1482,8 +1496,8 @@ void MainComponent::generateLtcTrack(int row,int column) {
                 safe->message("LTC cancelled: the target Audio cell is no longer empty.");
                 return;
             }
-            const auto duration=dialog->getTextEditorContents("duration").trim();
-            const auto start=dialog->getTextEditorContents("timecode").trim();
+            const auto duration=values->duration.trim();
+            const auto start=values->timecode.trim();
             const char* raw=duration.toRawUTF8();
             char* end=nullptr;
             const double seconds=std::strtod(raw,&end);
@@ -1494,8 +1508,7 @@ void MainComponent::generateLtcTrack(int row,int column) {
             }
             ltc::Config spec;
             spec.durationSeconds=seconds;
-            const auto* rateBox=dialog->getComboBoxComponent("rate");
-            switch (rateBox ? rateBox->getSelectedId() : 0) {
+            switch (values->rate) {
                 case 1:spec.rate=ltc::Rate::fps24;break;
                 case 2:spec.rate=ltc::Rate::fps25;break;
                 case 3:spec.rate=ltc::Rate::drop2997;break;
