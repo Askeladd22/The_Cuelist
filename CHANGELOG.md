@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.6] - 2026-11-02
+
+**Tipo:** hotfix di affidabilità del dialogo LTC e test di regressione Control Map / LTC (PR #124).
+
+### Corretto
+- Il dialogo **Generate LTC Track** ora conserva durata, timecode di partenza e frame rate in uno stato indipendente dalla finestra modale: JUCE può distruggere l'AlertWindow prima di invocare il callback. Evitato l'accesso a un puntatore non più valido.
+- Invariata la generazione SMPTE LTC PCM WAV mono 48 kHz, l'importazione nella normale pipeline Audio e la protezione dalle sovrascritture delle celle occupate.
+
+### Test e compatibilità
+- Aggiunto un test del segnale audio LTC **29.97 fps drop-frame** durante il passaggio da `00:00:59;29` a `00:01:00;02`, con verifica delle transizioni biphase-mark.
+- Aggiunto un test della Control Column con override locale: verifica che apra lo **stesso Control Mappings editor**, preselezionando la Map corretta senza cambiare assegnazione. Rimane il test già esistente per le Map condivise salvate.
+- **Funzioni già presenti in 0.9.5, non introdotte da questa PR:** voce Generate LTC Track sulle sole celle Audio vuote, scelta 24/25/29.97 DF/30 fps, durata e timecode iniziale; editor condiviso per Control Column e Control Mappings.
+- Nessuna variazione a schema `.cuelist` v10, Default Map, Map salvate, assegnazioni Control Column, timecode globale, motore/routing Audio o MIDI/OSC.
+- Verifica Windows CMake/CTest affidata alla CI della PR; test con hardware timecode esterno e ascolto su dispositivi reali ancora da eseguire. Nessuna build portable.
+
 ## [0.9.5] - 2026-11-02
 
 **Tipo:** redesign nativo V2 — fase N7.2, toolbar responsive e docking editor MIDI/OSC.
