@@ -8,6 +8,10 @@ void controlColumnTests() {
     test("Control Column opens the SAME Mapping panel with saved Map preselected",[] {
         MainComponent ui(false);
         addColumn(ui.show,ColumnType::control,"Scene Control");
+        ControlSetTemplate unrelated;
+        unrelated.id=ui.show.controls.nextId++;
+        unrelated.name="Unrelated Map";
+        ui.show.controls.templates.push_back(unrelated);
         ControlSetTemplate saved;
         saved.id=ui.show.controls.nextId++;
         saved.name="Scene A";
@@ -31,8 +35,39 @@ void controlColumnTests() {
         const int originalId=ui.show.rows[0].cells[1].assignedMapId;
         // Opening an editor cannot silently reassign or clone a Map.
         check(ui.show.rows[0].cells[1].assignedMapId==originalId &&
-              ui.show.controls.templates.size()==1,
+              ui.show.controls.templates.size()==2,
               "Shared editor changed the Map entity/assignment on open");
+    });
+
+    test("Control Column local overrides open the same editor without reassigning maps",[] {
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::control,"Cue Overrides");
+        check(ui.createEmptyControlSet(0,1),"Could not create local Control Map");
+        check(validateShow(ui.show).wasOk(),"Local Control Map fixture invalid");
+        const int cellId=ui.show.rows[0].cells[1].id;
+        const int initialNextId=ui.show.controls.nextId;
+        ui.resized();
+        auto* grid=cueViewFixtures::find<CueGrid>(ui);
+        check(grid!=nullptr,"Control Column grid missing");
+        if (!grid) return;
+        const float x=(float)grid->columnX(1)+25.0f;
+        const float y=(float)CueGridGeometry::rowTop(0)+
+                      CueGrid::rowContentInset+16.0f;
+        cueViewFixtures::click(*grid,x,y);
+        auto* modal=juce::ModalComponentManager::getInstance()->getModalComponent(0);
+        check(modal!=nullptr && controlsV3::named(*modal,"controlMappingPanel"),
+              "Local Control Map opened a different editor");
+        auto* selector=modal ? dynamic_cast<juce::ComboBox*>(
+            controlsV3::named(*modal,"mappingMapSelector")) : nullptr;
+        check(selector!=nullptr &&
+              selector->getText().contains("Cue-local override"),
+              "Local Map was not preselected in shared Control Mappings");
+        const auto& cell=ui.show.rows[0].cells[1];
+        check(cell.id==cellId && cell.controlSet.has_value() &&
+              cell.assignedMapId==0 &&
+              ui.show.controls.templates.empty() &&
+              ui.show.controls.nextId==initialNextId,
+              "Opening a local Map altered its identity or assignments");
     });
 
     test("Legacy Control Column lock migrates without implicitly activating dormant Q sets",[] {
