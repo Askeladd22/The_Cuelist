@@ -5,6 +5,36 @@
 #include "ControlPresetArchive.h"
 
 void controlColumnTests() {
+    test("Control Column opens the SAME Mapping panel with saved Map preselected",[] {
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::control,"Scene Control");
+        ControlSetTemplate saved;
+        saved.id=ui.show.controls.nextId++;
+        saved.name="Scene A";
+        ui.show.controls.templates.push_back(saved);
+        ui.show.rows[0].cells[1].assignedMapId=saved.id;
+        check(validateShow(ui.show).wasOk(),"Saved Control Map fixture invalid");
+        ui.resized();
+        auto* grid=cueViewFixtures::find<CueGrid>(ui);
+        check(grid!=nullptr,"Control Column grid missing");
+        const float x=(float)grid->columnX(1)+25.0f;
+        const float y=(float)CueGridGeometry::rowTop(0)+
+                      CueGrid::rowContentInset+16.0f;
+        cueViewFixtures::click(*grid,x,y);
+        auto* modal=juce::ModalComponentManager::getInstance()->getModalComponent(0);
+        check(modal!=nullptr && controlsV3::named(*modal,"controlMappingPanel"),
+              "Saved Control Map cell opened a legacy menu, not Control Mappings");
+        auto* selector=dynamic_cast<juce::ComboBox*>(
+            controlsV3::named(*modal,"mappingMapSelector"));
+        check(selector!=nullptr && selector->getText().contains("Scene A"),
+              "The cell's assigned saved Map was not automatically selected");
+        const int originalId=ui.show.rows[0].cells[1].assignedMapId;
+        // Opening an editor cannot silently reassign or clone a Map.
+        check(ui.show.rows[0].cells[1].assignedMapId==originalId &&
+              ui.show.controls.templates.size()==1,
+              "Shared editor changed the Map entity/assignment on open");
+    });
+
     test("Legacy Control Column lock migrates without implicitly activating dormant Q sets",[] {
         Show original=makeShow();
         addColumn(original,ColumnType::control,"Legacy control");
