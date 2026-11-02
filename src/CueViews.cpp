@@ -498,8 +498,7 @@ void CueGrid::showCellMenu(int row,int column,juce::Point<int> screenPoint) {
     menu.addItem(7,"Includi nell'Auto Stop",true,cell.stopOnNext);
     // An LTC source is real Audio: offer generation ONLY on a truly empty
     // Audio slot. Never overwrite an existing WAV, PCM clip or media path.
-    if (col.type==ColumnType::audio && cell.file.isEmpty() &&
-        !owner.hasClip(row,column)) {
+    if (owner.canGenerateLtcTrack(row,column)) {
         menu.addSeparator();
         menu.addItem(8,"Generate LTC Track");
     }
