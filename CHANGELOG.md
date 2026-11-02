@@ -13,6 +13,23 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.0-beta.28] - 2026-11-02
+
+**Tipo:** redesign nativo V2 — affinamento visivo delle celle Audio/MIDI/OSC e test di scroll.
+
+### Interfaccia
+- Le celle contenenti realmente una clip mostrano una superficie e un accento di tipo più visibili al passaggio del mouse. I pulsanti **Play e Stop** evidenziano soltanto il loro hitbox effettivo e mostrano tooltip specifici per Audio/MIDI/OSC.
+- I rettangoli `cellPlayBounds` e `cellStopBounds` sono usati da **un unico `cellActionAt`** condiviso tra input e rendering. Un clic conserva gli handler originali `triggerCellAt` e `stopCellAt`. Nessuna nuova azione su celle vuote o mancanti; nessun pulsante non visibile aggiunto.
+- La selezione, gli indicatori `CONT.` di Auto Stop, looping, clip mancanti, posizione/durata, progress bar e stato PLAY/PAUSE/WAIT restano presenti e distinti. Il movimento del mouse è puramente visivo e non modifica lo show.
+
+### Correzioni
+- Sistemata la fixture del test beta.27 `N3.6 cue transport hover targets are exact, distinct and safe`: il test aggiungeva righe direttamente al modello ma richiamava `setSize(1440,900)` sulla dimensione già in uso, senza ricostruire il viewport. Ora esegue `ui.resized()` esplicitamente e distingue un errore di scrolling da un tooltip rimasto visibile.
+- Nuovo test con clip Audio realmente caricato e celle MIDI/OSC vuote: hover dei controlli, suggerimenti Play/Stop, ripristino dello stato idle, nessuna mutazione di selezione, Next Cue o Show.
+
+### Compatibilità
+- Nessuna modifica a motori Audio/MIDI/OSC, gestione clip, Play/Stop, drag&drop, Inspector, BPM inline, Master Audio fisso nella fascia Cuelist 318px, telemetria e M/O Learn, formato JSON v10 o build portable.
+- Windows CI e CTest devono risultare verdi prima di integrare. Resta necessaria verifica visiva DPI/ultrawide.
+
 ## [0.9.0-beta.27] - 2026-11-02
 
 **Tipo:** redesign nativo V2 — gerarchia visiva dei trasporti nella colonna Cuelist.
