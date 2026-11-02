@@ -182,6 +182,14 @@ public:
     static juce::Rectangle<int> cellStopBounds(int x,int width,int y) {
         return {x+width-32,y+23,24,23};
     }
+    enum class CellAction {none,play,stop};
+    static CellAction cellActionAt(int localX,int localY,int width) {
+        if (cellPlayBounds(0,width,0).contains(localX,localY))
+            return CellAction::play;
+        if (cellStopBounds(0,width,0).contains(localX,localY))
+            return CellAction::stop;
+        return CellAction::none;
+    }
     // A compact read-only marker; Auto Stop membership is edited through the
     // cell context menu or Inspector rather than an inline disclosure mode.
     static juce::Rectangle<int> cellContinueBadgeBounds(int x,int width,int y) {
@@ -196,6 +204,7 @@ private:
     MainComponent& owner;
     int dragRow=-1, dragColumn=-1, dropRow=-1, dropColumn=-1;
     int hoverRow=-1, hoverColumn=-1; // visual only; never activates a cue
+    CellAction hoverCellAction=CellAction::none;
     int hoverHeaderRow=-1;
     HeaderAction hoverHeaderAction=HeaderAction::none;
     bool dragging=false;
