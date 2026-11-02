@@ -496,6 +496,13 @@ void CueGrid::showCellMenu(int row,int column,juce::Point<int> screenPoint) {
     menu.addItem(6,"Include in Row GO",!locked,cell.followsRow);
     menu.addSeparator();
     menu.addItem(7,"Includi nell'Auto Stop",true,cell.stopOnNext);
+    // An LTC source is real Audio: offer generation ONLY on a truly empty
+    // Audio slot. Never overwrite an existing WAV, PCM clip or media path.
+    if (col.type==ColumnType::audio && cell.file.isEmpty() &&
+        !owner.hasClip(row,column)) {
+        menu.addSeparator();
+        menu.addItem(8,"Generate LTC Track");
+    }
     auto safe=juce::Component::SafePointer<MainComponent>(&owner);
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetScreenArea(
         {screenPoint.x,screenPoint.y,1,1}),[safe,rowId,columnId](int choice) {
@@ -514,6 +521,7 @@ void CueGrid::showCellMenu(int row,int column,juce::Point<int> screenPoint) {
             case 5:safe->setCellLoop(r,c,!safe->show.rows[(size_t)r].cells[(size_t)c].loop);break;
             case 6:safe->setCellFollowsRow(r,c,!safe->show.rows[(size_t)r].cells[(size_t)c].followsRow);break;
             case 7:safe->setCellAutoStop(r,c,!safe->show.rows[(size_t)r].cells[(size_t)c].stopOnNext);break;
+            case 8:safe->generateLtcTrack(r,c);break;
         }
     });
 }
@@ -715,9 +723,10 @@ void CueGrid::mouseDown(const juce::MouseEvent& e) {
     if (!owner.select(row,column)) return;
     if (col.type==ColumnType::control) {
         const auto& cell=owner.show.rows[(size_t)row].cells[(size_t)column];
-        if (!col.controlLocked && cell.controlSet)
-            owner.showControlCellMenu(row,column,e.getScreenPosition());
-        else if (col.controlLocked) owner.editControlSet(row,column);
+        // Direct click edits the assigned Map in the SAME ControlPanel
+        // as Control Mappings. Right-click keeps assignment/management menu.
+        if (col.controlLocked || hasControlMapAssignment(cell))
+            owner.editControlSet(row,column);
     } else if (owner.hasClip(row,column)) {
         dragRow=row; dragColumn=column;
     }
