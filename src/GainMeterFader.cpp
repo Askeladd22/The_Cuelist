@@ -7,8 +7,10 @@ void GainMeterFader::paint(juce::Graphics& g) {
     if(compact) {
         const float mid=getWidth()*.5f;
         const auto rail=juce::Rectangle<float>(mid-10.0f,top,20.0f,length);
-        g.setColour(palette::raised);g.fillRoundedRectangle(rail,3.0f);
-        g.setColour(palette::line);g.drawRoundedRectangle(rail,3.0f,1.0f);
+        // Rack-meter rails are precisely bounded instrument surfaces, not
+        // nested rounded cards. No change to the calibrated dB mapping.
+        g.setColour(palette::input);g.fillRect(rail);
+        g.setColour(palette::line.withAlpha(.65f));g.drawRect(rail,.75f);
         for(int ch=0;ch<2;++ch) {
             const float value=peaks[(size_t)ch].current;
             if(value>minDb+.01f) {
@@ -18,13 +20,16 @@ void GainMeterFader::paint(juce::Graphics& g) {
             }
         }
         const float y=yForDb(gainDb,top,bottom,ceilingDb);
+        // Slim horizontal cap with one calibrated centre notch.
         g.setColour(palette::background);
-        g.fillRoundedRectangle(mid-15.0f,y-5.0f,30.0f,10.0f,2.0f);
-        g.setColour(palette::text);
-        g.fillRoundedRectangle(mid-13.0f,y-3.0f,26.0f,6.0f,1.7f);
+        g.fillRect(mid-15.0f,y-5.0f,30.0f,10.0f);
+        g.setColour(palette::muted);
+        g.fillRect(mid-13.0f,y-3.0f,26.0f,6.0f);
+        g.setColour(palette::background);
+        g.fillRect(mid-9.0f,y-.5f,18.0f,1.0f);
         if(hasKeyboardFocus(false)) {
             g.setColour(palette::teal);
-            g.drawRoundedRectangle(mid-15.0f,y-5.0f,30.0f,10.0f,2.0f,1.0f);
+            g.drawRect(juce::Rectangle<float>(mid-15.f,y-5.f,30.f,10.f),1.f);
         }
         g.setColour(palette::muted);
         const auto silenceText=juce::String::charToString((juce::juce_wchar)0x2212)
@@ -36,8 +41,12 @@ void GainMeterFader::paint(juce::Graphics& g) {
         return;
     }
     const juce::Rectangle<float> backdrop(12.0f,top,28.0f,length);
-    g.setColour(palette::raised); g.fillRoundedRectangle(backdrop,3.0f);
-    g.setColour(palette::line); g.drawRoundedRectangle(backdrop,3.0f,1.0f);
+    // Flat, twin-channel dBFS rails. Peak hold and operating levels remain
+    // live; only the non-informational rounded container is removed.
+    g.setColour(palette::input); g.fillRect(backdrop);
+    g.setColour(palette::line.withAlpha(.65f)); g.drawRect(backdrop,.75f);
+    g.setColour(palette::line.withAlpha(.4f));
+    g.fillRect(26.0f,top+1.0f,1.0f,std::max(0.f,length-2.f));
 
     // Gain and both dBFS readings use exactly the same vertical coordinate
     // transform; labels describe different quantities rather than gain=signal.
@@ -65,7 +74,10 @@ void GainMeterFader::paint(juce::Graphics& g) {
         const float y=yForDb((float)tick,top,bottom,ceilingDb);
         const bool major=tick==(int)ceilingDb || tick==0 || tick==-12 || tick==-24
             || tick==-36 || tick==-48 || tick==-60;
-        g.setColour(tick==0 ? palette::teal : palette::muted);
+        // Unity gain is a readable reference, not another signal status
+        // colour. Reserve teal/amber/red for real meter states and focus.
+        g.setColour(tick==0 ? palette::text.withAlpha(.85f)
+                            : palette::muted.withAlpha(.66f));
         g.drawHorizontalLine((int)std::round(y),42.0f,major ? 50.0f : 46.0f);
         // Retain all tick marks but skip conflicting labels in short strips.
         if (y-previousLabel>=13.0f || previousLabel<0) {
@@ -82,11 +94,13 @@ void GainMeterFader::paint(juce::Graphics& g) {
     // A single, visible gain thumb overlaps both L/R bars. No child slider.
     const float thumbY=yForDb(gainDb,top,bottom,ceilingDb);
     const juce::Rectangle<float> thumb(8.0f,thumbY-5.0f,37.0f,10.0f);
-    g.setColour(palette::background); g.fillRoundedRectangle(thumb.expanded(1),2.5f);
-    g.setColour(palette::text); g.fillRoundedRectangle(thumb,2.2f);
+    // Mechanically legible fader cap: low-profile metal, dark centre groove.
+    g.setColour(palette::background); g.fillRect(thumb.expanded(1.f));
+    g.setColour(palette::muted); g.fillRect(thumb);
     g.setColour(palette::background); g.fillRect(14.0f,thumbY-.65f,25.0f,1.3f);
     if (hasKeyboardFocus(false)) {
-        g.setColour(palette::teal); g.drawRoundedRectangle(thumb.expanded(2),3.0f,1.1f);
+        g.setColour(palette::teal);
+        g.drawRect(thumb.expanded(2.f),1.f);
     }
 
     g.setColour(palette::muted);
