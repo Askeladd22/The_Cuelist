@@ -3,7 +3,7 @@
 ## Fonti ufficiali
 
 - **`VERSION.txt` nella radice:** unica fonte della versione dell'applicazione.
-  CMake la legge, la valida rispetto al `project(... VERSION 0.9.5)`, la
+  CMake la legge, la valida rispetto al `project(... VERSION 0.9.6)`, la
   passa a `THE_CUELIST_VERSION` e quindi ad About/eseguibile e
   agli script di packaging. **Non creare un secondo file di versione.**
 - **`CHANGELOG.md` nella radice:** documento **cumulativo, non sovrascritto**
@@ -12,7 +12,7 @@
 - Lo **schema JSON show v10** riguarda il formato `.cuelist`, non la
   versione dell'applicazione e non va incrementato automaticamente.
 - Il numero CMake `project VERSION` descrive la base numerica
-  `0.9.5`; eventuali suffissi prerelease derivano da `VERSION.txt`.
+  `0.9.6`; eventuali suffissi prerelease derivano da `VERSION.txt`.
   Aggiornare anche CMake soltanto quando cambia la terna major/minor/patch.
 
 ## Procedura per OGNI update
@@ -114,3 +114,7 @@ L'aggiornamento dopo la correzione CI 0.9.3 incrementa la patch secondo SemVer e
 ### 0.9.5 — Toolbar responsive
 
 L'aggiornamento N7.2 incrementa la versione applicativa e centralizza le geometrie delle toolbar native MIDI/OSC. Non cambia il formato JSON dei progetti e non costituisce certificazione hardware o release pubblica.
+
+### 0.9.6 — Consolidamento Control Map/LTC e CI
+
+L'aggiornamento corregge il ciclo di vita del dialogo di generazione LTC, consolida i controlli contro le sovrascritture, amplia i test del segnale audio SMPTE e risolve i due errori di compilazione introdotti nei test N7.2 della 0.9.5. Le condizioni di distribuzione e le prove hardware rimangono indipendenti dalla numerazione.
