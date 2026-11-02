@@ -16,7 +16,6 @@ struct HeaderTelemetryLayout final {
     juce::Rectangle<int> timeText,meridiemText,cpuLabel,cpuValue,ramLabel,ramValue;
     juce::Rectangle<float> cpuMeter,ramMeter;
     juce::Rectangle<int> activityHeading,audioHeading,audioStatus;
-    juce::Rectangle<int> midiLearn,oscLearn;
     std::array<juce::Rectangle<int>,4> activityLabels{};
     std::array<juce::Rectangle<int>,4> activityDots{};
 
@@ -49,21 +48,18 @@ struct HeaderTelemetryLayout final {
         t.cpuMeter={meterX,22.f,(float)meterWidth,7.f};
         t.ramMeter={meterX,45.f,(float)meterWidth,7.f};
 
-        t.activityHeading={t.activity.getX()+9,8,iw<=220?78:94,19};
-        const int learnWidth=iw>=245?67:61;
-        const int learnX=t.activity.getRight()-2*learnWidth-7;
-        t.midiLearn={learnX,9,learnWidth,22};
-        t.oscLearn={learnX+learnWidth+4,9,learnWidth,22};
+        // Telemetry only: no Learn buttons or interaction targets in I/O.
+        t.activityHeading={t.activity.getX()+9,8,iw-18,20};
         const int leftX=t.activity.getX()+9;
         const int rightX=t.activity.getX()+iw/2+3;
-        t.activityDots={juce::Rectangle<int>{leftX,36,10,10},
-                        juce::Rectangle<int>{rightX,36,10,10},
-                        juce::Rectangle<int>{leftX,53,10,10},
-                        juce::Rectangle<int>{rightX,53,10,10}};
-        t.activityLabels={juce::Rectangle<int>{leftX+15,30,iw/2-25,20},
-                          juce::Rectangle<int>{rightX+15,30,iw/2-23,20},
-                          juce::Rectangle<int>{leftX+15,46,iw/2-25,18},
-                          juce::Rectangle<int>{rightX+15,46,iw/2-23,18}};
+        t.activityDots={juce::Rectangle<int>{leftX,33,10,10},
+                        juce::Rectangle<int>{rightX,33,10,10},
+                        juce::Rectangle<int>{leftX,50,10,10},
+                        juce::Rectangle<int>{rightX,50,10,10}};
+        t.activityLabels={juce::Rectangle<int>{leftX+15,29,iw/2-25,17},
+                          juce::Rectangle<int>{rightX+15,29,iw/2-23,17},
+                          juce::Rectangle<int>{leftX+15,47,iw/2-25,17},
+                          juce::Rectangle<int>{rightX+15,47,iw/2-23,17}};
         t.audioHeading={t.audio.getX()+12,11,aw-22,20};
         t.audioStatus={t.audio.getX()+30,31,aw-40,26};
         return t;
