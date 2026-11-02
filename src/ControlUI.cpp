@@ -741,10 +741,11 @@ private:
         // A local override can change a captured physical input, but shared
         // function destinations remain read-only as in the original editor.
         for (juce::Component* widget:std::initializer_list<juce::Component*>{
-                 &target,&columns,&outputChannel,&outputCc,&oscAddress,
-                 &minimum,&maximum,&inputKind,&inputChannel,&inputNumber,
-                 &inputAddress})
+                 &target,&minimum,&maximum,&inputKind,
+                 &inputChannel,&inputNumber,&inputAddress})
             widget->setEnabled(!editSet);
+        // columns/outputChannel/outputCc/oscAddress have target-specific
+        // enablement handled by refreshDestinationFields(). Never override it.
         resized();
         repaint();
     }

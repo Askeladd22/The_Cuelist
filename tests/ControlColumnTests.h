@@ -112,7 +112,11 @@ void controlColumnTests() {
                 auto* add=dynamic_cast<juce::TextButton*>(
                     controlsV3::named(*modal,"mappingAddMapping"));
                 check(add!=nullptr,"Local mapping cannot be added");
-                add->triggerClick();
+                // JUCE triggerClick() posts an asynchronous message: invoke
+                // the actual handler synchronously for this state assertion.
+                check(static_cast<bool>(add->onClick),
+                      "Local Add Mapping click handler missing");
+                add->onClick();
                 auto* kind=controlsV3::named(*modal,"mappingInputKind");
                 check(kind!=nullptr && kind->isVisible() && !kind->isEnabled(),
                       "Local mapping failed to open shared captured-input form");
