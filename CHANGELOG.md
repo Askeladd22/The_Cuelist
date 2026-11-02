@@ -21,6 +21,7 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 - Rimossi dall'Inspector i tre contenitori rialzati annidati (Entire Cue, Cell e Notes), con ombre simulate, bordi arrotondati e titoli teal ripetuti. L'Inspector diventa una **superficie continua Midnight Slate**, con divisori sottili, etichette neutre e una gerarchia tipografica chiara.
 - La testata mantiene il contesto operativo **CUE NN** e il tipo Audio/MIDI/OSC/Control, usando il colore funzionale **solo per identificare il tipo**, non come decorazione su ogni sezione.
 - Le sezioni `CUE PARAMETERS`, `CELL PARAMETERS` e `CUE NOTES` usano uno stile editoriale compatto. La struttura dei controlli, la scala dell'Inspector, la funzione del campo Note e le posizioni del toggle di collasso rimangono inalterate.
+- Anche la modalità **MIDI/OSC Learn** utilizza ora la medesima superficie piatta, mantenendo il colore del protocollo per il solo stato di apprendimento e lasciando invariati pulsanti, selettore mappe e target.
 - L'operatore conserva tutti i veri editor e callback di nome cue, BPM, tempo map, loop, nome cella, gain, import, MIDI/OSC editing e note. Nessun campo o pulsante è stato nascosto o sostituito da un placeholder.
 
 ### Test e salvaguardie
