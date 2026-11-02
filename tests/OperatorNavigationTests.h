@@ -111,13 +111,24 @@ void operatorNavigationTests() {
             ui.setSize(width,900);
             const auto nav=OperatorNavigationLayout::atWidth(width);
             const auto telemetry=HeaderTelemetryLayout::atWidth(width);
-            check(telemetry.clock.getX()>200 &&
-                  telemetry.usage.getRight()<width-365 &&
-                  telemetry.clock.getRight()<telemetry.usage.getX() &&
-                  telemetry.clock.getY()==8 &&
-                  telemetry.usage.getY()==8 &&
+            // A responsive monitor cannot be tested against the obsolete
+            // beta.19 Y=8 and fixed width-365 telemetry boundary.
+            check(telemetry.clock.getX()>OperatorNavigationLayout::left &&
+                  telemetry.clock.getY()==HeaderTelemetryLayout::top &&
+                  telemetry.usage.getY()==HeaderTelemetryLayout::top &&
+                  telemetry.activity.getY()==HeaderTelemetryLayout::top &&
+                  telemetry.audio.getY()==HeaderTelemetryLayout::top &&
+                  telemetry.clock.getHeight()==HeaderTelemetryLayout::panelHeight &&
+                  telemetry.audio.getBottom()<=72 &&
+                  telemetry.clock.getRight()+HeaderTelemetryLayout::groupGap==
+                      telemetry.usage.getX() &&
+                  telemetry.usage.getRight()+HeaderTelemetryLayout::groupGap==
+                      telemetry.activity.getX() &&
+                  telemetry.activity.getRight()+HeaderTelemetryLayout::groupGap==
+                      telemetry.audio.getX() &&
+                  telemetry.audio.getRight()<=width-10 &&
                   nav.bounds[0].getRight()<telemetry.clock.getX(),
-                  "Unified monitoring strip overlaps the native operator menu");
+                  "Responsive monitoring strip overlaps operator menus or leaves header");
         }
     });
 
@@ -140,6 +151,35 @@ void operatorNavigationTests() {
             check(picture.isValid() && picture.getWidth()==t.clock.getWidth() &&
                   picture.getHeight()==t.clock.getHeight(),
                   "Enlarged clock is not rendered in the native JUCE header");
+        }
+    });
+
+    test("N3.5 CPU/RAM meters expand safely at every telemetry breakpoint",[] {
+        using namespace cuelist;
+        // Exercise both sides of 1250px and 1550px, where widths change.
+        for (const int width:{1024,1180,1249,1250,1280,1440,
+                             1549,1550,1647,1920,3840}) {
+            const auto t=HeaderTelemetryLayout::atWidth(width);
+            const int expectedWidth=width>=1550 ? 48 :
+                                    width>=1250 ? 40 : 30;
+            check(std::abs(t.cpuMeter.getWidth()-(float)expectedWidth)<.01f &&
+                  std::abs(t.ramMeter.getWidth()-(float)expectedWidth)<.01f &&
+                  t.cpuMeter.getX()==t.ramMeter.getX() &&
+                  t.cpuMeter.getX()>=t.cpuValue.getRight() &&
+                  t.ramMeter.getX()>=t.ramValue.getRight() &&
+                  t.usage.contains(t.cpuMeter.toNearestInt()) &&
+                  t.usage.contains(t.ramMeter.toNearestInt()) &&
+                  t.cpuMeter.getRight()<t.usage.getRight() &&
+                  t.ramMeter.getRight()<t.usage.getRight(),
+                  "A longer meter overlaps a percentage or escapes CPU/RAM panel");
+            const auto nav=OperatorNavigationLayout::atWidth(width);
+            for (int i=0;i<nav.visibleMenuCount;++i)
+                check(nav.bounds[(size_t)i].getRight()<t.clock.getX(),
+                      "Responsive meter width caused navigation/telemetry overlap");
+            if (nav.visibleMenuCount<OperatorNavigationLayout::menuCount)
+                check(nav.bounds[OperatorNavigationLayout::overflowIndex].getRight()<
+                      t.clock.getX(),
+                      "More navigation button is obscured at a breakpoint");
         }
     });
 
