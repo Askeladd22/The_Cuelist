@@ -3,6 +3,35 @@
 #include <cstring>
 
 void oscAutomationV9Tests() {
+    test("N7 OSC editor renders flat event and automation lanes without altering data",[] {
+        OscClip source;
+        source.length=4;
+        source.events.push_back({.25,"/cue",{{OscValueType::integer,1,0,{}}}});
+        OscAutomation ramp;
+        ramp.message.address="/brightness";
+        ramp.message.arguments={{OscValueType::decimal,0,0,{}}};
+        ramp.time=1;ramp.duration=1;
+        ramp.points={{0,0},{1,1}};
+        source.automations.push_back(ramp);
+        OscClipEditor editor(source,{{0,120,4,4}},
+            [](const OscClip&,const OscClip&,bool){});
+        for (const auto size:std::initializer_list<juce::Point<int>>{
+                 {1100,320},{940,250},{710,250}}) {
+            editor.setSize(size.x,size.y);
+            const auto img=editor.createComponentSnapshot(editor.getLocalBounds());
+            check(img.isValid() && img.getWidth()==size.x &&
+                  img.getHeight()==size.y,
+                  "N7 OSC editor failed to render native timeline");
+        }
+        const auto& actual=editor.getClip();
+        check(actual.events.size()==1 && actual.automations.size()==1 &&
+              actual.events[0].address=="/cue" &&
+              actual.automations[0].time==1 &&
+              actual.automations[0].duration==1 &&
+              actual.automations[0].points.size()==2 &&
+              validateOscClip(actual).wasOk(),
+              "N7 visual OSC update mutated events or automation curves");
+    });
     test("OSC dock toolbar never overlaps at desktop and minimum window widths",[] {
         MainComponent ui(false);
         addColumn(ui.show,ColumnType::osc,"OSC");

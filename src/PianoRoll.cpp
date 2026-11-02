@@ -19,9 +19,16 @@ public:
             const int key=pitch%12; const bool black=key==1 || key==3 || key==6 || key==8 || key==10;
             g.setColour(black ? palette::background : palette::panel); g.fillRect(keysWidth,y,getWidth()-keysWidth,noteHeight);
             g.setColour(palette::line.withAlpha(.4f)); g.drawHorizontalLine(y,(float)keysWidth,(float)getWidth());
-            g.setColour(black ? palette::raised : juce::Colour(0xffc7d4df)); g.fillRect(0,y,keysWidth-2,noteHeight-1);
+            // Keep black/white piano-key hierarchy without a bright
+            // floating keyboard or OS-looking white panels.
+            g.setColour(black ? palette::background : palette::raised);
+            g.fillRect(0,y,keysWidth-2,noteHeight-1);
+            g.setColour(palette::line.withAlpha(.4f));
+            g.drawHorizontalLine(y,0,(float)keysWidth-2);
             static const char* names[] {"C","C#","D","D#","E","F","F#","G","G#","A","A#","B"};
-            label(g,juce::String(names[key])+juce::String(pitch/12-1),{5,y,52,noteHeight},10,black ? palette::text : palette::background);
+            label(g,juce::String(names[key])+juce::String(pitch/12-1),
+                  {5,y,52,noteHeight},10,
+                  black ? palette::muted : palette::text);
         }
         const double step=owner.gridStep();
         const int first=std::max(0,(int)std::floor((visible.getX()-keysWidth)/owner.pixelsPerBeat/step));
@@ -34,10 +41,20 @@ public:
         for (int i=0;i<(int)owner.clip.notes.size();++i) {
             const auto& n=owner.clip.notes[(size_t)i]; const auto box=noteBox(n);
             if (!box.intersects(visible.toFloat())) continue;
-            g.setColour(palette::amber.withAlpha(.35f+.6f*n.velocity/127.0f)); g.fillRoundedRectangle(box,2);
+            const float intensity=(float)n.velocity/127.f;
             const bool active=owner.selectedNotes.count(i)>0;
-            g.setColour(active ? palette::text : palette::amber.darker(.3f)); g.drawRoundedRectangle(box,2,active ? 2.0f : .7f);
-            if (box.getWidth()>26) label(g,juce::String(n.velocity),box.toNearestInt().reduced(4,0),9,palette::background);
+            // Notes remain velocity-weighted MIDI data, not glowing pills.
+            // The narrow amber key communicates protocol and velocity;
+            // selection is a genuine white outline.
+            g.setColour(palette::amber.withAlpha(.12f+.25f*intensity));
+            g.fillRect(box);
+            g.setColour(palette::amber.withAlpha(.5f+.5f*intensity));
+            g.fillRect(box.getX(),box.getY(),2.f,box.getHeight());
+            g.setColour(active ? palette::text : palette::amber.withAlpha(.54f));
+            g.drawRect(box,active ? 1.5f : .7f);
+            if (box.getWidth()>26)
+                label(g,juce::String(n.velocity),box.toNearestInt().reduced(5,0),
+                      10,palette::text);
         }
         if (selecting) {
             auto bounds=marquee();
@@ -253,7 +270,13 @@ void PianoRollEditor::deleteSelected() {
 }
 void PianoRollEditor::paint(juce::Graphics& g) {
     g.fillAll(palette::panel);
-    label(g,"PIANO ROLL  /  MIDI notes",{16,6,290,25},15,palette::amber,true);
+    // Editorial hierarchy: one title, neutral control labels and a single
+    // MIDI protocol rule. All working buttons retain their original bounds.
+    label(g,"MIDI  /  PIANO ROLL",{16,6,290,25},15,palette::text,true);
+    g.setColour(palette::amber.withAlpha(.86f));
+    g.fillRect(16,30,52,2);
+    g.setColour(palette::line.withAlpha(.6f));
+    g.drawHorizontalLine(64,16.f,(float)std::max(16,getWidth()-16));
     label(g,"Snap",{16,38,40,22},11,palette::muted);
     label(g,"Channel",{142,38,48,22},11,palette::muted);
     label(g,"Velocity",{270,38,50,22},11,palette::muted);
@@ -268,6 +291,9 @@ void PianoRollEditor::paint(juce::Graphics& g) {
         label(g,juce::String(beat+1),{x+4,67,48,17},10,palette::muted);
     }
     g.restoreState();
+    g.setColour(palette::line.withAlpha(.55f));
+    g.drawHorizontalLine(std::max(0,getHeight()-27),16.f,
+                         (float)std::max(16,getWidth()-16));
     label(g,hint,{16,getHeight()-25,getWidth()-32,22},11,palette::muted);
 }
 void PianoRollEditor::resized() {
