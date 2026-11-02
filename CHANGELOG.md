@@ -13,6 +13,16 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.7] - 2026-11-02
+
+**Tipo:** rafforzamento dei test nativi delle Control Map dopo il consolidamento 0.9.6.
+
+### Test e verifica
+- Il test dell'editor condiviso per una **Map salvata** ora contiene un'altra Map non assegnata: verifica che la scelta venga effettuata mediante l'ID effettivo, anziché usare sempre la prima Map disponibile.
+- Nuovo test click di una **Control Column con override locale**: apertura dell'unico `controlMappingPanel`, preselezione dell'override locale e nessuna duplicazione, riassegnazione o alterazione degli identificatori.
+- Nessun cambiamento a UI, Control Mappings, Default Map, saved Map, assegnazioni, motore Audio, generator LTC, frame rate, routing, formato JSON v10 o timecode globale.
+- Windows CMake/CTest e version guard da verificare tramite CI della PR; non sono inclusi pacchetti portable né verifiche hardware reali.
+
 ## [0.9.6] - 2026-11-02
 
 **Tipo:** verifica e consolidamento dell'editor Control Map condiviso e delle sorgenti Audio LTC; correzione della CI 0.9.5.
