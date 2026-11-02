@@ -82,7 +82,8 @@ void MainComponent::showControlCellMenu(int row,int column,
     const bool present=hasControlMapAssignment(selectedCell);
     juce::PopupMenu menu;
     menu.addItem(1,present ?
-        (selectedCell.assignedMapId>0 ? "Edit Control Map (shared)" : "Edit Control Map") :
+        (selectedCell.assignedMapId>0 ? "Edit in Control Mappings" :
+                                        "Edit Control Map") :
         "Create empty Control Map");
     juce::PopupMenu saved;
     for (const auto& item:show.controls.templates)
@@ -111,7 +112,14 @@ void MainComponent::showControlCellMenu(int row,int column,
                 const auto enabled=safe->show.rows[(size_t)r].cells[(size_t)c].stopOnNext;
                 safe->setCellAutoStop(r,c,!enabled);
             } else if (choice==1) {
-                if (safe->createEmptyControlSet(r,c)) safe->editControlSet(r,c);
+                // Existing assignments enter precisely the same ControlPanel
+                // as the global Control Mappings button; do not construct or
+                // clone a local override before opening a saved Map.
+                const auto& selected=safe->show.rows[(size_t)r].cells[(size_t)c];
+                if (hasControlMapAssignment(selected))
+                    safe->editControlSet(r,c);
+                else if (safe->createEmptyControlSet(r,c))
+                    safe->editControlSet(r,c);
             } else if (choice==2) {
                 if (!safe->show.rows[(size_t)r].cells[(size_t)c].controlSet) return;
                 showOperatorTextPrompt(*safe,safe->theme,"Save reusable Control Map",
