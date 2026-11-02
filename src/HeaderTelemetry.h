@@ -8,6 +8,10 @@ namespace cuelist {
 // responsive operator menus and the Cuelist tab overflow.
 // The entire console remains within the original 72px global header.
 struct HeaderTelemetryLayout final {
+    // Canonical operator header geometry shared with native tests.
+    static constexpr int top=7;
+    static constexpr int panelHeight=58;
+    static constexpr int groupGap=10;
     juce::Rectangle<int> clock,usage,activity,audio;
     juce::Rectangle<int> timeText,meridiemText,cpuLabel,cpuValue,ramLabel,ramValue;
     juce::Rectangle<float> cpuMeter,ramMeter;
@@ -25,13 +29,12 @@ struct HeaderTelemetryLayout final {
         const int uw=wide?156:medium?144:130;
         const int iw=wide?258:medium?238:218;
         const int aw=wide?184:medium?164:150;
-        constexpr int gap=10;
-        const int x=windowWidth-10-(cw+uw+iw+aw+gap*3);
+        const int x=windowWidth-10-(cw+uw+iw+aw+groupGap*3);
         HeaderTelemetryLayout t;
-        t.clock={x,7,cw,58};
-        t.usage={t.clock.getRight()+gap,7,uw,58};
-        t.activity={t.usage.getRight()+gap,7,iw,58};
-        t.audio={t.activity.getRight()+gap,7,aw,58};
+        t.clock={x,top,cw,panelHeight};
+        t.usage={t.clock.getRight()+groupGap,top,uw,panelHeight};
+        t.activity={t.usage.getRight()+groupGap,top,iw,panelHeight};
+        t.audio={t.activity.getRight()+groupGap,top,aw,panelHeight};
 
         t.timeText={x+4,10,cw-8,38};
         t.meridiemText={x+cw-49,49,45,13};
@@ -39,8 +42,12 @@ struct HeaderTelemetryLayout final {
         t.cpuValue={t.usage.getX()+44,16,45,19};
         t.ramLabel={t.usage.getX()+9,39,35,19};
         t.ramValue={t.usage.getX()+44,39,45,19};
-        t.cpuMeter={(float)t.usage.getRight()-40.f,22.f,30.f,7.f};
-        t.ramMeter={(float)t.usage.getRight()-40.f,45.f,30.f,7.f};
+        // Meters grow with their section. Even the compact 130px profile
+        // preserves clearance after the numeric values.
+        const int meterWidth=wide?48:medium?40:30;
+        const float meterX=(float)(t.usage.getRight()-10-meterWidth);
+        t.cpuMeter={meterX,22.f,(float)meterWidth,7.f};
+        t.ramMeter={meterX,45.f,(float)meterWidth,7.f};
 
         t.activityHeading={t.activity.getX()+9,8,iw<=220?78:94,19};
         const int learnWidth=iw>=245?67:61;
