@@ -59,6 +59,9 @@ MainComponent::MainComponent(bool startAudio) {
     // Immediately redraw pinned headers on wheel, scrollbar drag, resize or
     // keyboard scrolling. The grid body remains the only scrolled component.
     viewport.onScroll=[this] {
+        // A pinned transport hover belongs to the row under the pointer;
+        // scrolling must not leave its accent on a different cue.
+        grid.clearHeaderHover();
         cueHeaders.repaint();
         columnHeaders.repaint();
         cueMetrics.repaint();
