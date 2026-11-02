@@ -4,9 +4,9 @@
 
 The Cuelist is a desktop application for preparing and executing cue-based live productions, theatre performances, concerts and installations. It brings audio playback, MIDI sequences, OSC events and MIDI-controller mappings into one operator-focused workspace. It is not a digital audio workstation and does not include native video or timecode playback.
 
-**Current development version:** `versione indicata in [VERSION.txt](VERSION.txt)` · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
+**Application version:** [`0.9.1`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
 
-> **Beta software — not production certified.** Run Preflight, verify each actual audio/MIDI/OSC device and rehearse every transition on the intended show computer. A successful automated test suite does not establish physical-device reliability or end-to-end timing guarantees.
+> **0.9.1 is a development release baseline, not a live-show certification.** The beta numbering has ended, but rehearsals with real devices, licensing verification and Windows DPI/ultrawide visual review remain necessary before commercial distribution or production reliance. CI alone does not prove hardware reliability or end-to-end timing.
 
 ## Versione e storico aggiornamenti
 
@@ -24,6 +24,12 @@ versioni 0.7/0.8/0.9 e delle 86 PR precedentemente integrate (con
 link alle PR), distinguendo la cronologia di sviluppo dalle release
 pubbliche. La versione del progetto salvato `.cuelist` (**schema v10**)
 è indipendente dal numero del software.
+
+## 0.9.1 — Nuova baseline
+
+La serie delle `0.9.0-beta` si conclude con `0.9.1`, che riunisce il redesign nativo di header, Cue Grid, Inspector, mixer e Timeline, oltre a editor MIDI/OSC, Control Mapping condiviso e generazione WAV LTC. Questo numero identifica l'applicazione: non crea automaticamente una GitHub Release o un pacchetto portable.
+
+Restano da validare su Windows reale docking/editor MIDI/OSC, DPI e 32:9, routing hardware, decoder LTC esterno e condizioni di licenza JUCE. Consulta [stato della 0.9.1](docs/0.9.1-release-status.md), [checklist di rilascio](docs/0.9-release-checklist.md) e [changelog](CHANGELOG.md).
 
 ## UI V2 — Implementazione JUCE progressiva
 

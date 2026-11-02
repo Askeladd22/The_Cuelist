@@ -3,6 +3,47 @@
 
 void timelineV3Tests() {
     using namespace cueViewFixtures;
+    test("N6.1 Timeline uses neutral toolbar and readable type-keyed media lanes",[] {
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::control,"Stage control");
+        auto audio=std::make_shared<AudioClip>();
+        audio->samples.setSize(1,48000);
+        audio->samples.clear();
+        ui.clips[ui.show.rows[0].cells[0].id]=audio;
+        auto* timeline=cueViewFixtures::find<Timeline>(ui);
+        check(timeline!=nullptr,"Timeline missing for N6 visual review");
+        timeline->setSize(800,250);
+        const auto initial=encodeShow(ui.show);
+        const auto preview=timeline->createComponentSnapshot(
+            timeline->getLocalBounds());
+        check(preview.isValid() && preview.getWidth()==800 &&
+              preview.getHeight()==250,
+              "N6 Timeline did not render at standard operator height");
+        // No decorative teal tab at the leading edge of the 45px toolbar.
+        check(preview.getPixelAt(10,21)==preview.getPixelAt(14,21),
+              "Timeline still has the old ornamental teal header stripe");
+        // First row: loaded Audio clip, 1s wide on a 10s ruler, begins x=140.
+        // 3px colour-key is distinct from the flat clip body.
+        check(preview.getPixelAt(141,110)!=preview.getPixelAt(152,110) &&
+              preview.getPixelAt(152,110)==palette::input,
+              "A loaded Audio clip has lost its neutral body or type rail");
+        // Next row: Control configuration should no longer be one big
+        // translucent pastel card, but remain an identifiable Control lane.
+        check(preview.getPixelAt(141,152)!=preview.getPixelAt(400,152) &&
+              preview.getPixelAt(400,152)==palette::input,
+              "Control lane lost its technical surface or signal key");
+        const auto* snap=controlsV3::named(*timeline,"timelineSnapToggle");
+        const auto* grid=controlsV3::named(*timeline,"timelineGridVisibility");
+        check(snap && grid && snap->isVisible() && grid->isVisible(),
+              "Simplified Timeline removed real magnetic Snap/Grid controls");
+        timeline->setSize(800,115);
+        const auto compact=timeline->createComponentSnapshot(
+            timeline->getLocalBounds());
+        check(compact.isValid() && !snap->isVisible() && !grid->isVisible(),
+              "Compact Timeline exposes controls over the ruler/tracks");
+        check(encodeShow(ui.show)==initial,
+              "A Timeline-only visual update mutated persisted show data");
+    });
     test("timeline zoom controls pan and fit keep ruler coordinates consistent", [] {
         MainComponent ui(false);
         auto* timeline=find<Timeline>(ui); check(timeline!=nullptr,"Timeline absent"); timeline->setSize(800,250);

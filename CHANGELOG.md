@@ -13,6 +13,30 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.1] - 2026-11-02
+
+**Tipo:** passaggio dalla serie `0.9.0-beta` alla versione applicativa **0.9.1** e redesign N6.1 della Timeline.
+
+### Versione e distribuzione
+- `0.9.1` diventa la versione canonica in `VERSION.txt`, CMake, About e nell'eseguibile. L'ipotizzata `0.9.0-beta.33` non era stata integrata: N6.1 entra in `0.9.1` senza un'ulteriore versione beta.
+- Nessuna GitHub Release o build portable pubblicata automaticamente. Il cambio di numero **non certifica l'affidabilità per spettacoli dal vivo**: prove hardware, DPI/ultrawide, decoder LTC indipendente e licenze di terzi (soprattutto JUCE) restano gate prima della distribuzione commerciale.
+- Il formato dei progetti `.cuelist` rimane JSON v10. Conservata integralmente la cronologia cumulativa delle beta.
+
+
+
+### Interfaccia
+- La Timeline ora utilizza una **toolbar piatta Midnight Slate** al posto della fascia rialzata e del tratto teal puramente decorativo; i tre pulsanti zoom (-, +, Fit) mantengono esattamente gli hitbox reali e hanno superfici tecniche rettangolari.
+- La **griglia BPM** è resa in toni neutri e graduati per battuta, beat e suddivisione; è indipendente dal magnete **Snap**, che continua a funzionare anche con griglia nascosta e con cambi BPM in corso di cue.
+- Le corsie Audio/MIDI/OSC/Control hanno fondo neutro e un sottile **marcatore del tipo** nella corsia selezionata. I media hanno ora un corpo scuro rettangolare, un bordo misurato e un indicatore di tipo da 3 px, invece delle card traslucide pastel arrotondate.
+- La Timeline conserva **waveform Audio, note MIDI, eventi e automazioni OSC, resize grip**, posizioni iniziali e durate, selezione, scrollbar, playhead amber e modalità docked/floating degli editor. Nessuna variazione ai target di drag o alla scala tempo.
+- I Control Set mantengono il loro contenuto e si presentano come una corsia strumentale piatta; il footer mostra cue, tempo e zoom senza istruzioni ripetute. La guida delle azioni resta nei tooltip pertinenti.
+
+### Compatibilità e test
+- Test JUCE per il nuovo look a 800×250 e la riduzione a 800×115, preservando le azioni Grid e Snap senza collisioni e confermando che il repaint non modifichi il modello.
+- Restano attivi i test precedenti su zoom ancorato, pan, snap musicale, grid division separata, drag, MIDI/OSC editor docking e layout responsivo in 1280×768, 1920×1080 e ultrawide.
+- Master Audio fissato, mixer N5, editor Control Map, generatore LTC, motori Audio/MIDI/OSC, Undo/Redo, Inspector e JSON v10 invariati. Nessuna build portable.
+- Merge subordinato a Windows CI e CTest verdi; verifica hardware e visuale Windows (100/125/150% DPI) obbligatoria prima dell'approvazione della distribuzione. Consultare `docs/0.9-release-checklist.md`.
+
 ## [0.9.0-beta.32] - 2026-11-02
 
 **Tipo:** redesign nativo V2 / N5.2 — ergonomia e leggibilità dei controlli mixer.
