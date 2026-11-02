@@ -163,6 +163,18 @@ public:
         return rowNameBounds(0).contains(x,localY) ||
                rowStatusBounds(0).contains(x,localY);
     }
+    // A single geometry contract governs cue action tooltips and hover
+    // painting; actual click handlers remain unchanged.
+    enum class HeaderAction { none, go, playPause, stop, menu };
+    static HeaderAction headerActionAt(int x,int localY) {
+        if (rowGoBounds(0).contains(x,localY)) return HeaderAction::go;
+        if (rowPlayBounds(0).contains(x,localY)) return HeaderAction::playPause;
+        if (rowStopBounds(0).contains(x,localY)) return HeaderAction::stop;
+        if (rowMenuBounds(0).contains(x,localY)) return HeaderAction::menu;
+        return HeaderAction::none;
+    }
+    void updateHeaderHover(int row,int x,int localY);
+    void clearHeaderHover();
     // Shared by the painter and input handling to prevent discrepancies.
     static juce::Rectangle<int> cellPlayBounds(int x,int width,int y) {
         return {x+width-64,y+23,24,23};
@@ -184,6 +196,8 @@ private:
     MainComponent& owner;
     int dragRow=-1, dragColumn=-1, dropRow=-1, dropColumn=-1;
     int hoverRow=-1, hoverColumn=-1; // visual only; never activates a cue
+    int hoverHeaderRow=-1;
+    HeaderAction hoverHeaderAction=HeaderAction::none;
     bool dragging=false;
 };
 // Stays outside the horizontally scrolled content, but follows its vertical
@@ -198,6 +212,7 @@ public:
     void mouseUp(const juce::MouseEvent&) override;
     void mouseDoubleClick(const juce::MouseEvent&) override;
     void mouseMove(const juce::MouseEvent&) override;
+    void mouseExit(const juce::MouseEvent&) override;
     void mouseWheelMove(const juce::MouseEvent&,const juce::MouseWheelDetails&) override;
 private:
     MainComponent& owner;

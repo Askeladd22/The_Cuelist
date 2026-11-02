@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.0-beta.27] - 2026-11-02
+
+**Tipo:** redesign nativo V2 — gerarchia visiva dei trasporti nella colonna Cuelist.
+
+### Interfaccia
+- I comandi **GO, Play/Pausa, Stop e menu della singola cue** mostrano ora un feedback differenziato al passaggio del mouse: contorno leggibile per GO, superfici attive per Play/Stop e menu contestuale discreto.
+- I quattro comandi conservano rigorosamente **le stesse dimensioni, gli hitbox, i callback e la semantica operativa**. Non vengono cambiate le azioni GO/Stop, la sospensione, il trasporto MIDI/OSC, la selezione, il drag delle righe o la rinomina inline.
+- La vista fissa `PinnedCueHeaders` utilizza la medesima geometria di hit-test e painting del `CueGrid`; ogni comando espone un tooltip descrittivo. Il vecchio tooltip sul nome troncato resta invariato.
+- L'hover non cambia il progetto né avvia uno show; viene cancellato quando il puntatore esce o quando il viewport scorre, evitando highlight su una riga differente.
+
+### Test e compatibilità
+- Nuovi test nativi JUCE per confermare rettangoli indipendenti e coerenti di GO/Play/Stop/Menu, modifica visuale realmente disegnata, tooltip corretti, ripristino dello stato idle e assenza di modifiche a modello, selezione e next cue.
+- Restano inalterati header globale da 72px, M Learn e O Learn sotto il logo, I/O Activity passivo, Master Audio fisso nella colonna Cuelist da 318px, audio/MIDI/OSC engines, routing/mapping, Inspector, BPM inline, Auto Stop e schema JSON v10.
+- Nessuna build portable; Windows CI + CTest e controllo visivo su Windows/DPI restano necessari prima del merge.
+
 ## [0.9.0-beta.26] - 2026-11-02
 
 **Tipo:** redesign nativo V2 — comandi MIDI/OSC Learn separati dalla telemetria.
