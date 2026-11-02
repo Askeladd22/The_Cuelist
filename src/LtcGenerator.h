@@ -10,7 +10,7 @@ namespace cuelist::ltc {
 
 // This is an AUDIO-source generator, deliberately independent of show-wide
 // timecode, transport clock and any future timecode receiver.
-enum class Rate { fps24, fps25, drop2997, fps30 };
+enum class Rate { fps24, fps25, drop2997, fps30, nonDrop2997 };
 struct Timecode {
     int hour=0, minute=0, second=0, frame=0;
 };
@@ -23,10 +23,12 @@ inline int nominalFps(Rate rate) {
     return rate==Rate::fps24 ? 24 : rate==Rate::fps25 ? 25 : 30;
 }
 inline int numerator(Rate rate) {
-    return rate==Rate::drop2997 ? 30000 : nominalFps(rate);
+    return (rate==Rate::drop2997 || rate==Rate::nonDrop2997)
+        ? 30000 : nominalFps(rate);
 }
 inline int denominator(Rate rate) {
-    return rate==Rate::drop2997 ? 1001 : 1;
+    return (rate==Rate::drop2997 || rate==Rate::nonDrop2997)
+        ? 1001 : 1;
 }
 inline juce::Result parseTimecode(juce::String input,Rate rate,Timecode& out) {
     input=input.trim();

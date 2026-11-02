@@ -13,6 +13,26 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.6] - 2026-11-02
+
+**Tipo:** verifica e consolidamento dell'editor Control Map condiviso e delle sorgenti Audio LTC; correzione della CI 0.9.5.
+
+### Control Column e Control Mappings
+- Confermato e preservato il percorso nativo unico `ControlPanel`: il clic su una Control Column con Map assegnata chiama `editControlSet`, che seleziona la Map salvata usando il suo ID; la sezione Control Mappings usa la stessa classe e gli stessi dati di progetto. Il menu contestuale rimane per assegnare, cambiare o rimuovere una Map, senza mutare gli scope Default/saved/local.
+- Conservato il test JUCE della selezione automatica della Map e della mancata duplicazione o riassegnazione quando si apre l'editor.
+
+### Generate LTC Track
+- Un'unica regola `canGenerateLtcTrack` determina sia la visibilità della voce nel menu destro sia la validità della conferma: colonna Audio aperta, nessun file o clip PCM esistente e nessun contenuto MIDI/OSC. La regola è riesaminata prima dell'import; nessuna sovrascrittura.
+- Corretto il ciclo di vita del dialogo asincrono: la finestra conserva i campi fino al completamento della callback ed è rilasciata in modo deterministico, senza leggere un `AlertWindow` già cancellato automaticamente.
+- Aggiunto il frame rate **29,97 non-drop**, accanto ai precedenti **24, 25, 29,97 drop-frame e 30 fps**; il numeratore/denominatore 30000/1001 resta preciso e la numerazione 29,97 NDF non salta le etichette di frame.
+- Il WAV continua a essere **PCM mono a 48 kHz/16 bit**, salvato in Documenti e importato come un normale Audio (routing e memoria invariati), senza introdurre un timecode globale.
+- Estesi i test: validità del dialogo (mediante regola condivisa), timecode e rollover, generazione non distruttiva e decodifica dei bit audio su numerosi frame consecutivi a ogni rate, oltre al normale caricamento WAV.
+
+### Build e compatibilità
+- Corretti due errori C2664 in `tests/PianoRollTests.h` e `tests/OscAutomationV9Tests.h`: il test harness `check(bool,const char*)` richiede messaggi letterali, non espressioni `juce::String`. La compilazione di `0.9.5` era fallita su questi due errori, non nel codice applicativo.
+- Nessun cambio agli engine, alle Control Map assegnate, agli effetti del mixer, al Master Audio, al formato dei progetti JSON v10 o alle altre interazioni del redesign. Nessuna build portable.
+- Prima del merge: Windows Release, CTest completo e version/changelog guard tutti verdi; decodifica LTC mediante ricevitore indipendente e prove hardware restano verifiche aggiuntive prima dell'uso in uno spettacolo.
+
 ## [0.9.5] - 2026-11-02
 
 **Tipo:** redesign nativo V2 — fase N7.2, toolbar responsive e docking editor MIDI/OSC.

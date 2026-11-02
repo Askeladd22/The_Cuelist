@@ -1442,13 +1442,17 @@ void MainComponent::message(const juce::String& text) { status=text; repaint(); 
 bool MainComponent::memoryFits(const ClipMap& collection) const {
     return withinPcmBudget(collection);
 }
-void MainComponent::generateLtcTrack(int row,int column) {
+bool MainComponent::canGenerateLtcTrack(int row,int column) const {
     if (row<0 || row>=(int)show.rows.size() ||
-        column<0 || column>=(int)show.columns.size() ||
-        show.columns[(size_t)column].type!=ColumnType::audio ||
-        show.columns[(size_t)column].collapsed ||
-        show.rows[(size_t)row].cells[(size_t)column].file.isNotEmpty() ||
-        hasClip(row,column)) return;  // Must never replace existing media.
+        column<0 || column>=(int)show.columns.size()) return false;
+    const auto& col=show.columns[(size_t)column];
+    const auto& cell=show.rows[(size_t)row].cells[(size_t)column];
+    return col.type==ColumnType::audio && !col.collapsed &&
+           cell.file.isEmpty() && !cell.midi && !cell.osc &&
+           !hasClip(row,column);
+}
+void MainComponent::generateLtcTrack(int row,int column) {
+    if (!canGenerateLtcTrack(row,column)) return;
 
     // Stable IDs make the async dialog resilient to row/column reorder.
     const int rowId=show.rows[(size_t)row].id;
@@ -1460,7 +1464,8 @@ void MainComponent::generateLtcTrack(int row,int column) {
     dialog->setLookAndFeel(&theme);
     dialog->addTextEditor("duration","10.0","Duration in seconds (0.1–600)");
     dialog->addTextEditor("timecode","01:00:00:00","Start timecode HH:MM:SS:FF");
-    dialog->addComboBox("rate",{"24 fps","25 fps","29.97 fps (drop-frame)","30 fps"},
+    dialog->addComboBox("rate",{"24 fps","25 fps","29.97 fps (drop-frame)",
+                                 "30 fps","29.97 fps (non-drop)"},
                         "Frame rate");
     if (auto* rate=dialog->getComboBoxComponent("rate"))
         rate->setSelectedId(2,juce::dontSendNotification);
@@ -1469,16 +1474,16 @@ void MainComponent::generateLtcTrack(int row,int column) {
     auto safe=juce::Component::SafePointer<MainComponent>(this);
     dialog->enterModalState(true,juce::ModalCallbackFunction::create(
         [safe,dialog,rowId,columnId](int result) {
+            // Keep the AlertWindow alive throughout the async callback:
+            // JUCE must not auto-delete it before the fields are read.
+            std::unique_ptr<juce::AlertWindow> owned(dialog);
             if (!safe || result!=1) return;
             int r=-1,c=-1;
             for (int i=0;i<(int)safe->show.rows.size();++i)
                 if (safe->show.rows[(size_t)i].id==rowId) {r=i;break;}
             for (int i=0;i<(int)safe->show.columns.size();++i)
                 if (safe->show.columns[(size_t)i].id==columnId) {c=i;break;}
-            if (r<0 || c<0 || safe->show.columns[(size_t)c].type!=ColumnType::audio ||
-                safe->show.columns[(size_t)c].collapsed ||
-                safe->show.rows[(size_t)r].cells[(size_t)c].file.isNotEmpty() ||
-                safe->hasClip(r,c)) {
+            if (!safe->canGenerateLtcTrack(r,c)) {
                 safe->message("LTC cancelled: the target Audio cell is no longer empty.");
                 return;
             }
@@ -1500,6 +1505,7 @@ void MainComponent::generateLtcTrack(int row,int column) {
                 case 2:spec.rate=ltc::Rate::fps25;break;
                 case 3:spec.rate=ltc::Rate::drop2997;break;
                 case 4:spec.rate=ltc::Rate::fps30;break;
+                case 5:spec.rate=ltc::Rate::nonDrop2997;break;
                 default:safe->message("Select an LTC frame rate.");return;
             }
             if (const auto parsed=ltc::parseTimecode(start,spec.rate,spec.start);
@@ -1517,12 +1523,15 @@ void MainComponent::generateLtcTrack(int row,int column) {
                 safe->message("Could not generate LTC: "+generated.getErrorMessage());
                 return;
             }
-            if (!safe->select(r,c)) {file.deleteFile();return;}
-            safe->importFile(file); // normal clip loading, memory check and routing
+            if (!safe->select(r,c) || !safe->canGenerateLtcTrack(r,c)) {
+                file.deleteFile();
+                return;
+            }
+            safe->importFile(file); // regular Audio loading, routing and budget
             // A rejected preload must not leave an unused generated WAV.
             if (safe->show.rows[(size_t)r].cells[(size_t)c].file!=
                 file.getFullPathName()) file.deleteFile();
-        }),true);
+        }),false); // callback owns the dialog and releases it after reading fields
 }
 void MainComponent::importDialog() {
     if (show.columns[selectedColumn].type==ColumnType::osc ||
