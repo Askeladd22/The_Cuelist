@@ -449,8 +449,10 @@ MainComponent::MainComponent(bool startAudio) {
     panicLearnHotspot.setVisible(false);
     globalMidiLearn.setName("globalMidiLearn");
     globalOscLearn.setName("globalOscLearn");
-    globalMidiLearn.setTooltip("Inline MIDI Learn: choose a parameter, move a control, done.");
-    globalOscLearn.setTooltip("Inline OSC Learn: choose a parameter, send a message, done.");
+    globalMidiLearn.setTooltip("MIDI Learn — select a parameter, then move the MIDI controller. One-click global command.");
+    globalOscLearn.setTooltip("OSC Learn — select a parameter, then send an OSC message. One-click global command.");
+    globalMidiLearn.setColour(juce::TextButton::textColourOffId,palette::amber);
+    globalOscLearn.setColour(juce::TextButton::textColourOffId,palette::purple);
     globalMidiLearn.onClick=[this] {beginQuickLearn(false);};
     globalOscLearn.onClick=[this] {beginQuickLearn(true);};
     controlButton.setName("controlMapping");
@@ -1841,10 +1843,10 @@ void MainComponent::timerCallback() {
     // there is no currently selected target waiting for its next event.
     globalMidiLearn.setColour(juce::TextButton::buttonColourId,
         (quickLearnMode==QuickLearnMode::midi || controlLearnArmed) ?
-        palette::amber.withAlpha(.55f) : palette::raised);
+        palette::amber.withAlpha(.55f) : palette::amber.withAlpha(.13f));
     globalOscLearn.setColour(juce::TextButton::buttonColourId,
         (quickLearnMode==QuickLearnMode::osc || oscLearnArmed) ?
-        palette::purple.withAlpha(.55f) : palette::raised);
+        palette::purple.withAlpha(.55f) : palette::purple.withAlpha(.13f));
     // 25 Hz UI refresh: only the armed target pulses (~1.8 Hz).
     // Other available controls retain their steady protocol-coloured tint.
     if (quickLearnFunctionId>0 && quickLearnMode!=QuickLearnMode::off &&
