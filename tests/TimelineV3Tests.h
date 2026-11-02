@@ -32,8 +32,15 @@ void timelineV3Tests() {
         check(preview.getPixelAt(141,152)!=preview.getPixelAt(400,152) &&
               preview.getPixelAt(400,152)==palette::input,
               "Control lane lost its technical surface or signal key");
-        const auto* snap=controlsV3::named(*timeline,"timelineSnapToggle");
-        const auto* grid=controlsV3::named(*timeline,"timelineGridVisibility");
+        // Resolve children using the Timeline's own public component API.
+        // This test must not rely on helpers defined in ControlsV3Tests.h,
+        // which is deliberately included later by Tests.cpp.
+        juce::Component* snap=nullptr;
+        juce::Component* grid=nullptr;
+        for (auto* child:timeline->getChildren()) {
+            if (child->getName()=="timelineSnapToggle") snap=child;
+            else if (child->getName()=="timelineGridVisibility") grid=child;
+        }
         check(snap && grid && snap->isVisible() && grid->isVisible(),
               "Simplified Timeline removed real magnetic Snap/Grid controls");
         timeline->setSize(800,115);
