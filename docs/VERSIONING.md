@@ -3,7 +3,7 @@
 ## Fonti ufficiali
 
 - **`VERSION.txt` nella radice:** unica fonte della versione dell'applicazione.
-  CMake la legge, la valida rispetto al `project(... VERSION 0.9.2)`, la
+  CMake la legge, la valida rispetto al `project(... VERSION 0.9.3)`, la
   passa a `THE_CUELIST_VERSION` e quindi ad About/eseguibile e
   agli script di packaging. **Non creare un secondo file di versione.**
 - **`CHANGELOG.md` nella radice:** documento **cumulativo, non sovrascritto**
@@ -12,7 +12,7 @@
 - Lo **schema JSON show v10** riguarda il formato `.cuelist`, non la
   versione dell'applicazione e non va incrementato automaticamente.
 - Il numero CMake `project VERSION` descrive la base numerica
-  `0.9.2`; eventuali suffissi prerelease derivano da `VERSION.txt`.
+  `0.9.3`; eventuali suffissi prerelease derivano da `VERSION.txt`.
   Aggiornare anche CMake soltanto quando cambia la terna major/minor/patch.
 
 ## Procedura per OGNI update
@@ -102,3 +102,7 @@ Il numero senza suffisso beta **non attesta certificazione hardware, conformità
 ### Hotfix 0.9.2
 
 Il primo commit integrato come `0.9.1` ha introdotto un errore in `CuelistTests` dovuto all'ordine di inclusione degli header dei test Timeline. Il progetto richiede una nuova versione per ogni PR, anche per un fix di test: `0.9.2` ne è la patch successiva. Il cambiamento non implica automaticamente una release pubblicata o il superamento dei gate hardware/licenze/DPI.
+
+### Hotfix 0.9.3
+
+La CI della patch 0.9.2 compilava e superava la quasi totalità delle asserzioni; il test About richiedeva tuttavia la vecchia serie 0.9.0-beta. Il test ora verifica la struttura SemVer, non una versione hardcoded. I gate manuali di distribuzione rimangono aperti.
