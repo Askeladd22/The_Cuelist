@@ -77,25 +77,51 @@ private:
 class MixerPanLookAndFeel final : public juce::LookAndFeel_V4 {
 public:
     void drawRotarySlider(juce::Graphics& g,int x,int y,int width,int height,
-        float position,float start,float end,juce::Slider&) override {
-        const auto r=juce::Rectangle<float>((float)x,(float)y,(float)width,(float)height).reduced(5);
+        float position,float start,float end,juce::Slider& slider) override {
+        // One neutral physical knob for Master and channel pan. The coloured
+        // arc only appears when actually panned away from the centre.
+        const auto r=juce::Rectangle<float>((float)x,(float)y,
+            (float)width,(float)height).reduced(5.f);
         const auto centre=r.getCentre();
-        const float radius=std::min(r.getWidth(),r.getHeight())*0.38f;
+        const float radius=std::min(r.getWidth(),r.getHeight())*.38f;
+        const float mid=(start+end)*.5f;
+        const float angle=start+(end-start)*position;
         juce::Path track;
         track.addCentredArc(centre.x,centre.y,radius,radius,0,start,end,true);
-        g.setColour(palette::line);g.strokePath(track,juce::PathStrokeType(3.5f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
-        juce::Path active;
-        const auto angle=start+(end-start)*position,mid=(start+end)*.5f;
-        active.addCentredArc(centre.x,centre.y,radius,radius,0,std::min(mid,angle),std::max(mid,angle),true);
-        g.setColour(palette::teal);g.strokePath(active,juce::PathStrokeType(4.0f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
-        g.setColour(palette::raised);g.fillEllipse(centre.x-radius*.68f,centre.y-radius*.68f,radius*1.36f,radius*1.36f);
-        g.setColour(palette::line);g.drawEllipse(centre.x-radius*.68f,centre.y-radius*.68f,radius*1.36f,radius*1.36f,1.1f);
-        const auto x2=centre.x+std::sin(angle)*radius*.65f;
-        const auto y2=centre.y-std::cos(angle)*radius*.65f;
-        g.setColour(palette::text);g.drawLine(centre.x,centre.y,x2,y2,2.3f);
-        const auto centreX=centre.x+std::sin(mid)*radius*1.18f;
-        const auto centreY=centre.y-std::cos(mid)*radius*1.18f;
-        g.setColour(palette::muted);g.fillEllipse(centreX-1.6f,centreY-1.6f,3.2f,3.2f);
+        g.setColour(palette::line.withAlpha(.86f));
+        g.strokePath(track,juce::PathStrokeType(2.4f,
+            juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+        // Three calibrated reference notches: full L, unity centre, full R.
+        for(const auto tick:{start,mid,end}) {
+            const auto x1=centre.x+std::sin(tick)*radius*1.13f;
+            const auto y1=centre.y-std::cos(tick)*radius*1.13f;
+            const auto x2=centre.x+std::sin(tick)*radius*1.29f;
+            const auto y2=centre.y-std::cos(tick)*radius*1.29f;
+            g.setColour(tick==mid ? palette::text.withAlpha(.86f)
+                                   : palette::muted.withAlpha(.65f));
+            g.drawLine(x1,y1,x2,y2,1.1f);
+        }
+        if(std::abs(position-.5f)>.008f) {
+            juce::Path active;
+            active.addCentredArc(centre.x,centre.y,radius,radius,0,
+                std::min(mid,angle),std::max(mid,angle),true);
+            g.setColour(palette::teal.withAlpha(.78f));
+            g.strokePath(active,juce::PathStrokeType(2.8f,
+                juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+        }
+        // Flat instrument dial, without raised bezel or ornamental gloss.
+        const auto diameter=radius*1.36f;
+        const auto face=juce::Rectangle<float>(centre.x-diameter*.5f,
+            centre.y-diameter*.5f,diameter,diameter);
+        g.setColour(palette::input);g.fillEllipse(face);
+        g.setColour(slider.hasKeyboardFocus(false) ? palette::teal :
+                    palette::line.withAlpha(.95f));
+        g.drawEllipse(face,slider.hasKeyboardFocus(false)?1.65f:1.f);
+        const auto inner=radius*.63f;
+        g.setColour(palette::text);
+        g.drawLine(centre.x,centre.y,
+            centre.x+std::sin(angle)*inner,
+            centre.y-std::cos(angle)*inner,2.f);
     }
 };
 inline MixerPanLookAndFeel& sharedMixerPanLookAndFeel() {
