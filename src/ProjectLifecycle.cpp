@@ -141,10 +141,12 @@ bool MainComponent::commitPreparedProject(Show candidate,const juce::File& sourc
     show=std::move(candidate);clips=std::move(loaded);
     projectFile=recovering ? juce::File{} : source;
     dirty=recovering || migratedLegacy;
-    if(!recovering) rememberRecentProject(source);
     selectedRow=selectedColumn=nextCue=0;
     resetActiveMapping();refreshControlSettings();
     engine.publish(makeRenderState(show,clips));refresh();
+    // Remember only committed projects, after the new selection/Inspector
+    // have been rebuilt; updating the sidebar invokes resized().
+    if(!recovering) rememberRecentProject(source);
     status=recovering ? "Recovered unsaved show. Use Save to choose a project filename." :
                         migratedLegacy ?
                             "Legacy Control Columns migrated to Default Map; review imported functions and Save to persist." :
