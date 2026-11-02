@@ -239,6 +239,16 @@ The **Master Audio** strip provides Main Out routing, stereo gain/meter, pan, mu
 
 Master gain/mute/pan act on PCM audio, not MIDI notes or OSC commands. The output stage clamps device PCM samples, but that is not a substitute for physical gain staging and rehearsal.
 
+### 7.4 Generate LTC Track (audio source only)
+
+Right-click an **empty Audio cell** and select **Generate LTC Track**. Enter duration (0.1–600 seconds), start timecode (HH:MM:SS:FF; use HH:MM:SS;FF for 29.97 drop-frame), and frame rate (24, 25, 29.97 drop-frame, 29.97 non-drop or 30 fps). The operation writes a real **mono 48 kHz / 16-bit PCM WAV** in `Documents/The Cuelist/Generated LTC`, then imports it as an ordinary Audio cell. Occupied cells cannot be overwritten through this command. Generated media must be preserved alongside the project when transferring shows.
+
+For a timecode receiver, dedicate a separate **Direct Out** hardware pair, disable that column's **Master Send**, and route only a chosen line output into the receiver's LTC input. Use unity source/row levels, start with the physical interface output gain low, disable OS/device audio enhancement, and avoid mute, fader automation, pan changes, phase reversal, looping, crossfades or shared mixes on the timecode path. A PRE Direct Out bypasses the column fader but **not** clip/row gain, mute, pan or phase. The same mono signal is present on both sides of the selected Direct Out pair; connect only the intended line output.
+
+**Safety:** LTC is a harsh encoded waveform, not listening material. Never route it to audience loudspeakers, headphones or an unverified Master output. Verify all patching and gain staging before playback. A WAV generated at 48 kHz may be resampled by the device when running at another sample rate; external decoder tolerance must be verified on that actual device.
+
+This feature is **audio LTC generation only**. It does not synchronize the Cuelist's transport from external timecode, provide global LTC/MTC following or guarantee lock with other devices. Before show use, follow [the LTC hardware acceptance checklist](ltc-hardware-acceptance.md) with an independent decoder.
+
 ## 8. MIDI clips and Piano Roll
 
 Add a **MIDI** column and choose the correct external output in its Column Utilities. Import an existing MIDI file or create a note clip in the built-in **Piano Roll**. The clip participates in cue GO, stopping, looping and timeline operations as supported.
@@ -381,6 +391,6 @@ The executable is written to `build/TheCuelist_artefacts/Release/The Cuelist.exe
 
 ## 15. Known limitations and legal terms
 
-This prerelease does not provide native video playback, LTC/MTC, motorized MIDI controller feedback or guaranteed sample-accurate external MIDI/OSC delivery. The application still has UI-thread work in some import/save operations and needs hardware stress testing before a public production release. Prefer independent backups and a tested fallback.
+This prerelease does not provide native video playback, global LTC/MTC chase or external timecode sync, motorized MIDI controller feedback or guaranteed sample-accurate external MIDI/OSC delivery. It can generate LTC audio tracks, but independent receiver compatibility and hardware output timing require physical tests. The application still has UI-thread work in some import/save operations and needs hardware stress testing before a public production release. Prefer independent backups and a tested fallback.
 
 The Cuelist is **proprietary software; all rights reserved, not open source**. The [LICENSE](../LICENSE) is an English-only conventional copyright reservation, **not a complete commercial end-user licence agreement**. Individual licences already lawfully granted continue under their own terms; any new paid distribution requires separately prepared licence and sales conditions. See [NOTICE.md](../NOTICE.md) for independent JUCE and other third-party obligations. Do not distribute a proprietary binary without securing all applicable third-party rights.

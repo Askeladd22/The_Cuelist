@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.8] - 2026-11-02
+
+**Tipo:** collaudo LTC end-to-end senza hardware fittizio; documentazione operativa dei limiti.
+
+### Test e affidabilità
+- Nuovo test-only receiver indipendente dal generatore: recupera timecode BCD, flag drop-frame, sync SMPTE e parità direttamente dal PCM WAV per 24, 25, 29.97 drop/non-drop e 30 fps, includendo il passaggio di minuto.
+- Nuovo test della vera pipeline Audio: WAV LTC caricata come clip, trasporto avviato e segnale verificato sul solo Direct Out dedicato, con Master silenziato e device a 48/44.1 kHz. Confronto sample-per-sample sul percorso 48 kHz a guadagno unitario.
+- Nessun inserimento di un timecode engine globale né di un ricevitore LTC runtime.
+
+### Guida e limiti
+- Descritta in guida la generazione LTC, la distinzione rispetto a LTC/MTC chase, e la necessità di evitare le uscite verso diffusori/cuffie.
+- Aggiunto `docs/ltc-hardware-acceptance.md` per la verifica con decoder fisico indipendente. La CI non certifica hardware, patch fisici o sincronizzazione esterna.
+- Nessuna modifica allo schema dei progetti v10, UI, routing o DSP esistenti. Nessuna build portable.
+- PR #126; risultati Windows CI/CTest richiesti prima dell'integrazione.
+
 ## [0.9.7] - 2026-11-02
 
 **Tipo:** rafforzamento dei test nativi delle Control Map dopo il consolidamento 0.9.6.
