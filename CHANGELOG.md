@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.0-beta.32] - 2026-11-02
+
+**Tipo:** redesign nativo V2 / N5.2 — ergonomia e leggibilità dei controlli mixer.
+
+### Interfaccia
+- I meter L/R di `GainMeterFader` mantengono picchi istantanei, peak-hold e scala dBFS, ma sostituiscono la vecchia card rialzata con **due binari rettangolari** su fondo tecnico, un separatore centrale e graduazioni neutre. La tacca 0 dB è leggibile senza usare teal decorativo.
+- Il fader adotta un **cursore fisico ribassato** con scanalatura centrale e contorno di focus solo quando riceve input da tastiera. La versione compatta usa la medesima grammatica visiva.
+- Il pan pot nativo, condiviso fra Master e colonne Audio, mostra **riferimenti L / centro / R** mediante tre tacche calibrate, una ghiera sobria e un arco teal solo per scostamenti reali dal centro. Il focus tastiera è distinto dallo stato del controllo.
+- Tutti i parametri reali, hitbox, drag, doppio clic 0 dB/pan centrato, guadagno e bilanciamento audio, taratura della scala, colori di picco rosso/ambra, rendering L/R, regole +0/+6 dB e scelta delle uscite restano invariati. Le posizioni e le dimensioni di strip e Master Audio non sono state modificate.
+
+### Test
+- Test JUCE nuovi per verificare superficie tecnica piatta, risposta visiva dei due meter stereo, movimento del cursore, modalità fader compatta, pan centrato e spostato, oltre all'uso del medesimo LookAndFeel tra Master e Audio. La logica PCM e i test di routing già presenti restano il gate funzionale.
+- Nessuna modifica a Engine Audio/MIDI/OSC, Control Mapping, LTC, Cue Grid, Inspector, Auto Stop, Timeline o formato progetto JSON v10. Nessuna build portable.
+- PR integrabile solo con Windows CI/CTest verde e verifica visiva Win 100/125/150% DPI, 1280×768 e 32:9.
+
 ## [0.9.0-beta.31] - 2026-11-02
 
 **Tipo:** Editor Control Map condiviso e generazione audio LTC da celle Audio vuote.
