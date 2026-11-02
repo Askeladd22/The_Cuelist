@@ -746,10 +746,8 @@ void MainComponent::paint(juce::Graphics& g) {
 
     g.saveState();
     g.addTransform(geometry.inspectorTransform());
-    // The unscaled section boundaries still follow the Inspector's shared
-    // transform. No duplicate raised fills, double outlines or fake cards.
-    g.setColour(palette::line.withAlpha(.34f));
-    g.drawHorizontalLine(168,(float)x-6,(float)x+inspectorInner+6);
+    // Section labels follow the Inspector's shared scale. No second
+    // rule beside the header divider, and no raised containers.
     label(g,"CUE PARAMETERS",{x+3,173,inspectorInner-6,20},12,
           palette::muted,true);
     label(g,"Cue name",{x,204,inspectorInner,18},12,palette::text,true);
