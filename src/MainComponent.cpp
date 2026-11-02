@@ -1202,8 +1202,6 @@ void MainComponent::resized() {
     const int recentTop=218,recentBottom=h-349;
     const bool recentVisible=recentBottom>recentTop+62;
     recentOpenButton.setVisible(recentVisible);
-    recentMoreButton.setVisible(recentVisible &&
-                                recentProjects.size()>visibleRecentProjects);
     if(recentVisible) {
         recentOpenButton.setBounds(19,recentTop+32,102,26);
         recentMoreButton.setBounds(126,recentTop+32,35,26);
@@ -1212,6 +1210,10 @@ void MainComponent::resized() {
     const int capacity=recentVisible ?
         juce::jlimit(0,visibleRecentProjects,
                      (recentBottom-listTop-5)/43) : 0;
+    // At short window heights fewer than five rows fit. The All action
+    // must expose *every* hidden entry, not only history positions >5.
+    recentMoreButton.setVisible(recentVisible &&
+                                recentProjects.size()>capacity);
     for(int i=0;i<visibleRecentProjects;++i) {
         const bool showRow=i<capacity && i<recentProjects.size();
         auto& button=*recentProjectButtons[(size_t)i];
