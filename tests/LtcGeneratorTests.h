@@ -147,9 +147,9 @@ void ltcGeneratorTests() {
                 increment(time,rate);
             }
             if(rate==Rate::drop2997)
-                check(time.minute==1 && time.second==0 &&
-                      time.frame==nominalFps(rate),
-                      "Drop-frame advancement has an invalid frame number");
+                check(time.minute==1 && time.second==1 &&
+                      time.frame==0,
+                      "Drop-frame advancement across the first minute is wrong");
             file.deleteFile();
         }
     });
