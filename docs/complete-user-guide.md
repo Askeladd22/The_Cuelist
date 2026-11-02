@@ -46,7 +46,7 @@ The sidebar provides **New**, **Open**, **Save**, the editable show title, **Set
 - **Open** loads an existing project, subject to preparation and validation before activation.
 - **Save** writes the project and collects referenced media.
 - **Preferences** contains Pre-flight, Diagnostics, Fader Range and Rename active Cuelist.
-- **Control Mappings** opens the independent map archive, with Default Map selected by default; the per-cue editor is available from a Control Column cell.
+- **Control Mappings** opens the shared native editor with Default Map selected. Clicking an assigned Control Column cell opens that same editor preselected on its saved or cue-local Map.
 
 The shortcut hints formerly shown at the bottom of the sidebar have been removed; the keyboard shortcuts still work.
 
@@ -216,6 +216,12 @@ The right-side Inspector distinguishes **Cue properties** from **Cell properties
 The **Notes / Cue NN** multiline editor holds technical stage directions, reminders and other operational notes. They belong to the selected cue and are included in the project save; each Cuelist maintains its own notes. Moving to another cue or collapsing the Inspector commits valid pending changes. An invalid Inspector value can prevent the panel from closing until corrected.
 
 Text input not yet applied to the model is not independently guaranteed to exist in a periodic recovery checkpoint. Save explicitly after editing cue notes and titles.
+
+### Control Map editing: one shared interface
+
+The **Control Mappings** panel is the only native editor for Default Map, saved reusable Control Maps and cue-local Control Column overrides. Click an assigned Control Column cell to open the same editor with its Map preselected. The `...` menu on a cue-local override provides effective mapping preview, saving the local overrides as a reusable Map, and applying an existing saved Map. These actions retain the existing ownership and assignment semantics; opening the editor never changes assignments. Use the Control Column cell's right-click menu to assign or remove Maps.
+
+When editing a cue-local override, function destinations are inherited from project functions and remain read-only. Use MIDI/OSC Learn to capture the replacement physical input. Default and saved Maps retain their regular function editing controls.
 
 ## 7. Audio, mixer and routing
 

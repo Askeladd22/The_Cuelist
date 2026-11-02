@@ -70,6 +70,68 @@ void controlColumnTests() {
               "Opening a local Map altered its identity or assignments");
     });
 
+    test("Saved and cue-local Control Maps use identical native editor geometry",[] {
+        using Bounds=std::array<juce::Rectangle<int>,4>;
+        const auto dimensions=[](bool local)->Bounds {
+            MainComponent ui(false);
+            addColumn(ui.show,ColumnType::control,"Cue Control");
+            if (local) {
+                check(ui.createEmptyControlSet(0,1),
+                      "Could not create cue-local map fixture");
+            } else {
+                ControlSetTemplate saved;
+                saved.id=ui.show.controls.nextId++;
+                saved.name="Assigned Map";
+                ui.show.controls.templates.push_back(saved);
+                ui.show.rows[0].cells[1].assignedMapId=saved.id;
+            }
+            ui.resized();
+            auto* grid=cueViewFixtures::find<CueGrid>(ui);
+            check(grid!=nullptr,"Control Column grid missing");
+            if(!grid) return {};
+            cueViewFixtures::click(*grid,
+                (float)grid->columnX(1)+25.0f,
+                (float)CueGridGeometry::rowTop(0)+
+                    CueGrid::rowContentInset+16.0f);
+            auto* modal=juce::ModalComponentManager::getInstance()
+                            ->getModalComponent(0);
+            check(modal!=nullptr &&
+                  controlsV3::named(*modal,"controlMappingPanel"),
+                  "A Control Column opened the legacy editor");
+            const std::array<const char*,4> names{
+                "mappingMapSelector","mappingBindings",
+                "mappingAddMapping","mappingMoreMenu"};
+            Bounds geometry{};
+            for (size_t i=0;i<names.size();++i) {
+                auto* component=controlsV3::named(*modal,names[i]);
+                check(component!=nullptr && component->isVisible(),
+                      "Modern editor control absent for selected Map scope");
+                geometry[i]=component->getBounds();
+            }
+            if (local) {
+                auto* add=dynamic_cast<juce::TextButton*>(
+                    controlsV3::named(*modal,"mappingAddMapping"));
+                check(add!=nullptr,"Local mapping cannot be added");
+                // JUCE triggerClick() posts an asynchronous message: invoke
+                // the actual handler synchronously for this state assertion.
+                check(static_cast<bool>(add->onClick),
+                      "Local Add Mapping click handler missing");
+                add->onClick();
+                auto* kind=controlsV3::named(*modal,"mappingInputKind");
+                check(kind!=nullptr && kind->isVisible() && !kind->isEnabled(),
+                      "Local mapping failed to open shared captured-input form");
+                check(ui.show.rows[0].cells[1].assignedMapId==0,
+                      "Opening local editor silently assigned a saved Map");
+            }
+            return geometry;
+        };
+        const auto saved=dimensions(false);
+        const auto local=dimensions(true);
+        for(size_t i=0;i<saved.size();++i)
+            check(saved[i]==local[i],
+                  "Saved and local Map scopes have different editor layouts");
+    });
+
     test("Legacy Control Column lock migrates without implicitly activating dormant Q sets",[] {
         Show original=makeShow();
         addColumn(original,ColumnType::control,"Legacy control");

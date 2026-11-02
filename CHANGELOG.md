@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.9] - 2026-11-02
+
+**Tipo:** unificazione effettiva della presentazione del Control Mappings editor, compresi gli override della Control Column.
+
+### Control Mappings / Control Column
+- Eliminati il disegno, il layout e l'editor form legacy attivati da `editSet`: tutte le mappe usano la stessa disposizione nativa di Control Mappings (lista a tre colonne e form di modifica).
+- Map salvata e override locale mantengono la selezione corretta per ID e il rispettivo percorso di modifica nel modello esistente; campi di destinazione e assegnazioni di funzione sono read-only per gli override locali.
+- Conservate anteprima del mapping effettivo, salvataggio locale come Map riutilizzabile e applicazione di una Map salvata, accessibili dal medesimo menu `...` del nuovo editor.
+- Il titolo del dialogo e la geometria dell'editor sono identici per Default, Saved e Cue-local scope; il clic destro delle Control Column continua a gestire le assegnazioni.
+
+### Test e compatibilità
+- Test JUCE dell'identità della UI tra Map salvate e locali, del form moderno per acquisizioni locali e della mancata riassegnazione implicita.
+- Nessuna modifica a MIDI/OSC routing, prioritizzazione, Show JSON v10, audio engine o generatore LTC. Nessuna build portable.
+- PR #127; verifiche Windows CMake/CTest e versione obbligatorie prima del merge.
+
 ## [0.9.8] - 2026-11-02
 
 **Tipo:** collaudo LTC end-to-end senza hardware fittizio; documentazione operativa dei limiti.
