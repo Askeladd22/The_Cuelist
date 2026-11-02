@@ -309,7 +309,7 @@ public:
             const int id=functionChoice.getSelectedId()-1;
             scope.setSelectedId(1,juce::dontSendNotification);
             scope.setEnabled(id==0 && !editSet);
-            if (id==0 && !editSet) updateEditorVisibility();
+            if (id==0) updateEditorVisibility();
             for (const auto& item:owner->show.controls.functions)
                 if (item.id==id) {
                     functionName.setText(item.name,false);

@@ -46,7 +46,7 @@ The sidebar provides **New**, **Open**, **Save**, the editable show title, **Set
 - **Open** loads an existing project, subject to preparation and validation before activation.
 - **Save** writes the project and collects referenced media.
 - **Preferences** contains Pre-flight, Diagnostics, Fader Range and Rename active Cuelist.
-- **Control Mappings** opens the independent map archive, with Default Map selected by default; the per-cue editor is available from a Control Column cell.
+- **Control Mappings** opens the shared native editor with Default Map selected. Clicking an assigned Control Column cell opens that same editor preselected on its saved or cue-local Map.
 
 The shortcut hints formerly shown at the bottom of the sidebar have been removed; the keyboard shortcuts still work.
 
