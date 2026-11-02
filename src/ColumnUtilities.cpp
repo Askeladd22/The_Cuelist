@@ -320,13 +320,15 @@ struct ColumnUtilities::Strip final : juce::Component {
     void paint(juce::Graphics& g) override {
         const auto& col=owner.show.columns[(size_t)index];
         const auto colType=col.type;
-        const auto inset=juce::Rectangle<float>(4.0f,4.0f,
-            (float)std::max(1,getWidth()-8),(float)std::max(1,getHeight()-8));
-        g.setColour(palette::raised.withAlpha(.58f));g.fillRoundedRectangle(inset,8.0f);
-        g.setColour(palette::line);g.drawRoundedRectangle(inset,8.0f,1.0f);
-        g.setColour(palette::type((int)colType));
-        g.fillRoundedRectangle(9.0f,3.0f,(float)std::max(1,getWidth()-18),3.0f,1.5f);
-        g.setColour(palette::line); g.drawVerticalLine(0,0,(float)getHeight());
+        // N5: a mixer strip is an instrument lane, not a floating card.
+        // Keep the whole panel one neutral surface; use the colour-coded
+        // 2px rail only to identify the physical signal type.
+        g.fillAll(palette::panel);
+        g.setColour(palette::line.withAlpha(.54f));
+        g.drawVerticalLine(0,0,(float)getHeight());
+        g.drawVerticalLine(getWidth()-1,0,(float)getHeight());
+        g.setColour(palette::type((int)colType).withAlpha(.81f));
+        g.fillRect(1,0,std::max(1,getWidth()-2),2);
         if (col.collapsed) {
             label(g,colType==ColumnType::audio ? "A" : colType==ColumnType::midi ? "M" :
                   colType==ColumnType::osc ? "O" : "C",
@@ -335,10 +337,12 @@ struct ColumnUtilities::Strip final : juce::Component {
             return;
         }
         if (colType==ColumnType::control) {
-            label(g,"CUE-SPECIFIC / DEFAULT MAP OVERRIDES",
-                  {7,91,getWidth()-14,22},11,palette::teal,true);
-            label(g,col.controlPriority==4 ? "Priority: MAXIMUM" :
-                  col.controlPriority==3 ? "Priority: HIGH" : "Priority: MEDIUM",
+            // The editor and priority button above already describe the
+            // action. This reads as a technical strip, not a promo card.
+            label(g,"CONTROL ASSIGNMENT",
+                  {7,91,getWidth()-14,22},11,palette::muted,true);
+            label(g,col.controlPriority==4 ? "Max priority" :
+                  col.controlPriority==3 ? "High priority" : "Medium priority",
                   {7,120,getWidth()-14,20},10,palette::muted);
             return;
         }
@@ -470,19 +474,22 @@ void ColumnUtilities::paint(juce::Graphics& g) {
     // move, mask or clip the Master while the cue grid scrolls.
     g.saveState();
     g.reduceClipRegion(0,0,MasterAudioLayout::laneWidth,getHeight());
-    g.setColour(palette::raised.withAlpha(.50f));
-    g.fillRoundedRectangle(layout.card.toFloat(),7.f);
-    g.setColour(palette::line.withAlpha(.66f));
-    g.drawRoundedRectangle(layout.card.toFloat(),7.f,.8f);
-
-    // A restrained header rule provides continuity with the Cue/Transport
-    // lane; this card no longer resembles a floating settings dialog.
-    g.setColour(palette::teal.withAlpha(.85f));
-    g.fillRoundedRectangle((float)layout.card.getX()+11.f,
-                           (float)layout.card.getY()+1.f,96.f,2.f,1.f);
-    label(g,"MASTER AUDIO",layout.title,14,palette::teal,true);
+    // The Master has one continuous chassis, matching other strips.
+    // Real fader/peak, output, limiter, pan and mute retain their exact
+    // geometry and operational states.
+    g.setColour(palette::panel);
+    g.fillRect(layout.card);
+    g.setColour(palette::line.withAlpha(.49f));
+    g.drawHorizontalLine(layout.headerRule.getY(),
+                         (float)layout.card.getX()+10.f,
+                         (float)layout.card.getRight()-10.f);
+    g.setColour(palette::type((int)ColumnType::audio).withAlpha(.81f));
+    g.fillRect(layout.card.getX(),layout.card.getY(),
+               layout.card.getWidth(),2);
+    label(g,"MASTER AUDIO",layout.title,14,palette::text,true);
     // The PAN caption now has its own clean line above the knob; a
     // redundant L/R header badge would collide at compact panel heights.
+    // A narrow rule terminates before the PAN caption, with no badge.
     g.setColour(palette::line.withAlpha(.33f));
     g.fillRect(layout.headerRule);
 
