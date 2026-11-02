@@ -526,6 +526,49 @@ void uiRefinementTests() {
         }
     });
 
+    test("N4 flat Inspector uses one panel and retains every editable section",[] {
+        MainComponent ui(false);
+        auto* cue=dynamic_cast<juce::TextEditor*>(
+            controlsV3::named(ui,"cueName"));
+        auto* bpm=dynamic_cast<juce::TextEditor*>(
+            controlsV3::named(ui,"cueBpm"));
+        auto* cell=dynamic_cast<juce::TextEditor*>(
+            controlsV3::named(ui,"cellName"));
+        auto* notes=dynamic_cast<juce::TextEditor*>(
+            controlsV3::named(ui,"cueNotes"));
+        auto* gain=controlsV3::named(ui,"cellGainDb");
+        check(cue && bpm && cell && notes && gain,
+              "Inspector lost live cue, BPM, cell, notes or gain editors");
+        for(const auto dimensions:std::initializer_list<juce::Point<int>>{
+                {1180,820},{1440,900},{1920,1080}}) {
+            ui.setSize(dimensions.x,dimensions.y);
+            ui.resized();
+            check(cue->isVisible() && bpm->isVisible() &&
+                  cell->isVisible() && notes->isVisible() &&
+                  cue->getWidth()>=220 && cell->getWidth()>=220 &&
+                  notes->getHeight()>=38 &&
+                  cue->getBottom()<cell->getY() &&
+                  notes->getY()>cell->getBottom(),
+                  "Flat Inspector restyle changed protected editable geometry");
+            // Inspect the padding to the left of actual native fields.
+            // Former nested raised cards painted over these three points.
+            for(const auto* editor:
+                {static_cast<const juce::TextEditor*>(cue),
+                 static_cast<const juce::TextEditor*>(cell),
+                 static_cast<const juce::TextEditor*>(notes)}) {
+                const int x=editor->getX()-4;
+                const int y=editor->getY()+7;
+                const auto px=ui.createComponentSnapshot({x,y,1,1});
+                check(px.isValid() && px.getPixelAt(0,0)==palette::panel,
+                      "Inspector section still has a decorative raised card");
+            }
+        }
+        const auto encoded=encodeShow(ui.show);
+        ui.repaint();
+        check(encodeShow(ui.show)==encoded,
+              "The visual Inspector repaint mutated the saved Show");
+    });
+
     test("Inspector edge tab collapses right and restores unsaved cue notes",[] {
         MainComponent ui(false);
         ui.setSize(1440,900);
