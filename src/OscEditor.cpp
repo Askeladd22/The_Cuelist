@@ -1,4 +1,5 @@
 #include "OscEditor.h"
+#include "EditorToolbarLayout.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -57,6 +58,14 @@ OscClipEditor::OscClipEditor(OscClip value,std::vector<TempoPoint> points,
     add.setName("oscAddAutomation"); add.setTooltip("Add a new OSC automation track.");
     zoomOut.setName("oscZoomOut"); zoomIn.setName("oscZoomIn"); zoomFit.setName("oscZoomFit");
     remove.setName("oscRemoveMessage"); duplicate.setName("oscDuplicate");
+    remove.setTooltip("Delete the selected OSC event, automation, or point.");
+    duplicate.setTooltip("Duplicate the selected OSC event or automation.");
+    grid.setTooltip("Show or hide timing grid lines; snapping is independent.");
+    snap.setTooltip("Enable timing snapping independently of grid visibility.");
+    unit.setTooltip("OSC time values in seconds or musical beats.");
+    zoomOut.setTooltip("Zoom the OSC timeline out.");
+    zoomIn.setTooltip("Zoom the OSC timeline in.");
+    zoomFit.setTooltip("Fit the OSC clip to the current timeline width.");
     add.onClick=[this] { createTrack(); };
     zoomOut.onClick=[this] { zoomAround(zoom/1.5f,axisLeft()+axisWidth()*.5f); };
     zoomIn.onClick=[this] { zoomAround(zoom*1.5f,axisLeft()+axisWidth()*.5f); };
@@ -64,6 +73,7 @@ OscClipEditor::OscClipEditor(OscClip value,std::vector<TempoPoint> points,
     remove.onClick=[this] { deleteSelection(); };
     duplicate.onClick=[this] { duplicateSelection(); };
     detach.setName("oscDetach");
+    detach.setTooltip("Detach the OSC editor into a floating window, or reattach it.");
     detach.onClick=[this] { if (onDetach) onDetach(); };
     for (auto* button:{&add,&remove,&duplicate,&detach,&zoomOut,&zoomIn,&zoomFit}) button->setWantsKeyboardFocus(false);
     ensureTracks();
@@ -79,18 +89,16 @@ void OscClipEditor::loadClip(const OscClip& next) {
     repaint();
 }
 void OscClipEditor::resized() {
-    const int w=getWidth();
-    detach.setBounds(w-105,7,95,27);
-    unit.setBounds(w-228,7,110,26);
-    add.setBounds(13,7,35,26);
-    remove.setBounds(53,7,70,26); duplicate.setBounds(128,7,83,26);
-    grid.setBounds(219,7,69,26); snap.setBounds(291,7,60,26);
-    resolution.setBounds(353,8,78,24);
-    // In compact docks the window actions and zoom tools occupy row two.
-    const bool compact=w<950;
-    zoomOut.setBounds(compact ? 13 : 435,compact ? 39 : 7,29,26);
-    zoomIn.setBounds(compact ? 46 : 468,compact ? 39 : 7,29,26);
-    zoomFit.setBounds(compact ? 79 : 501,compact ? 39 : 7,30,26);
+    // All OSC edit/zoom/detach commands keep their original callbacks
+    // and real hitboxes. Geometry is now a shared testable contract.
+    const auto layout=OscEditorToolbarLayout::atWidth(getWidth());
+    detach.setBounds(layout.detach); unit.setBounds(layout.unit);
+    add.setBounds(layout.add);
+    remove.setBounds(layout.remove); duplicate.setBounds(layout.duplicate);
+    grid.setBounds(layout.grid); snap.setBounds(layout.snap);
+    resolution.setBounds(layout.resolution);
+    zoomOut.setBounds(layout.zoomOut);
+    zoomIn.setBounds(layout.zoomIn); zoomFit.setBounds(layout.zoomFit);
     repaint();
 }
 float OscClipEditor::xForTime(double time) const {
