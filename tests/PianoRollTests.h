@@ -16,6 +16,30 @@ inline void pianoRollTests() {
         ui.triggerRow(0); ui.engine.collectRetired(); ui.engine.processBlock(nullptr,0,1,100);
         check(ui.engine.getCellPlayback(row.cells[1].id).paused,"Missing output blocked pause GO");
     });
+    test("N7 MIDI Piano Roll renders restrained velocity-keyed notes at dock and float sizes",[] {
+        MidiClip source{4,{{0,.25,60,80,1}}};
+        PianoRollEditor editor(source,[](const MidiClip&,const MidiClip&,bool){});
+        auto& canvas=editor.getCanvas();
+        const auto note=canvas.createComponentSnapshot({64,1233,20,16});
+        check(note.isValid() && note.getWidth()==20 && note.getHeight()==16,
+              "N7 MIDI clip note surface cannot be rendered");
+        check(note.getPixelAt(1,7)!=note.getPixelAt(7,7),
+              "Flat MIDI note lost its velocity-weighted protocol rail");
+        const auto unchanged=editor.getClip().notes.front();
+        for (const auto size:std::initializer_list<juce::Point<int>>{
+                 {940,620},{1180,720},{710,260}}) {
+            editor.setSize(size.x,size.y);
+            const auto img=editor.createComponentSnapshot(editor.getLocalBounds());
+            check(img.isValid() && img.getWidth()==size.x &&
+                  img.getHeight()==size.y,
+                  "N7 Piano Roll did not render after dock/float resize");
+        }
+        const auto& actual=editor.getClip().notes.front();
+        check(actual.beat==unchanged.beat && actual.pitch==unchanged.pitch &&
+              actual.length==unchanged.length &&
+              actual.velocity==unchanged.velocity,
+              "Visual-only Piano Roll refresh changed MIDI notes");
+    });
     test("piano roll creates snaps moves resizes and deletes notes",[] {
         PianoRollEditor editor(MidiClip{},[](const MidiClip&,const MidiClip&,bool){}); auto& canvas=editor.getCanvas();
         using namespace cueViewFixtures;
