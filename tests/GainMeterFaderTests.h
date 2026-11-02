@@ -104,6 +104,7 @@ void gainMeterFaderTests() {
               "Fader cap does not follow its actual dB gain");
         fader.setCompact(true);
         fader.setSize(34,195);
+        for(int i=0;i<120;++i) fader.setStereoPeaks(0.f,0.f);
         const auto compact=fader.createComponentSnapshot(fader.getLocalBounds());
         check(compact.isValid() && compact.getWidth()==34,
               "Collapsed mixer cannot render its compact meter/fader");
