@@ -1196,6 +1196,9 @@ void MainComponent::resized() {
                         &deviceButton,&preferencesButton,&controlButton})
         control->setVisible(false);
     projectNameLabel.setBounds(28,122,132,34);
+    // setSize() in the MainComponent constructor runs resized() before
+    // optional recent-project child controls have been constructed.
+    if(recentProjectButtons[0]) {
     const int recentTop=218,recentBottom=h-349;
     const bool recentVisible=recentBottom>recentTop+62;
     recentOpenButton.setVisible(recentVisible);
@@ -1220,6 +1223,7 @@ void MainComponent::resized() {
             button.setBounds(19,y,142,24);
             detail.setBounds(21,y+24,138,16);
         }
+    }
     }
     refreshCuelistTabs();
     const auto nav=OperatorNavigationLayout::atWidth(getWidth());
