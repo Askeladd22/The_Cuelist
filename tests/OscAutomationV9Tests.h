@@ -58,8 +58,7 @@ void oscAutomationV9Tests() {
                 check(c && c->isVisible() &&
                       c->getBounds()==bounds[i] &&
                       c->getX()>=0 && c->getRight()<=width,
-                      "N7.2 OSC toolbar lost a live action: "+
-                      juce::String(names[i]));
+                      "N7.2 OSC toolbar moved, hid or clipped a working action");
             }
             for(size_t i=0;i<bounds.size();++i)
                 for(size_t j=i+1;j<bounds.size();++j)
