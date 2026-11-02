@@ -167,9 +167,10 @@ void Timeline::paint(juce::Graphics& g) {
     // Explicitly clip it even during repeated splitter drags and repainting.
     g.reduceClipRegion(getLocalBounds());
     syncViewport();g.fillAll(palette::panel);
-    g.setColour(palette::raised.withAlpha(.68f));
+    // Flat ruler chassis: colour belongs to real tracks and playback, not
+    // an ornamental left-edge accent or a generic dashboard toolbar.
+    g.setColour(palette::toolbar.withAlpha(.73f));
     g.fillRect(0,0,getWidth(),45);
-    g.setColour(palette::teal);g.fillRoundedRectangle(9.0f,9.0f,3.0f,27.0f,1.5f);
     if (owner.selectedRow<0 || owner.selectedRow>=(int)owner.show.rows.size()) return;
     const auto& row=owner.show.rows[owner.selectedRow];
     label(g,"TIMELINE",{20,11,110,23},14,palette::text,true);
@@ -179,10 +180,12 @@ void Timeline::paint(juce::Graphics& g) {
     }
     if (getHeight()>=detailedToolbarHeight) for (int i=0;i<3;++i) {
         const auto box=zoomButton(getWidth(),i);
-        // Timeline zoom controls use the same restrained icon-only surface;
-        // their click geometry and zoom/fit behavior are unchanged.
-        drawIconButtonSurface(g,box.toFloat(),palette::teal,
-                              IconButtonState{true,false,false,false,false},3.5f);
+        // These are genuine native Timeline mouse targets. Draw a plain
+        // technical toolbar control, not another filled decorative pill.
+        g.setColour(palette::input);
+        g.fillRect(box);
+        g.setColour(palette::line.withAlpha(.77f));
+        g.drawRect(box,1);
         label(g,i==0 ? "-" : i==1 ? "+" : "Fit",box,12,palette::text,true,
               juce::Justification::centred);
     }
@@ -223,7 +226,11 @@ void Timeline::paint(juce::Graphics& g) {
             const int x=timelineStart+(int)std::round(area*(seconds-viewStart)/length);
             const bool bar=std::abs(beat/4-std::round(beat/4))<.0001;
             const bool quarter=std::abs(beat-std::round(beat))<.0001;
-            g.setColour(palette::teal.withAlpha(bar ? .31f : quarter ? .19f : .09f));
+            // Grid is a timing reference, NOT a playing-state signal.
+            // Neutral graduations let the amber playhead and type rails
+            // stand out, including at 125–150% Windows DPI.
+            g.setColour(palette::muted.withAlpha(bar ? .26f :
+                                                 quarter ? .16f : .075f));
             g.drawVerticalLine(x,76,(float)bottom);
         }
         g.restoreState();
@@ -234,13 +241,16 @@ void Timeline::paint(juce::Graphics& g) {
         const int y=tracksTop+track++*trackHeight-trackScroll;
         const bool present=owner.hasClip(owner.selectedRow,c); if (present) ++loaded;
         if (y+32<tracksTop || y>=bottom) continue;
-        // A subtle translucent lane wash preserves the musical grid underneath.
-        g.setColour(c==owner.selectedColumn ? palette::teal.withAlpha(.085f) :
-                    palette::text.withAlpha(c%2==0 ? .018f : .005f));
+        // Alternating console lanes and an unambiguous selected marker.
+        // Never colour-wash the entire track: controls and time markers
+        // need contrast against a stable neutral field.
+        g.setColour(c==owner.selectedColumn
+            ? palette::raised.withAlpha(.30f)
+            : palette::text.withAlpha(c%2==0 ? .025f : .008f));
         g.fillRect(0,y,getWidth(),trackHeight-1);
         if (c==owner.selectedColumn) {
-            g.setColour(palette::teal);
-            g.fillRect(0,y,3,trackHeight-1);
+            g.setColour(palette::type((int)owner.show.columns[(size_t)c].type));
+            g.fillRect(0,y,2,trackHeight-1);
         }
         const auto& name=owner.show.columns[c].name;
         label(g,name.isEmpty() ? (owner.show.columns[c].type==ColumnType::midi ? "MIDI " :
@@ -251,14 +261,18 @@ void Timeline::paint(juce::Graphics& g) {
             const auto& cell=row.cells[(size_t)c];
             const ControlSet* set=column.controlLocked ? &column.controlDefaultSet :
                 (cell.controlSet ? &*cell.controlSet : nullptr);
-            g.setColour(palette::type((int)ColumnType::control).withAlpha(.16f));
-            g.fillRoundedRectangle((float)timelineStart,(float)y,
-                (float)area,31.0f,4.0f);
-            label(g,column.controlLocked ? "LOCKED DEFAULT / ALL CUES" :
+            g.setColour(palette::input);
+            g.fillRect(timelineStart,y,area,31);
+            g.setColour(palette::type((int)ColumnType::control).withAlpha(.83f));
+            g.fillRect(timelineStart,y,3,31);
+            const auto controlLabel=column.controlLocked
+                ? "LOCKED DEFAULT / ALL CUES" :
                   set && !set->bindings.empty() ?
-                  juce::String((int)set->bindings.size())+" control mappings" : "No Control Set",
-                  {timelineStart+9,y+5,std::max(1,area-18),21},12,
-                  palette::type((int)ColumnType::control),true);
+                  juce::String((int)set->bindings.size())+" control mappings" :
+                  "No Control Set";
+            label(g,controlLabel,
+                  {timelineStart+10,y+5,std::max(1,area-18),21},
+                  12,palette::muted,true);
             continue;
         }
         if (!present) continue;
@@ -266,10 +280,17 @@ void Timeline::paint(juce::Graphics& g) {
         const auto colour=palette::type((int)owner.show.columns[c].type);
         const float x=(float)(timelineStart+area*(cell.startSeconds-viewStart)/length), width=std::max(4.0f,(float)(area*seconds/length));
         g.saveState(); g.reduceClipRegion(timelineStart,tracksTop,area,std::max(0,bottom-tracksTop));
-        g.setColour(colour.withAlpha(c==owner.selectedColumn ? .45f : .28f));
-        g.fillRoundedRectangle(x,(float)y,width,31,5);
-        g.setColour(colour.withAlpha(.86f)); g.drawRoundedRectangle(x,(float)y,width,31,5,1.2f);
-        g.setColour(colour.withAlpha(.66f));
+        const auto clipBounds=juce::Rectangle<float>(x,(float)y,width,31.f);
+        // Clips are instrument data. A neutral body, 3px type key and a
+        // selected outline keep MIDI notes, OSC automation and waveforms
+        // legible without colouring the entire clip as an AI-style badge.
+        g.setColour(palette::input);
+        g.fillRect(clipBounds);
+        g.setColour(colour.withAlpha(c==owner.selectedColumn ? .88f : .53f));
+        g.drawRect(clipBounds,c==owner.selectedColumn ? 1.25f : .75f);
+        g.setColour(colour.withAlpha(.84f));
+        g.fillRect(x,(float)y,3.f,31.f);
+        g.setColour(colour.withAlpha(.8f));
         if (cell.osc) {
             for (const auto& event:cell.osc->events) {
                 const double moment=cell.osc->useBeats ? secondsAtBeat(row.tempo,event.time) : event.time;
@@ -282,9 +303,9 @@ void Timeline::paint(juce::Graphics& g) {
                     ? secondsAtBeat(row.tempo,automation.time+automation.duration)
                     : automation.time+automation.duration;
                 const auto from=x+(float)(area*start/length),to=x+(float)(area*end/length);
-                g.setColour(palette::teal.withAlpha(.60f));
-                g.fillRoundedRectangle(from,(float)y+25,std::max(2.0f,to-from),4,1.5f);
-                g.setColour(colour.withAlpha(.4f));
+                g.setColour(colour.withAlpha(.86f));
+                g.fillRect(from,(float)y+25,std::max(2.0f,to-from),3.f);
+                g.setColour(colour.withAlpha(.52f));
             }
         } else if (cell.midi) {
             for (const auto& note:cell.midi->notes) {
@@ -302,8 +323,8 @@ void Timeline::paint(juce::Graphics& g) {
         }
         if (cell.midi || cell.osc) {
             // Explicit resize grip at the right edge of MIDI and OSC clips.
-            g.setColour(palette::teal.withAlpha(.65f));
-            g.fillRoundedRectangle(x+width-7,(float)y+5,4,21,1.5f);
+            g.setColour(palette::text.withAlpha(.67f));
+            g.fillRect(x+width-7,(float)y+5,3.f,21.f);
         }
         label(g,(cell.name.isEmpty() ? (cell.midi ? "MIDI" : cell.osc ? "OSC" : "AUDIO") : cell.name)+"  +"+juce::String(cell.startSeconds,2)+"s",{(int)x+8,y+5,std::max(1,(int)width-16),20},12,palette::text);
         g.restoreState();
@@ -319,7 +340,11 @@ void Timeline::paint(juce::Graphics& g) {
             juce::Path marker; marker.addTriangle(x-5,71,x+5,71,x,78); g.fillPath(marker);
         }
     }
-    label(g,juce::String(row.tempo.front().bpm,1)+" BPM  /  drag MIDI/OSC right edge: length  /  "+row.name+"  /  "+juce::String(zoom,1)+"x",
+    // Operator data first; lengthy usage instructions belong in tooltips.
+    // The BPM ruler/grid and clip length editor retain all their functions.
+    label(g,"Q"+juce::String(owner.selectedRow+1)+"  |  "+
+          row.name+"  |  "+juce::String(row.tempo.front().bpm,1)+
+          " BPM  |  "+juce::String(zoom,1)+"x",
           {16,getHeight()-27,getWidth()-30,20},11,palette::muted);
     const int available=std::max(1,bottom-tracksTop), total=track*trackHeight;
     if (total>available) {
