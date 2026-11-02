@@ -13,6 +13,19 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.3] - 2026-11-02
+
+**Tipo:** correzione del test About dopo la transizione alle versioni senza suffisso beta.
+
+### Corretto
+- Il test nativo `Native Guide and About stay reachable at every supported width` falliva perché richiedeva ancora il prefisso `0.9.0-beta.`, nonostante `About` già mostrasse correttamente il valore definito da `VERSION.txt` tramite `THE_CUELIST_VERSION`.
+- Ora il test verifica la terna numerica SemVer senza essere vincolato a una specifica beta o patch; la corrispondenza con `VERSION.txt` continua a essere garantita da CMake e dal controllo version/changelog.
+- Invariati runtime, controlli Guide/About, routing e motori Audio/MIDI/OSC, LTC, Control Mapping, Inspector, mixer, Timeline, docking e schema JSON v10.
+- Incrementata per policy la versione applicativa a `0.9.3` con CMake, README e documentazione allineati. La CI precedente della `0.9.2` aveva compilato ma fallito un unico test su 407.122 asserzioni.
+
+### Verifiche richieste
+- Windows Release, CTest e version/changelog guard verdi prima del merge; prove hardware, licenze JUCE, DPI/ultrawide e decoder LTC restano gate indipendenti. Nessuna distribuzione portable.
+
 ## [0.9.2] - 2026-11-02
 
 **Tipo:** hotfix di build/test dopo il passaggio dalla numerazione beta alla baseline 0.9.1.
