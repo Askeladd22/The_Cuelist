@@ -547,6 +547,19 @@ private:
     void updateCuelistDropTarget(int rootX);
     juce::TextButton undoButton{"Undo"},redoButton{"Redo"};
     juce::TextButton globalMidiLearn{"M Learn"},globalOscLearn{"O Learn"};
+    // Recent files reside in the existing application preferences, never
+    // in the persisted Show. Opening uses the original async loader.
+    static constexpr int maxRecentProjects=8,visibleRecentProjects=5;
+    juce::StringArray recentProjects;
+    juce::TextButton recentOpenButton{"Open..."},recentMoreButton{"All"};
+    std::array<std::unique_ptr<juce::TextButton>,visibleRecentProjects> recentProjectButtons;
+    std::array<std::unique_ptr<juce::Label>,visibleRecentProjects> recentProjectDetails;
+    void restoreRecentProjects();
+    void rememberRecentProject(const juce::File&);
+    void refreshRecentProjectButtons();
+    void openRecentProject(int);
+    void showAllRecentProjects();
+    void requestProjectLoad(const juce::File&);
     QuickControlTargets quickControlTargets;
     juce::ComboBox quickLearnMapSelector;
     std::vector<std::pair<int,int>> quickLearnMapLocations;
