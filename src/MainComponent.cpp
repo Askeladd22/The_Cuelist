@@ -62,6 +62,7 @@ MainComponent::MainComponent(bool startAudio) {
         // A pinned transport hover belongs to the row under the pointer;
         // scrolling must not leave its accent on a different cue.
         grid.clearHeaderHover();
+        cueHeaders.setTooltip({});
         cueHeaders.repaint();
         columnHeaders.repaint();
         cueMetrics.repaint();
