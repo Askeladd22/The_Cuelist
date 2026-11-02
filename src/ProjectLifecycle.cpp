@@ -32,6 +32,7 @@ void MainComponent::saveProject() {
             if (result.failed()) { safe->message(result.getErrorMessage()); return; }
             Show portable; if (loadShow(file,portable).wasOk()) safe->show=std::move(portable);
             safe->projectFile=file; safe->dirty=false; safe->status="Saved: "+file.getFullPathName();
+            safe->rememberRecentProject(file);
             if (safe->recoveryEnabled) {
                 if (safe->recoveryWriter) safe->recoveryWriter->flush();
                 ProjectRecovery::discard(ProjectRecovery::defaultDirectory());
@@ -140,6 +141,7 @@ bool MainComponent::commitPreparedProject(Show candidate,const juce::File& sourc
     show=std::move(candidate);clips=std::move(loaded);
     projectFile=recovering ? juce::File{} : source;
     dirty=recovering || migratedLegacy;
+    if(!recovering) rememberRecentProject(source);
     selectedRow=selectedColumn=nextCue=0;
     resetActiveMapping();refreshControlSettings();
     engine.publish(makeRenderState(show,clips));refresh();
@@ -187,18 +189,115 @@ void MainComponent::offerCrashRecovery() {
     });
 }
 
+
+void MainComponent::restoreRecentProjects() {
+    recentProjects.clear();
+    if(!appPreferences) return;
+    for(int i=0;i<maxRecentProjects;++i) {
+        const auto path=appPreferences->getValue(
+            "recentProject"+juce::String(i)).trim();
+        if(path.isEmpty()) continue;
+        const juce::File file(path);
+        // Do not offer nonexistent files as live actions (e.g. a detached
+        // removable drive). The last known preference can be recovered later.
+        if(file.existsAsFile() &&
+           !recentProjects.contains(file.getFullPathName(),true))
+            recentProjects.add(file.getFullPathName());
+    }
+    refreshRecentProjectButtons();
+}
+void MainComponent::rememberRecentProject(const juce::File& file) {
+    if(file==juce::File{} || !file.existsAsFile()) return;
+    const auto path=file.getFullPathName();
+    for(int i=recentProjects.size();--i>=0;)
+        if(recentProjects[i].equalsIgnoreCase(path))
+            recentProjects.remove(i);
+    recentProjects.insert(0,path);
+    while(recentProjects.size()>maxRecentProjects)
+        recentProjects.remove(recentProjects.size()-1);
+    if(appPreferences) {
+        for(int i=0;i<maxRecentProjects;++i) {
+            const auto key="recentProject"+juce::String(i);
+            if(i<recentProjects.size())
+                appPreferences->setValue(key,recentProjects[i]);
+            else
+                appPreferences->removeValue(key);
+        }
+        appPreferences->saveIfNeeded();
+    }
+    refreshRecentProjectButtons();
+    resized();
+    repaint();
+}
+void MainComponent::refreshRecentProjectButtons() {
+    for(int i=0;i<visibleRecentProjects;++i) {
+        if(!recentProjectButtons[(size_t)i] ||
+           !recentProjectDetails[(size_t)i]) continue;
+        auto& button=*recentProjectButtons[(size_t)i];
+        auto& detail=*recentProjectDetails[(size_t)i];
+        if(i>=recentProjects.size()) {
+            button.setButtonText({});
+            detail.setText({},juce::dontSendNotification);
+            continue;
+        }
+        const juce::File file(recentProjects[i]);
+        const auto modified=file.getLastModificationTime().toString(
+            true,false,false,true);
+        button.setButtonText(file.getFileNameWithoutExtension());
+        detail.setText(file.getParentDirectory().getFileName()+" · "+modified,
+                       juce::dontSendNotification);
+        button.setTooltip(file.getFullPathName()+"\nModified: "+modified);
+    }
+}
+void MainComponent::requestProjectLoad(const juce::File& file) {
+    if(!file.existsAsFile()) {
+        message("Project file unavailable: "+file.getFullPathName());
+        return;
+    }
+    if(!projectLoader)
+        projectLoader=std::make_unique<ProjectLoadWorker>();
+    projectLoader->request(file);
+    status="Preparing project in background: "+file.getFileName()+
+        ". Current show stays loaded until preparation succeeds.";
+    repaint();
+}
+void MainComponent::openRecentProject(int index) {
+    if(index<0 || index>=recentProjects.size()) return;
+    const juce::File file(recentProjects[index]);
+    if(!file.existsAsFile()) {
+        message("Project file unavailable: "+file.getFullPathName());
+        return;
+    }
+    withDiscardConfirmation(
+        [safe=juce::Component::SafePointer<MainComponent>(this),file] {
+            if(safe) safe->requestProjectLoad(file);
+        });
+}
+void MainComponent::showAllRecentProjects() {
+    juce::PopupMenu menu;
+    menu.addItem(1,"Open...");
+    if(!recentProjects.isEmpty()) menu.addSeparator();
+    for(int i=0;i<recentProjects.size();++i)
+        menu.addItem(100+i,juce::File(recentProjects[i]).getFileNameWithoutExtension());
+    auto safe=juce::Component::SafePointer<MainComponent>(this);
+    menu.showMenuAsync(
+        juce::PopupMenu::Options().withTargetComponent(&recentMoreButton),
+        [safe](int choice) {
+            if(!safe) return;
+            if(choice==1)
+                safe->withDiscardConfirmation([safe] {
+                    if(safe) safe->openProject();
+                });
+            else if(choice>=100) safe->openRecentProject(choice-100);
+        });
+}
+
 void MainComponent::openProject() {
     chooser=std::make_unique<juce::FileChooser>("Open show",projectFile,"*.cuelist;*.json;*.bak");
     chooser->launchAsync(juce::FileBrowserComponent::openMode|juce::FileBrowserComponent::canSelectFiles,
         [safe=juce::Component::SafePointer<MainComponent>(this)](const juce::FileChooser& fc) {
             if(!safe || fc.getResult()==juce::File{}) return;
-            const auto file=fc.getResult();
-            if(!safe->projectLoader)
-                safe->projectLoader=std::make_unique<ProjectLoadWorker>();
-            safe->projectLoader->request(file);
-            safe->status="Preparing project in background: "+file.getFileName()+
-                ". Current show stays loaded until preparation succeeds.";
-            safe->repaint();
+            safe->requestProjectLoad(fc.getResult());
         });
 }
 

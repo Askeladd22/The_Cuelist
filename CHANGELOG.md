@@ -13,6 +13,27 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.10] - 2026-11-02
+
+**Tipo:** aggiornamento nativo dei controlli I/O, dell'apertura rapida dei progetti e della strip BPM/Auto Stop.
+
+### I/O Activity
+- Spostati i pulsanti originali `M Learn` e `O Learn` nella prima fascia di `I/O Activity`; le lampade MIDI RX/TX e OSC RX/TX restano nel gruppo e le callback/stati Learn sono invariati.
+- Eliminata la vecchia cornice Learn sotto il wordmark; layout responsivo verificato a 1024px e su schermi ultrawide.
+
+### Recent Projects
+- Sotto `Workspace` pannello nativo con progetti aperti/salvati di recente, pulsante `Open...`, nomi progetto, cartella/data e menu `All` per la cronologia completa.
+- Riutilizzato il `PropertiesFile` per la cronologia (massimo 8 progetti) e il caricatore asincrono esistente. L'apertura rapida mantiene la conferma per lavori non salvati; gli elementi vengono aggiunti dopo apertura o salvataggio riusciti.
+- Nessun nuovo schema dei file .cuelist né effetti sul motore Audio/MIDI/OSC.
+
+### BPM / Auto Stop
+- Allineamento e bilanciamento delle intestazioni e del valore BPM, accento di stato sottile condiviso tra le due celle e divisoria centrale continua anche nelle aree senza cue e sotto la striscia del mixer.
+- Hitbox originali e logica BPM/Auto Stop invariate.
+
+### Test e limitazioni
+- Test JUCE dei pulsanti Learn nel nuovo pannello, presenza dei controlli recenti e rendering della separazione BPM/Auto Stop.
+- Test Windows CMake/CTest, versioning e changelog richiesti in CI prima del merge. Nessun pacchetto portable e nessun collaudo hardware reale.
+
 ## [0.9.9] - 2026-11-02
 
 **Tipo:** unificazione effettiva della presentazione del Control Mappings editor, compresi gli override della Control Column.
