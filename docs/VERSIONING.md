@@ -3,7 +3,7 @@
 ## Fonti ufficiali
 
 - **`VERSION.txt` nella radice:** unica fonte della versione dell'applicazione.
-  CMake la legge, la valida rispetto al `project(... VERSION 0.9.0)`, la
+  CMake la legge, la valida rispetto al `project(... VERSION 0.9.2)`, la
   passa a `THE_CUELIST_VERSION` e quindi ad About/eseguibile e
   agli script di packaging. **Non creare un secondo file di versione.**
 - **`CHANGELOG.md` nella radice:** documento **cumulativo, non sovrascritto**
@@ -12,7 +12,7 @@
 - Lo **schema JSON show v10** riguarda il formato `.cuelist`, non la
   versione dell'applicazione e non va incrementato automaticamente.
 - Il numero CMake `project VERSION` descrive la base numerica
-  `0.9.1`; eventuali suffissi prerelease derivano da `VERSION.txt`.
+  `0.9.2`; eventuali suffissi prerelease derivano da `VERSION.txt`.
   Aggiornare anche CMake soltanto quando cambia la terna major/minor/patch.
 
 ## Procedura per OGNI update
@@ -98,3 +98,7 @@ il riferimento per i dettagli di ogni PR.
 La serie `0.9.0-beta` si conclude alla `beta.32` integrata. La proposta N6.1 `beta.33` è stata rinominata in `0.9.1` prima del merge e non costituisce una release separata. Il cambio della terna semantica richiede `project(TheCuelist VERSION 0.9.1)` e corrispondenza con `VERSION.txt`.
 
 Il numero senza suffisso beta **non attesta certificazione hardware, conformità alle licenze dei terzi o pubblicazione commerciale**: sono gate manuali indipendenti. Non viene creato un tag o uno ZIP solo aggiornando `VERSION.txt`.
+
+### Hotfix 0.9.2
+
+Il primo commit integrato come `0.9.1` ha introdotto un errore in `CuelistTests` dovuto all'ordine di inclusione degli header dei test Timeline. Il progetto richiede una nuova versione per ogni PR, anche per un fix di test: `0.9.2` ne è la patch successiva. Il cambiamento non implica automaticamente una release pubblicata o il superamento dei gate hardware/licenze/DPI.

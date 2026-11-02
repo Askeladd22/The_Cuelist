@@ -13,6 +13,19 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.2] - 2026-11-02
+
+**Tipo:** hotfix di build/test dopo il passaggio dalla numerazione beta alla baseline 0.9.1.
+
+### Corretto
+- Il nuovo test N6.1 della Timeline utilizzava `controlsV3::named`, helper privato dichiarato in `ControlsV3Tests.h`, incluso **dopo** `TimelineV3Tests.h` da `tests/Tests.cpp`. MSVC produceva `C2653` / `C2672` e interrompeva la compilazione di `CuelistTests`, pur compilando l'eseguibile principale.
+- Il test individua ora i pulsanti nativi `timelineSnapToggle` e `timelineGridVisibility` tramite `Timeline::getChildren()` e `Component::getName()`, evitando dipendenze accidentali dall'ordine degli header. Conservati i controlli di visibilità, il test compatto e il controllo che la Timeline non alteri lo show.
+- Allineati `VERSION.txt`, versione numerica/regex di `CMakeLists.txt`, README e normativa di versionamento alla patch `0.9.2` prevista dalla regola di incremento SemVer obbligatorio per ogni PR.
+
+### Compatibilità e gate
+- **Nessun cambio al runtime JUCE, motori Audio/MIDI/OSC, LTC, Control Mapping, Timeline e docking, Master Audio o formato `.cuelist` JSON v10.** Solo infrastruttura dei test e metadati di versione.
+- La CI della 0.9.1 era fallita in compilazione test su questo errore; la 0.9.2 deve superare Windows CMake Release, CTest e il version/changelog guard prima del merge. Le prove hardware/DPI/licenze restano gate separati per la distribuzione commerciale.
+
 ## [0.9.1] - 2026-11-02
 
 **Tipo:** passaggio dalla serie `0.9.0-beta` alla versione applicativa **0.9.1** e redesign N6.1 della Timeline.
