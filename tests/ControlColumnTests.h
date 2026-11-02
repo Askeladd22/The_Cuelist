@@ -35,6 +35,30 @@ void controlColumnTests() {
               "Shared editor changed the Map entity/assignment on open");
     });
 
+    test("Control Column local override uses the SAME Control Mappings editor",[] {
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::control,"Q Overrides");
+        check(ui.createEmptyControlSet(0,1),"Could not add local Control Map");
+        ui.resized();
+        auto* grid=cueViewFixtures::find<CueGrid>(ui);
+        check(grid!=nullptr,"Control Column grid missing");
+        if (!grid) return;
+        const float x=(float)grid->columnX(1)+25.0f;
+        const float y=(float)CueGridGeometry::rowTop(0)+
+                      CueGrid::rowContentInset+16.0f;
+        cueViewFixtures::click(*grid,x,y);
+        auto* modal=juce::ModalComponentManager::getInstance()->getModalComponent(0);
+        check(modal!=nullptr && controlsV3::named(*modal,"controlMappingPanel"),
+              "Local Control Map must use the shared Control Mapping panel");
+        auto* selector=modal ? dynamic_cast<juce::ComboBox*>(
+            controlsV3::named(*modal,"mappingMapSelector")) : nullptr;
+        check(selector!=nullptr && selector->getText().contains("Cue-local override"),
+              "Local Map was not preselected in shared Mapping editor");
+        check(ui.show.rows[0].cells[1].controlSet.has_value() &&
+              ui.show.rows[0].cells[1].assignedMapId==0,
+              "Opening local Control Map changed its existing assignment");
+    });
+
     test("Legacy Control Column lock migrates without implicitly activating dormant Q sets",[] {
         Show original=makeShow();
         addColumn(original,ColumnType::control,"Legacy control");
