@@ -3,7 +3,7 @@
 ## Fonti ufficiali
 
 - **`VERSION.txt` nella radice:** unica fonte della versione dell'applicazione.
-  CMake la legge, la valida rispetto al `project(... VERSION 0.9.4)`, la
+  CMake la legge, la valida rispetto al `project(... VERSION 0.9.5)`, la
   passa a `THE_CUELIST_VERSION` e quindi ad About/eseguibile e
   agli script di packaging. **Non creare un secondo file di versione.**
 - **`CHANGELOG.md` nella radice:** documento **cumulativo, non sovrascritto**
@@ -12,7 +12,7 @@
 - Lo **schema JSON show v10** riguarda il formato `.cuelist`, non la
   versione dell'applicazione e non va incrementato automaticamente.
 - Il numero CMake `project VERSION` descrive la base numerica
-  `0.9.4`; eventuali suffissi prerelease derivano da `VERSION.txt`.
+  `0.9.5`; eventuali suffissi prerelease derivano da `VERSION.txt`.
   Aggiornare anche CMake soltanto quando cambia la terna major/minor/patch.
 
 ## Procedura per OGNI update
@@ -110,3 +110,7 @@ La CI della patch 0.9.2 compilava e superava la quasi totalità delle asserzioni
 ### 0.9.4 — Redesign nativo editor
 
 L'aggiornamento dopo la correzione CI 0.9.3 incrementa la patch secondo SemVer e include N7.1 del redesign. Il nuovo numero non garantisce automaticamente una release pubblica o approvazione dei gate hardware e di licenza.
+
+### 0.9.5 — Toolbar responsive
+
+L'aggiornamento N7.2 incrementa la versione applicativa e centralizza le geometrie delle toolbar native MIDI/OSC. Non cambia il formato JSON dei progetti e non costituisce certificazione hardware o release pubblica.
