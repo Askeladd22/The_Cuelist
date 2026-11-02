@@ -13,6 +13,16 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.11] - 2026-11-02
+
+**Tipo:** rifinitura del layout I/O Activity.
+
+### MIDI/OSC Learn
+- I pulsanti native `M Learn` e `O Learn` sono ora impilati in verticale a destra nel pannello `I/O Activity`; il primo è sopra il secondo con identica posizione X e stessa larghezza.
+- MIDI RX/TX e OSC RX/TX conservano le quattro lampade e le etichette su due righe, con colonne più compatte che non invadono i pulsanti Learn a 1024, 1250, 1550 e risoluzioni ultrawide.
+- Identità, callback, tooltip, stato armato e logica Quick Learn invariati; si modifica solo la geometria nativa.
+- Aggiunti controlli JUCE della geometria verticale e dell'assenza di sovrapposizioni fra pulsanti e lampade. Nessuna build portable.
+
 ## [0.9.10] - 2026-11-02
 
 **Tipo:** aggiornamento nativo dei controlli I/O, dell'apertura rapida dei progetti e della strip BPM/Auto Stop.

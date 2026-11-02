@@ -49,22 +49,24 @@ struct HeaderTelemetryLayout final {
         t.cpuMeter={meterX,22.f,(float)meterWidth,7.f};
         t.ramMeter={meterX,45.f,(float)meterWidth,7.f};
 
-        // I/O Activity contains the original Learn actions in its first
-        // tier and preserves four independent MIDI/OSC traffic lamps below.
-        t.activityHeading={t.activity.getX()+9,10,iw-143,18};
-        // End both hitboxes at y=28: the first RX/TX label starts at 29.
-        t.midiLearn={t.activity.getRight()-118,9,54,19};
-        t.oscLearn={t.activity.getRight()-60,9,54,19};
-        const int leftX=t.activity.getX()+9;
-        const int rightX=t.activity.getX()+iw/2+3;
+        // A narrow, dedicated action rail on the right stacks both original
+        // Learn buttons. The RX/TX lamps remain in two readable columns on
+        // the left, without any overlapping hitboxes at 1024px or ultrawide.
+        t.activityHeading={t.activity.getX()+9,10,iw-84,18};
+        t.midiLearn={t.activity.getRight()-66,8,60,21};
+        t.oscLearn ={t.activity.getRight()-66,36,60,21};
+        const int leftX=t.activity.getX()+8;
+        const int lampColumnWidth=(iw-76)/2;
+        const int rightX=leftX+lampColumnWidth;
+        const int labelWidth=lampColumnWidth-17;
         t.activityDots={juce::Rectangle<int>{leftX,33,10,10},
                         juce::Rectangle<int>{rightX,33,10,10},
                         juce::Rectangle<int>{leftX,50,10,10},
                         juce::Rectangle<int>{rightX,50,10,10}};
-        t.activityLabels={juce::Rectangle<int>{leftX+15,29,iw/2-25,17},
-                          juce::Rectangle<int>{rightX+15,29,iw/2-23,17},
-                          juce::Rectangle<int>{leftX+15,47,iw/2-25,17},
-                          juce::Rectangle<int>{rightX+15,47,iw/2-23,17}};
+        t.activityLabels={juce::Rectangle<int>{leftX+14,29,labelWidth,17},
+                          juce::Rectangle<int>{rightX+14,29,labelWidth,17},
+                          juce::Rectangle<int>{leftX+14,47,labelWidth,17},
+                          juce::Rectangle<int>{rightX+14,47,labelWidth,17}};
         t.audioHeading={t.audio.getX()+12,11,aw-22,20};
         t.audioStatus={t.audio.getX()+30,31,aw-40,26};
         return t;

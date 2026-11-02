@@ -220,11 +220,25 @@ void operatorNavigationTests() {
                   osc->getBounds()==t.oscLearn &&
                   t.activity.contains(t.midiLearn) &&
                   t.activity.contains(t.oscLearn) &&
+                  t.midiLearn.getX()==t.oscLearn.getX() &&
+                  t.midiLearn.getWidth()==t.oscLearn.getWidth() &&
+                  t.midiLearn.getBottom()<t.oscLearn.getY() &&
                   !t.midiLearn.intersects(t.oscLearn) &&
-                  !t.midiLearn.intersects(t.activityDots[0]) &&
-                  !t.oscLearn.intersects(t.activityDots[1]) &&
                   t.activityHeading.getRight()<=t.midiLearn.getX(),
-                  "I/O Learn controls leave telemetry or overlap other lamps");
+                  "M Learn and O Learn must stack vertically in I/O Activity");
+            for(int i=0;i<4;++i) {
+                const auto dot=t.activityDots[(size_t)i];
+                const auto label=t.activityLabels[(size_t)i];
+                check(!t.midiLearn.intersects(dot) &&
+                      !t.oscLearn.intersects(dot) &&
+                      !t.midiLearn.intersects(label) &&
+                      !t.oscLearn.intersects(label) &&
+                      dot.getRight()<=label.getX(),
+                      "Stacked Learn actions obscure MIDI/OSC traffic indicators");
+            }
+            check(!t.activityLabels[0].intersects(t.activityDots[1]) &&
+                  !t.activityLabels[2].intersects(t.activityDots[3]),
+                  "Traffic columns overlap when accommodating vertical Learn");
         }
     });
 
@@ -247,9 +261,15 @@ void operatorNavigationTests() {
                   t.activityHeading.getBottom()<=t.activityLabels[0].getY() &&
                   t.activity.contains(t.midiLearn) &&
                   t.activity.contains(t.oscLearn) &&
+                  t.midiLearn.getX()==t.oscLearn.getX() &&
+                  t.midiLearn.getBottom()<t.oscLearn.getY() &&
                   !t.midiLearn.intersects(t.oscLearn) &&
                   !t.midiLearn.intersects(t.activityLabels[0]) &&
+                  !t.midiLearn.intersects(t.activityLabels[1]) &&
+                  !t.oscLearn.intersects(t.activityLabels[0]) &&
                   !t.oscLearn.intersects(t.activityLabels[1]) &&
+                  !t.oscLearn.intersects(t.activityLabels[2]) &&
+                  !t.oscLearn.intersects(t.activityLabels[3]) &&
                   !t.activityLabels[0].intersects(t.activityLabels[2]) &&
                   !t.activityLabels[1].intersects(t.activityLabels[3]),
                   "I/O Activity heading, Learn and traffic rows overlap");
@@ -282,9 +302,13 @@ void operatorNavigationTests() {
                   osc->getBounds()==t.oscLearn &&
                   t.activity.contains(t.midiLearn) &&
                   t.activity.contains(t.oscLearn) &&
+                  t.midiLearn.getX()==t.oscLearn.getX() &&
+                  t.midiLearn.getBottom()<t.oscLearn.getY() &&
                   !t.midiLearn.intersects(t.activityLabels[0]) &&
-                  !t.oscLearn.intersects(t.activityLabels[1]),
-                  "Live Learn commands overlap the I/O Activity lamps");
+                  !t.midiLearn.intersects(t.activityLabels[1]) &&
+                  !t.oscLearn.intersects(t.activityLabels[2]) &&
+                  !t.oscLearn.intersects(t.activityLabels[3]),
+                  "Live vertical Learn buttons overlap the I/O Activity lamps");
             for (const auto region:{t.clock,t.usage,t.activity,t.audio}) {
                 const auto image=ui.createComponentSnapshot(region);
                 check(image.isValid() &&
