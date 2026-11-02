@@ -1,5 +1,6 @@
 #pragma once
 #include "PianoRoll.h"
+#include "EditorToolbarLayout.h"
 inline void pianoRollTests() {
     test("MIDI pause GO remains available without an output device",[] {
         MainComponent ui(false); addColumn(ui.show,ColumnType::midi,{});
@@ -39,6 +40,92 @@ inline void pianoRollTests() {
               actual.length==unchanged.length &&
               actual.velocity==unchanged.velocity,
               "Visual-only Piano Roll refresh changed MIDI notes");
+    });
+    test("N7.2 compact MIDI toolbar keeps all native edit and window actions visible",[] {
+        using namespace cuelist;
+        PianoRollEditor editor(MidiClip{},[](const MidiClip&,const MidiClip&,bool){});
+        const auto find=[&](const char* name)->juce::Component* {
+            for (auto* child:editor.getChildren())
+                if (child->getName()==name) return child;
+            return nullptr;
+        };
+        const std::array<const char*,10> names{
+            "midiSnap","midiChannel","midiVelocity","midiLength",
+            "midiDeleteNotes","midiZoomOut","midiZoomIn",
+            "clipEditorUndo","clipEditorRedo","clipEditorDetach"};
+        for (int width:{710,820,940,999,1000,1180}) {
+            editor.setSize(width,300);
+            const auto t=MidiEditorToolbarLayout::atWidth(width);
+            const std::array<juce::Rectangle<int>,10> rects{
+                t.snap,t.channel,t.velocity,t.length,t.remove,t.zoomOut,
+                t.zoomIn,t.undo,t.redo,t.detach};
+            for(size_t i=0;i<names.size();++i) {
+                auto* control=find(names[i]);
+                check(control && control->isVisible() &&
+                      control->getBounds()==rects[i] &&
+                      control->getX()>=0 && control->getRight()<=width,
+                      "N7.2 MIDI toolbar moved/hidden a working action: "+
+                      juce::String(names[i]));
+            }
+            for(size_t i=0;i<rects.size();++i)
+                for(size_t j=i+1;j<rects.size();++j)
+                    check(!rects[i].intersects(rects[j]),
+                          "N7.2 compact MIDI toolbar controls overlap");
+            if(t.compact) {
+                check(!t.title.intersects(t.undo) &&
+                      !t.detach.intersects(t.collapse) &&
+                      !t.collapse.intersects(t.close) &&
+                      t.close.getRight()<=width,
+                      "Dock actions collide with MIDI toolbar or title");
+                for(const auto& bounds:rects)
+                    check(!bounds.intersects(t.collapse) &&
+                          !bounds.intersects(t.close),
+                          "Dock Collapse/Close would obscure a MIDI control");
+            }
+        }
+        auto* detach=dynamic_cast<juce::TextButton*>(find("clipEditorDetach"));
+        check(detach!=nullptr,"Existing detachable MIDI editor missing");
+        editor.setFloating(true);
+        check(detach->getButtonText()=="Reattach",
+              "MIDI toolbar lost floating/reattach semantic state");
+        editor.setFloating(false);
+        check(detach->getButtonText()=="Detach",
+              "Docked MIDI editor no longer offers Detach");
+    });
+    test("N7.2 parent MIDI dock actions use identical responsive hitboxes",[] {
+        using namespace cuelist;
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::midi,"MIDI");
+        check(ui.select(0,1),"N7.2 cannot select MIDI cell");
+        ui.editMidiClip();
+        auto* editor=ui.activeClipEditor();
+        auto* collapse=controlsV3::named(ui,"clipEditorCollapse");
+        auto* close=controlsV3::named(ui,"clipEditorClose");
+        check(editor && collapse && close,"N7.2 dock actions missing");
+        for(int width:{1180,1280,1440,1640}) {
+            ui.setSize(width,900);
+            const auto t=MidiEditorToolbarLayout::atWidth(editor->getWidth());
+            if(!t.compact) continue;
+            const auto pos=editor->getPosition();
+            check(collapse->getBounds()==t.collapse.translated(pos.x,pos.y) &&
+                  close->getBounds()==t.close.translated(pos.x,pos.y),
+                  "MIDI dock controls do not follow the actual editor layout");
+            for(const auto& action:{t.undo,t.redo,t.detach}) {
+                const auto absolute=action.translated(pos.x,pos.y);
+                check(!absolute.intersects(collapse->getBounds()) &&
+                      !absolute.intersects(close->getBounds()),
+                      "MIDI parent toolbar buttons cover editor window actions");
+            }
+        }
+        auto* collapseButton=dynamic_cast<juce::Button*>(collapse);
+        check(collapseButton!=nullptr,"MIDI collapse button unavailable");
+        collapseButton->triggerClick();
+        auto* timeline=cueViewFixtures::find<Timeline>(ui);
+        check(timeline && collapse->getBottom()<=timeline->getY() &&
+              close->getBottom()<=timeline->getY(),
+              "MIDI collapsed dock covers Timeline");
+        collapseButton->triggerClick();
+        check(editor->isVisible(),"MIDI toolbar did not restore docked editor");
     });
     test("piano roll creates snaps moves resizes and deletes notes",[] {
         PianoRollEditor editor(MidiClip{},[](const MidiClip&,const MidiClip&,bool){}); auto& canvas=editor.getCanvas();
