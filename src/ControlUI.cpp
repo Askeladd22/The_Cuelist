@@ -314,7 +314,7 @@ public:
                 if (item.id==id) {
                     functionName.setText(item.name,false);
                     showRoute(item.destination);
-                    if (!editSet) updateEditorVisibility();
+                    updateEditorVisibility();
                     return;
                 }
         };
@@ -804,12 +804,11 @@ private:
                     } else if (choice>=100 && choice-100<(int)mapIds.size()) {
                         const int id=mapIds[(size_t)(choice-100)];
                         if (main.applyControlSetTemplate(row,column,id)) {
-                            panel.selected=-1;panel.editingMapping=false;
-                            panel.bindingList.deselectAllRows();
-                            panel.bindingList.updateContent();
-                            panel.refreshMapChooser();panel.refreshEmptyState();
-                            panel.updateEditorVisibility();
-                            panel.updateEffectivePreview();
+                            // Assignment semantics are unchanged; the editor
+                            // must now select the actual saved Map, not the
+                            // obsolete cue-local scope of the previous cell.
+                            panel.availableMaps.clear();
+                            panel.switchMap(id,false);
                             panel.state.setText("Saved Control Map applied.",
                                                 juce::dontSendNotification);
                         } else panel.state.setText(main.status,
