@@ -771,9 +771,9 @@ void uiRefinementTests() {
                   "Pinned Master still paints a redundant raised card");
             for(int c=0;c<4;++c) {
                 auto* strip=lane->getChildComponent(c);
-                check(strip!=nullptr && strip->getWidth()==
-                      ui.show.columns[(size_t)c].collapsed ?
-                      CueGrid::compressedWidth : CueGrid::columnWidth,
+                const int expectedWidth=ui.show.columns[(size_t)c].collapsed
+                    ? CueGrid::compressedWidth : CueGrid::columnWidth;
+                check(strip!=nullptr && strip->getWidth()==expectedWidth,
                       "Mixer strip width diverged from Cue Grid geometry");
                 const auto surface=strip->createComponentSnapshot({5,85,1,1});
                 check(surface.isValid() &&
