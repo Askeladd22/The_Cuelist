@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.0-beta.29] - 2026-11-02
+
+**Tipo:** redesign nativo V2 / N4 — Inspector più sobrio e professionale, progettato per l'uso operativo.
+
+### Interfaccia
+- Rimossi dall'Inspector i tre contenitori rialzati annidati (Entire Cue, Cell e Notes), con ombre simulate, bordi arrotondati e titoli teal ripetuti. L'Inspector diventa una **superficie continua Midnight Slate**, con divisori sottili, etichette neutre e una gerarchia tipografica chiara.
+- La testata mantiene il contesto operativo **CUE NN** e il tipo Audio/MIDI/OSC/Control, usando il colore funzionale **solo per identificare il tipo**, non come decorazione su ogni sezione.
+- Le sezioni `CUE PARAMETERS`, `CELL PARAMETERS` e `CUE NOTES` usano uno stile editoriale compatto. La struttura dei controlli, la scala dell'Inspector, la funzione del campo Note e le posizioni del toggle di collasso rimangono inalterate.
+- L'operatore conserva tutti i veri editor e callback di nome cue, BPM, tempo map, loop, nome cella, gain, import, MIDI/OSC editing e note. Nessun campo o pulsante è stato nascosto o sostituito da un placeholder.
+
+### Test e salvaguardie
+- Nuove asserzioni JUCE alle dimensioni 1180×820, 1440×900 e 1920×1080: editor e note restano visibili e nella stessa geometria; i padding dei pannelli sono una superficie unica invece di tre card sovrapposte; il rendering non altera il modello.
+- Master Audio ancorato nella colonna Cuelist da 318 px, Cue Grid, BPM/Auto Stop, M/O Learn, motori e routing Audio/MIDI/OSC, Inspector focus/validazione, Undo/Redo, docking e formato JSON v10 invariati.
+- Nessuna build portable. Windows CI + CTest verde e verifica visiva a DPI differenti sono requisiti per il merge e per la chiusura definitiva di N4.
+
 ## [0.9.0-beta.28] - 2026-11-02
 
 **Tipo:** redesign nativo V2 — affinamento visivo delle celle Audio/MIDI/OSC e test di scroll.
