@@ -183,6 +183,34 @@ void operatorNavigationTests() {
         }
     });
 
+    test("V2 MIDI and OSC Learn remain dedicated global controls",[] {
+        MainComponent ui(false);
+        auto* midi=controlsV3::named(ui,"globalMidiLearn");
+        auto* osc=controlsV3::named(ui,"globalOscLearn");
+        check(midi && osc,"Original global Learn buttons must not be replaced");
+        const auto brand=OperatorLearnLayout::backdrop();
+        check(brand.getRight()<OperatorLearnLayout::tabStart &&
+              brand.getBottom()<=OperatorLearnLayout::headerHeight &&
+              !OperatorLearnLayout::midi().intersects(OperatorLearnLayout::osc()),
+              "New global Learn segment overlaps the second-tier tab region");
+        for (const int width:{1024,1180,1249,1250,1440,1549,1550,1920,3840}) {
+            ui.setSize(width,900);
+            const auto t=HeaderTelemetryLayout::atWidth(width);
+            auto* firstTab=controlsV3::named(ui,"cuelistTab0");
+            check(midi->isVisible() && osc->isVisible() &&
+                  midi->getBounds()==OperatorLearnLayout::midi() &&
+                  osc->getBounds()==OperatorLearnLayout::osc() &&
+                  midi->getRight()<firstTab->getX() &&
+                  osc->getRight()<firstTab->getX() &&
+                  osc->getRight()<t.clock.getX(),
+                  "Learn must stay one-click accessible, independent of overflow");
+            const auto image=ui.createComponentSnapshot(brand);
+            check(image.isValid() && image.getWidth()==brand.getWidth() &&
+                  image.getHeight()==brand.getHeight(),
+                  "Operator Learn surface failed to render");
+        }
+    });
+
     test("V2 enlarged telemetry has readable five groups and no overlap",[] {
         MainComponent ui(false);
         for (const int width:{1024,1180,1280,1440,1647,1920,3840}) {
@@ -198,13 +226,11 @@ void operatorNavigationTests() {
                   t.activity.getRight()+10==t.audio.getX(),
                   "Five operator-monitor groups are too narrow or overlap");
             check(t.activity.contains(t.activityHeading) &&
-                  t.activity.contains(t.midiLearn) &&
-                  t.activity.contains(t.oscLearn) &&
-                  !t.activityHeading.intersects(t.midiLearn) &&
-                  !t.midiLearn.intersects(t.oscLearn) &&
-                  t.midiLearn.getHeight()>=22 &&
-                  t.midiLearn.getWidth()>=61,
-                  "I/O activity labels and Learn targets are compressed");
+                  t.activityHeading.getWidth()>=t.activity.getWidth()-18 &&
+                  t.activityHeading.getBottom()<=t.activityLabels[0].getY() &&
+                  !t.activityLabels[0].intersects(t.activityLabels[2]) &&
+                  !t.activityLabels[1].intersects(t.activityLabels[3]),
+                  "I/O telemetry rows overlap after removing Learn controls");
             check(t.audio.contains(t.audioHeading) &&
                   t.audio.contains(t.audioStatus) &&
                   t.clock.contains(t.timeText) &&
@@ -229,12 +255,22 @@ void operatorNavigationTests() {
             const auto t=HeaderTelemetryLayout::atWidth(width);
             auto* midi=controlsV3::named(ui,"globalMidiLearn");
             auto* osc=controlsV3::named(ui,"globalOscLearn");
+            const auto midiBounds=OperatorLearnLayout::midi();
+            const auto oscBounds=OperatorLearnLayout::osc();
+            const auto brand=OperatorLearnLayout::backdrop();
             check(midi && osc && midi->isVisible() && osc->isVisible() &&
-                  midi->getBounds()==t.midiLearn &&
-                  osc->getBounds()==t.oscLearn &&
-                  t.activity.contains(midi->getBounds()) &&
-                  t.activity.contains(osc->getBounds()),
-                  "Native MIDI/OSC Learn buttons are not aligned to I/O Activity");
+                  midi->getBounds()==midiBounds &&
+                  osc->getBounds()==oscBounds &&
+                  brand.contains(midiBounds) && brand.contains(oscBounds) &&
+                  !midiBounds.intersects(oscBounds) &&
+                  midiBounds.getRight()<=OperatorLearnLayout::brandLaneWidth &&
+                  oscBounds.getRight()<OperatorLearnLayout::tabStart &&
+                  midiBounds.getY()>=38 && oscBounds.getBottom()<=72 &&
+                  midiBounds.getRight()<t.clock.getX() &&
+                  oscBounds.getRight()<t.clock.getX() &&
+                  !midiBounds.intersects(t.activity) &&
+                  !oscBounds.intersects(t.activity),
+                  "Live Learn buttons overlap branding, Cuelist tabs or telemetry");
             for (const auto region:{t.clock,t.usage,t.activity,t.audio}) {
                 const auto image=ui.createComponentSnapshot(region);
                 check(image.isValid() &&
