@@ -282,6 +282,69 @@ void cueGridN3VisualTests() {
               "Loaded audio lost its type-colour cue");
     });
 
+    test("N3.7 loaded clip hover highlights only real cell transports",[] {
+        using namespace cuelist;
+        MainComponent ui(false);
+        addRow(ui.show,"Audio, MIDI and OSC");
+        addColumn(ui.show,ColumnType::midi,"MIDI");
+        addColumn(ui.show,ColumnType::osc,"OSC");
+        ui.setSize(1647,895);
+        auto* grid=cueViewFixtures::find<CueGrid>(ui);
+        check(grid!=nullptr,"Cue Grid missing");
+        // The same real loaded-clip fixture used by existing media tests.
+        auto pcm=std::make_shared<AudioClip>();
+        pcm->sampleRate=48000;
+        pcm->samples.setSize(1,64);
+        pcm->samples.clear();
+        ui.clips[ui.show.rows[1].cells[0].id]=pcm;
+        ui.resized();
+        const int x=grid->columnX(0);
+        const int y=CueGridGeometry::rowTop(1)+CueGrid::rowContentInset;
+        const int w=grid->columnWidthAt(0);
+        const auto modelBefore=encodeShow(ui.show);
+        const int selected=ui.selectedRow,next=ui.nextCueIndex();
+        auto sample=[&] {
+            auto bitmap=grid->createComponentSnapshot({x+5,y+19,1,1});
+            check(bitmap.isValid(),"Audio hover snapshot unavailable");
+            return bitmap.getPixelAt(0,0);
+        };
+        const auto before=sample();
+        const juce::Point<float> cardCursor{(float)x+15,(float)y+17};
+        grid->mouseMove(cueViewFixtures::event(*grid,cardCursor,cardCursor));
+        check(sample()!=before,
+              "Loaded Audio did not gain a visible accent on hover");
+        for(const auto action:{CueGrid::CellAction::play,
+                               CueGrid::CellAction::stop}) {
+            const auto bounds=action==CueGrid::CellAction::play ?
+                CueGrid::cellPlayBounds(x,w,y) : CueGrid::cellStopBounds(x,w,y);
+            const auto cursor=juce::Point<float>{(float)bounds.getCentreX(),
+                                                  (float)bounds.getCentreY()};
+            grid->mouseMove(cueViewFixtures::event(*grid,cursor,cursor));
+            check(grid->getTooltip().contains(
+                     action==CueGrid::CellAction::play?"Play":"Stop") &&
+                  CueGrid::cellActionAt(bounds.getCentreX()-x,
+                                        bounds.getCentreY()-y,w)==action,
+                  "Visible cell transport has no distinct hover target or hint");
+        }
+        grid->mouseExit(cueViewFixtures::event(*grid,cardCursor,cardCursor));
+        check(sample()==before && grid->getTooltip().isEmpty() &&
+              encodeShow(ui.show)==modelBefore &&
+              ui.selectedRow==selected && ui.nextCueIndex()==next,
+              "Cell mouse hover changed the Show or persisted after exit");
+        // Empty neighbouring MIDI/OSC cells must never claim a transport
+        // action when there is no real playable clip attached to them.
+        for (int column=1;column<=2;++column) {
+            const int cx=grid->columnX(column);
+            const int cw=grid->columnWidthAt(column);
+            const auto hit=CueGrid::cellPlayBounds(cx,cw,y);
+            const auto point=juce::Point<float>{(float)hit.getCentreX(),
+                                               (float)hit.getCentreY()};
+            grid->mouseMove(cueViewFixtures::event(*grid,point,point));
+            check(grid->getTooltip().isEmpty(),
+                  "Empty MIDI/OSC cell incorrectly offers an invisible Play");
+        }
+    });
+
     test("N3.3 empty cell has no invisible transport dead zones",[] {
         using namespace cuelist;
         MainComponent ui(false);
