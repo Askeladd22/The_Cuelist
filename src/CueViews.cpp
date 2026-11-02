@@ -700,13 +700,14 @@ void CueGrid::mouseDown(const juce::MouseEvent& e) {
     const int localX=e.x-columnX(column),w=columnWidthAt(column);
     const auto& col=owner.show.columns[(size_t)column];
     if (col.type!=ColumnType::control && owner.hasClip(row,column)) {
-        // Invisible disabled transport targets must not block selection of
-        // an empty cell. Loaded clips retain their exact safe hitboxes.
-        if (cellPlayBounds(0,w,0).contains(localX,localY)) {
+        // Use exactly the same transport geometry for click and hover;
+        // empty or missing-media cells cannot intercept hidden buttons.
+        const auto action=cellActionAt(localX,localY,w);
+        if (action==CellAction::play) {
             if (e.getNumberOfClicks()==1) owner.triggerCellAt(row,column);
             return;
         }
-        if (cellStopBounds(0,w,0).contains(localX,localY)) {
+        if (action==CellAction::stop) {
             if (e.getNumberOfClicks()==1) owner.stopCellAt(row,column);
             return;
         }
