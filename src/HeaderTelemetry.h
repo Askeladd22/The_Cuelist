@@ -16,6 +16,7 @@ struct HeaderTelemetryLayout final {
     juce::Rectangle<int> timeText,meridiemText,cpuLabel,cpuValue,ramLabel,ramValue;
     juce::Rectangle<float> cpuMeter,ramMeter;
     juce::Rectangle<int> activityHeading,audioHeading,audioStatus;
+    juce::Rectangle<int> midiLearn,oscLearn;
     std::array<juce::Rectangle<int>,4> activityLabels{};
     std::array<juce::Rectangle<int>,4> activityDots{};
 
@@ -48,8 +49,12 @@ struct HeaderTelemetryLayout final {
         t.cpuMeter={meterX,22.f,(float)meterWidth,7.f};
         t.ramMeter={meterX,45.f,(float)meterWidth,7.f};
 
-        // Telemetry only: no Learn buttons or interaction targets in I/O.
-        t.activityHeading={t.activity.getX()+9,8,iw-18,20};
+        // I/O Activity contains the original Learn actions in its first
+        // tier and preserves four independent MIDI/OSC traffic lamps below.
+        t.activityHeading={t.activity.getX()+9,10,iw-143,18};
+        // End both hitboxes at y=28: the first RX/TX label starts at 29.
+        t.midiLearn={t.activity.getRight()-118,9,54,19};
+        t.oscLearn={t.activity.getRight()-60,9,54,19};
         const int leftX=t.activity.getX()+9;
         const int rightX=t.activity.getX()+iw/2+3;
         t.activityDots={juce::Rectangle<int>{leftX,33,10,10},

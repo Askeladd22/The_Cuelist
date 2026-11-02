@@ -150,6 +150,14 @@ senders or acknowledge packet delivery. Test every hardware path and
 firewall setting before a performance. Historical locked Control Columns
 remain supported through migration, not as a new operator lock.
 
+### I/O Activity and quick project access
+
+The native **M Learn** and **O Learn** actions now belong to the **I/O Activity** panel next to MIDI RX/TX and OSC RX/TX. Their Quick Learn behavior, device handling and protocol colors are unchanged.
+
+The left sidebar offers **Recent Projects** below **Workspace**. Click a previously opened or saved show to load it with the existing safe background loader. The current show's unsaved changes still require explicit discard confirmation. **Open...** launches the ordinary project chooser; **All** lists remaining history. The recent project paths are held in the application's local preferences and do not alter the project format.
+
+The pinned BPM / Auto Stop lanes retain their original editing/toggle hitboxes but use balanced title/value alignment, a quieter cue-state accent and a continuous separator.
+
 ## 4. Managing multiple Cuelists
 
 ### 4.1 Creating, selecting and removing

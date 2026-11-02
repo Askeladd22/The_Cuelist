@@ -1030,7 +1030,7 @@ void CueMetricsOverlay::syncBpmEditor() {
     if (index<0) { finishBpmEdit(false); return; }
     const int y=CueGridGeometry::overlayRowTop(index,
         owner.viewport.getViewPositionY());
-    const auto bounds=juce::Rectangle<int>(16,y+15,73,32);
+    const auto bounds=juce::Rectangle<int>(13,y+15,76,32);
     if (bounds.getY()<CueGrid::headerHeight ||
         bounds.getBottom()>getHeight()) {
         // Never leave an interactive editor underneath the pinned heading
@@ -1059,6 +1059,9 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
     // The metrics lane is fixed: only row contents use the viewport's Y,
     // while the 72px heading, 3px rail and controls keep local coordinates.
     g.fillAll(palette::panel);
+    // Carry the same 94px divider through the otherwise unused row space.
+    g.setColour(palette::line.withAlpha(.27f));
+    g.drawVerticalLine(94,8.f,(float)getHeight());
     g.saveState();
     g.reduceClipRegion(getLocalBounds().withTrimmedTop(CueGrid::headerHeight));
     const int scroll=owner.viewport.getViewPositionY();
@@ -1096,34 +1099,29 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
             g.fillRect(3,y,getWidth()-3,CueGrid::rowHeight);
         }
         // Narrow independent status signals; keep BPM and toggles readable.
-        if (selected) {
-            g.setColour(palette::text.withAlpha(.78f));
-            g.fillRect(4,y,2,CueGrid::rowHeight);
-        }
-        if (next) {
-            g.setColour(palette::amber);
-            g.fillRect(6,y,2,CueGrid::rowHeight);
-        }
-        if (playing) {
-            g.setColour(palette::teal);
-            g.fillRect(9,y,2,CueGrid::rowHeight);
-        }
-        if (row.colour>0 && !next && !playing) {
-            g.setColour(cueTone.withAlpha(.88f));
-            g.fillRect(6,y,2,CueGrid::rowHeight);
+        // One understated cue-state accent spans both metrics columns.
+        // The original status remains visible in the cue-name lane.
+        const auto accent=playing ? palette::teal :
+            next ? palette::amber :
+            row.colour>0 ? cueTone : palette::text;
+        if(selected || next || playing || row.colour>0) {
+            g.setColour(accent.withAlpha(selected && !playing && !next ?
+                                        .65f : .80f));
+            g.fillRect(10,y+3,getWidth()-18,2);
         }
 
         const bool bpmHover=hoverRow==r && hoverTarget==HoverTarget::bpm;
         const bool toggleHover=hoverRow==r && hoverTarget==HoverTarget::autoStop;
         if (bpmHover) {
             g.setColour(palette::raised.withAlpha(.26f));
-            g.fillRoundedRectangle(juce::Rectangle<float>(14.f,(float)y+13.f,75.f,36.f),4.f);
+            g.fillRoundedRectangle(juce::Rectangle<float>(13.f,(float)y+13.f,76.f,36.f),4.f);
         }
         // One readable BPM number. No NEXT/LIVE/PAUSED/EDIT decorative
         // caption: all cue states remain available in the cue-name lane.
         if (editingRowId!=row.id)
             label(g,juce::String(row.tempo.front().bpm,1),
-                  {22,y+16,66,29},17,palette::text,true);
+                  {13,y+16,76,29},17,palette::text,true,
+                  juce::Justification::centred);
 
         const auto toggle=autoStopToggleBounds(y);
         if (toggleHover) {
@@ -1157,8 +1155,10 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
     // Lean two-column strip: no redundant "Cue Metrics" caption.
     g.setColour(palette::teal.withAlpha(.65f));
     g.fillRect(3,0,getWidth()-3,2);
-    label(g,"BPM",{22,23,66,26},13,palette::text,true);
-    label(g,"AUTO STOP",{103,23,77,26},13,palette::text,true);
+    label(g,"BPM",{13,23,76,26},13,palette::text,true,
+          juce::Justification::centred);
+    label(g,"AUTO STOP",{99,23,81,26},13,palette::text,true,
+          juce::Justification::centred);
     g.setColour(palette::line.withAlpha(.26f));
     g.drawVerticalLine(94,8.f,(float)CueGrid::headerHeight-9);
     g.setColour(palette::line.withAlpha(.72f));

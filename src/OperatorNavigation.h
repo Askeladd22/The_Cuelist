@@ -5,19 +5,6 @@
 
 namespace cuelist {
 
-// The two global Learn modes are operator commands, not indicators of
-// traffic. Anchor them below the product identity in the otherwise unused
-// left part of the second header tier, away from telemetry and Cuelist tabs.
-// This is fixed across window sizes: 180px branding lane, 190px tab start.
-struct OperatorLearnLayout final {
-    static constexpr int brandLaneWidth=180;
-    static constexpr int tabStart=190;
-    static constexpr int headerHeight=72;
-    static juce::Rectangle<int> midi() { return {10,43,78,26}; }
-    static juce::Rectangle<int> osc() { return {92,43,78,26}; }
-    static juce::Rectangle<int> backdrop() { return {7,40,166,31}; }
-};
-
 // Native V2 operator navigation geometry. This stage deliberately does not
 // change the workspace, cue hitboxes, audio output or the original Master.
 // On narrower windows, the trailing menus move into a real "More" popup

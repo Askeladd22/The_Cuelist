@@ -39,6 +39,22 @@ void cueGridN3VisualTests() {
               menu==juce::Rectangle<int>(CueGrid::nameWidth-46,31,29,24),
               "The extended cue title overlaps the relocated transport targets");
     });
+    test("BPM/Auto Stop divider continues after the last visible cue",[] {
+        MainComponent ui(false);
+        ui.setSize(1440,900);
+        auto* metrics=cueViewFixtures::find<CueMetricsOverlay>(ui);
+        check(metrics!=nullptr,"Pinned metrics missing");
+        check(CueMetricsOverlay::width==184 &&
+              CueMetricsOverlay::bpmEditBounds(0).getRight()<94 &&
+              CueMetricsOverlay::autoStopToggleBounds(0).getX()>=94,
+              "BPM and Auto Stop hitboxes no longer separated");
+        const auto shot=metrics->createComponentSnapshot(
+            {0,CueGrid::headerHeight+CueGrid::rowHeight+18,184,54});
+        check(shot.isValid(),"Metrics preview unavailable");
+        check(shot.getPixelAt(94,27)!=shot.getPixelAt(93,27),
+              "BPM/Auto Stop divider disappears below the last cue");
+    });
+
     test("N3.2 pinned title hover reveals untruncated cue and column names",[] {
         using namespace cuelist;
         MainComponent ui(false);

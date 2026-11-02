@@ -250,6 +250,32 @@ MainComponent::MainComponent(bool startAudio) {
     prefOptions.folderName="The Cuelist";
     appPreferences=std::make_unique<juce::PropertiesFile>(prefOptions);
     faderCeilingDb=appPreferences->getIntValue("audioFaderCeilingDb",6)==0 ? 0 : 6;
+    recentOpenButton.setName("recentProjectOpen");
+    recentMoreButton.setName("recentProjectsAll");
+    recentOpenButton.setTooltip("Choose a saved Cuelist project");
+    recentMoreButton.setTooltip("Show all recently opened or saved projects");
+    recentOpenButton.onClick=[this] {
+        withDiscardConfirmation([this] {openProject();});
+    };
+    recentMoreButton.onClick=[this] {showAllRecentProjects();};
+    addAndMakeVisible(recentOpenButton);
+    addAndMakeVisible(recentMoreButton);
+    for(int i=0;i<visibleRecentProjects;++i) {
+        auto& button=recentProjectButtons[(size_t)i];
+        auto& detail=recentProjectDetails[(size_t)i];
+        button=std::make_unique<juce::TextButton>();
+        detail=std::make_unique<juce::Label>();
+        button->setName("recentProject"+juce::String(i));
+        button->onClick=[this,i] {openRecentProject(i);};
+        detail->setName("recentProjectDetail"+juce::String(i));
+        detail->setFont(font(10.0f));
+        detail->setColour(juce::Label::textColourId,palette::muted);
+        detail->setJustificationType(juce::Justification::centredLeft);
+        detail->setInterceptsMouseClicks(false,false);
+        addAndMakeVisible(*button);
+        addAndMakeVisible(*detail);
+    }
+    restoreRecentProjects();
     masterSlider.setMaximumDb(faderCeilingDb);
     restoreAdditionalMidiInputs();
     for (const auto& midi:juce::MidiOutput::getAvailableDevices())
@@ -562,10 +588,22 @@ void MainComponent::paint(juce::Graphics& g) {
     g.setColour(palette::line.withAlpha(.62f));
     g.drawHorizontalLine(72,0,(float)w);
     g.drawVerticalLine(180,73,(float)h);
-    // Keep the project card, but remove the redundant static ENGINES panel.
-    // Engine controls, routing and the live audio-status indicator are unchanged.
-    g.setColour(palette::background.withAlpha(.30f));
-    g.fillRoundedRectangle(10.0f,373.0f,160.0f,96.0f,8.0f);
+    // Replace the otherwise empty sidebar void with a responsive, usable
+    // recent-project launcher underneath Workspace.
+    const int recentTop=218,recentBottom=h-349;
+    if(recentBottom>recentTop+62) {
+        const auto panel=juce::Rectangle<float>(
+            10.f,(float)recentTop,160.f,(float)(recentBottom-recentTop));
+        g.setColour(palette::background.withAlpha(.40f));
+        g.fillRoundedRectangle(panel,8.f);
+        g.setColour(palette::line.withAlpha(.42f));
+        g.drawRoundedRectangle(panel,8.f,.7f);
+        label(g,"RECENT PROJECTS",{19,recentTop+7,142,20},
+              11,palette::muted,true);
+        if(recentProjects.isEmpty())
+            label(g,"No saved projects yet.",{19,recentTop+82,141,34},
+                  11,palette::muted);
+    }
     static const auto appIcon=juce::ImageFileFormat::loadFrom(
         BinaryData::thecuelist_icon_png,BinaryData::thecuelist_icon_pngSize);
     if (appIcon.isValid())
@@ -578,14 +616,8 @@ void MainComponent::paint(juce::Graphics& g) {
     // accent from the approved reference (no font or icon replacement).
     label(g,"The",{53,7,38,32},19,palette::text,true);
     label(g,"CUElist",{91,7,105,32},19,palette::teal,true);
-    // Global Learn commands live below the brand, never among the
-    // MIDI/OSC traffic lamps. Subtle shared surface; each is the original
-    // clickable button with its existing active-mode colour.
-    const auto learnBackdrop=OperatorLearnLayout::backdrop().toFloat();
-    g.setColour(palette::panel.withAlpha(.66f));
-    g.fillRoundedRectangle(learnBackdrop,5.f);
-    g.setColour(palette::line.withAlpha(.40f));
-    g.drawRoundedRectangle(learnBackdrop,5.f,.7f);
+    // Global Learn now belongs to the live I/O Activity surface, while
+    // the unchanged top bar and telemetry remain within the 72px header.
     // A single enlarged monitoring console, responsive in X only.
     // All positions (including real Learn buttons) originate from one
     // geometry contract; the 72px global header remains unchanged.
@@ -639,7 +671,7 @@ void MainComponent::paint(juce::Graphics& g) {
     meter(telemetry.cpuMeter,systemCpuPercent,palette::teal);
     meter(telemetry.ramMeter,systemRamPercent,palette::amber);
 
-    label(g,"I/O ACTIVITY",telemetry.activityHeading,14,palette::muted,true);
+    label(g,"I/O ACTIVITY",telemetry.activityHeading,11,palette::muted,true);
     const double now=juce::Time::getMillisecondCounterHiRes();
     const std::array<juce::String,4> activityNames{{
         "MIDI RX","MIDI TX","OSC RX","OSC TX"}};
@@ -693,6 +725,10 @@ void MainComponent::paint(juce::Graphics& g) {
                3,geometry.utilities.getHeight());
     g.setColour(palette::line);
     g.drawVerticalLine(geometry.metrics.getX()+3,(float)geometry.utilities.getY(),
+                       (float)geometry.utilities.getBottom());
+    g.setColour(palette::line.withAlpha(.27f));
+    g.drawVerticalLine(geometry.metrics.getX()+94,
+                       (float)geometry.utilities.getY(),
                        (float)geometry.utilities.getBottom());
     if (!inspectorVisible) {
         // A slim, permanently visible rail provides a full-height spatial
@@ -1160,6 +1196,37 @@ void MainComponent::resized() {
                         &deviceButton,&preferencesButton,&controlButton})
         control->setVisible(false);
     projectNameLabel.setBounds(28,122,132,34);
+    // setSize() in the MainComponent constructor runs resized() before
+    // optional recent-project child controls have been constructed.
+    if(recentProjectButtons[0]) {
+    const int recentTop=218,recentBottom=h-349;
+    const bool recentVisible=recentBottom>recentTop+62;
+    recentOpenButton.setVisible(recentVisible);
+    if(recentVisible) {
+        recentOpenButton.setBounds(19,recentTop+32,102,26);
+        recentMoreButton.setBounds(126,recentTop+32,35,26);
+    }
+    const int listTop=recentTop+68;
+    const int capacity=recentVisible ?
+        juce::jlimit(0,visibleRecentProjects,
+                     (recentBottom-listTop-5)/43) : 0;
+    // At short window heights fewer than five rows fit. The All action
+    // must expose *every* hidden entry, not only history positions >5.
+    recentMoreButton.setVisible(recentVisible &&
+                                recentProjects.size()>capacity);
+    for(int i=0;i<visibleRecentProjects;++i) {
+        const bool showRow=i<capacity && i<recentProjects.size();
+        auto& button=*recentProjectButtons[(size_t)i];
+        auto& detail=*recentProjectDetails[(size_t)i];
+        button.setVisible(showRow);
+        detail.setVisible(showRow);
+        if(showRow) {
+            const int y=listTop+i*43;
+            button.setBounds(19,y,142,24);
+            detail.setBounds(21,y+24,138,16);
+        }
+    }
+    }
     refreshCuelistTabs();
     const auto nav=OperatorNavigationLayout::atWidth(getWidth());
     for (int i=0;i<=OperatorNavigationLayout::overflowIndex;++i)
@@ -1175,10 +1242,10 @@ void MainComponent::resized() {
     helpButton.setVisible(false);
     undoButton.setVisible(false);
     redoButton.setVisible(false);
-    // Keep direct one-click MIDI/OSC Learn available even at 1024px.
-    // No overlap with the Cuelist tabs (start X=190) or the telemetry.
-    globalMidiLearn.setBounds(OperatorLearnLayout::midi());
-    globalOscLearn.setBounds(OperatorLearnLayout::osc());
+    // Retain both original one-click actions and their Learn callbacks.
+    const auto ioActivity=HeaderTelemetryLayout::atWidth(getWidth());
+    globalMidiLearn.setBounds(ioActivity.midiLearn);
+    globalOscLearn.setBounds(ioActivity.oscLearn);
     // Collapse-all follows the pinned header after JUCE has computed the
     // actual left scrollbar inset (see placement below).
     const bool allCollapsed=std::all_of(show.columns.begin(),show.columns.end(),
