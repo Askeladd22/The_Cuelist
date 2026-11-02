@@ -13,6 +13,20 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.0-beta.25] - 2026-11-02
+
+**Tipo:** stabilizzazione del redesign nativo V2 e miglioramento leggibilità telemetria.
+
+### Correzioni
+- Risolta la regressione CI ereditata dalla beta.24: il test `N3.4C global header retains 72px tiers and active Cuelist tab` pretendeva ancora la vecchia coordinata `Y=8` e un confine fisso `width-365`, incompatibili con il nuovo cluster responsivo `Y=7`. Il test ora convalida le coordinate **reali condivise**, l'altezza da 72px, tutte le separazioni dei quattro gruppi e l'accessibilità del menu operatore.
+- Le misure fondamentali di `HeaderTelemetryLayout` (`top=7`, `panelHeight=58`, `groupGap=10`) sono definite in un'unica sede, senza duplicare valori nei test.
+- Barre CPU/RAM più lunghe in modo adattivo: **30px** nel profilo compatto, **40px** nel profilo intermedio, **48px** in quello ampio. Rimangono allineate ai valori percentuali reali e dentro il pannello.
+- Nuovo test JUCE sulle larghezze **1024, 1180, 1249, 1250, 1280, 1440, 1549, 1550, 1647, 1920, 3840** per verificare meter, testi, menu e overflow soprattutto nei punti di cambio profilo.
+
+### Compatibilità e verifica
+- Invariati refresh e sorgenti clock/CPU/RAM, I/O MIDI/OSC, MIDI/OSC Learn, disponibilità audio, altezza header 72px, schede Cuelist e relativo overflow, BPM inline, Auto Stop, Master Audio fissato nella colonna da 318px, engines e schema JSON v10.
+- Nessuna build portable. Windows CI + CTest e verifica visiva a DPI differenti restano necessari prima del merge.
+
 ## [0.9.0-beta.24] - 2026-11-01
 
 **Tipo:** redesign nativo V2 — ingrandimento dell'intero monitor operativo nell'header globale.
