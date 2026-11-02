@@ -1,5 +1,6 @@
 #pragma once
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <algorithm>
 
 namespace cuelist {
 
@@ -8,7 +9,7 @@ namespace cuelist {
 // The compact MIDI profile keeps every action available when docked at 710px.
 struct MidiEditorToolbarLayout {
     bool compact=false;
-    juce::Rectangle<int> title,undo,redo,detach;
+    juce::Rectangle<int> title,undo,redo,detach,collapse,close;
     juce::Rectangle<int> snapLabel,snap,channelLabel,channel;
     juce::Rectangle<int> velocityLabel,velocity,beatLabel,length;
     juce::Rectangle<int> remove,zoomOut,zoomIn;
@@ -16,12 +17,15 @@ struct MidiEditorToolbarLayout {
         MidiEditorToolbarLayout t;
         t.compact=w<1000;
         if(t.compact) {
-            // Actions on the first row stay left of the main dock's
-            // Collapse/Close targets at x=522..697 (main-window local).
-            t.title={16,6,202,25};
-            t.undo={226,4,68,26};
-            t.redo={300,4,68,26};
-            t.detach={378,4,86,26};
+            // Five independent actions share the FIRST row: Undo, Redo,
+            // Detach, Collapse and Close. The latter two belong to the
+            // parent dock, so MainComponent must use the same coordinates.
+            t.title={16,6,185,25};
+            t.undo={210,4,66,26};
+            t.redo={282,4,66,26};
+            t.detach={354,4,80,26};
+            t.collapse={444,4,86,26};
+            t.close={536,4,82,26};
             // Labels and controls are packed into the second row without
             // hiding Delete, MIDI note length, or either zoom direction.
             t.snapLabel={10,38,36,22}; t.snap={50,35,67,26};
