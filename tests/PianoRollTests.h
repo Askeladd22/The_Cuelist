@@ -64,8 +64,7 @@ inline void pianoRollTests() {
                 check(control && control->isVisible() &&
                       control->getBounds()==rects[i] &&
                       control->getX()>=0 && control->getRight()<=width,
-                      "N7.2 MIDI toolbar moved/hidden a working action: "+
-                      juce::String(names[i]));
+                      "N7.2 MIDI toolbar moved, hid or clipped a working action");
             }
             for(size_t i=0;i<rects.size();++i)
                 for(size_t j=i+1;j<rects.size();++j)
