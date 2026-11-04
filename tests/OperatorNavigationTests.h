@@ -126,8 +126,9 @@ void operatorNavigationTests() {
         const auto image=tab->createComponentSnapshot(tab->getLocalBounds());
         check(image.isValid(),"Native Cuelist tab snapshot unavailable");
         const auto underline=image.getPixelAt(15,tab->getHeight()-2);
-        check(underline.getGreen()>underline.getRed(),
-              "Active Cuelist lost its visible teal underline");
+        check(underline.getRed()>underline.getGreen() &&
+              underline.getGreen()>underline.getBlue(),
+              "Active Cuelist lost its visible copper underline");
         for (const int width:{1280,1440,1647,1920,3840}) {
             ui.setSize(width,900);
             const auto nav=OperatorNavigationLayout::atWidth(width);
