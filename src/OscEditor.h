@@ -28,7 +28,6 @@ public:
     void editEvent(int index);
     void addEvent();
     void addAutomation();
-    void editAutomation(int index);
     std::function<void()> onDetach,onUndo,onRedo;
 
 private:
@@ -44,6 +43,10 @@ private:
     int selectedEvent=-1,selectedTrack=-1,selectedAutomation=-1,selectedPoint=-1;
     std::set<int> selectedEvents,selectedAutomations;
     bool marqueeSelecting=false;
+    // Defer a right-click menu until mouseUp; moving the right button
+    // instead activates the same selection marquee used by Ctrl-drag.
+    bool rightMarqueePending=false,rightMarqueeDragged=false;
+    juce::Point<float> rightMarqueeStart;
     juce::Point<float> marqueeStart,marqueeEnd;
     int dragEvent=-1,dragAutomation=-1,dragPoint=-1;
     enum class RampDrag { none, move, resize, point };
@@ -74,8 +77,10 @@ private:
     void zoomAround(double factor,float anchorX);
     void chooseEvent(int index);
     void chooseAutomation(int index);
+    void updateMarqueeSelection(juce::Point<float> end);
     void createAutomationAt(double start,int trackIndex);
     void editTrackSettings(int index);
+    bool insertAutomationPoint(int automationIndex,float x,float y);
     void notify(const OscClip& before,bool complete=true);
     void deleteSelection();
     void duplicateSelection();
