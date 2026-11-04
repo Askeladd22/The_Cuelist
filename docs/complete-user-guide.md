@@ -14,7 +14,9 @@ This English guide covers the software currently implemented in this repository.
 
 ## 1. Concepts and project structure
 
-A **Show** contains shared output columns, device and mixer configuration, Control Mapping settings, and one to twelve **Cuelists**. Every Cuelist has its own ordered cue rows, clip contents and technical notes. Changing the viewed Cuelist does not stop the LIVE transport. A green dot on its tab identifies the LIVE sequence; GO continues there while other tabs are viewed. Explicit GO on a cue in another Cuelist intentionally takes over the live transport.
+A **Show** contains shared output columns, device and mixer configuration, Control Mapping settings, and one to twelve **Cuelists**. Every Cuelist has its own ordered cue rows, clip contents and technical notes. Adding cues/columns, renaming cues/columns or reordering existing cues/columns does not intentionally interrupt LIVE playback. The next GO follows the stable cue ID even if its row is moved. Selecting or changing a MIDI Output likewise does not issue PANIC: already playing audio and transport clocks continue; pending MIDI messages from the old route are invalidated, and the selected device receives subsequent messages. If a MIDI Output is unplugged, its events are skipped; the exact configured port may reconnect without automatically substituting another. Deleting a currently live cue/column or changing its tempo map remains an intentionally safety-boundary operation until an explicit migration policy is approved.
+
+Changing the viewed Cuelist does not stop the LIVE transport. A green dot on its tab identifies the LIVE sequence; GO continues there while other tabs are viewed. Explicit GO on a cue in another Cuelist intentionally takes over the live transport.
 
 Each cue is a row; each column represents a kind of material:
 - **Audio:** mono/stereo WAV or MP3 files with per-cell, cue and strip gain and playback settings.
