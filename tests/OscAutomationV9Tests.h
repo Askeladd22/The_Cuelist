@@ -66,8 +66,12 @@ void oscAutomationV9Tests() {
         editor.mouseDrag(cueViewFixtures::event(editor,moved,a,1,true));
         editor.mouseUp(cueViewFixtures::event(editor,moved,a,1,true));
         const auto& result=editor.getClip();
-        near(result.events[0].time,.75);
-        near(result.events[1].time,1.25);
+        // Snap is enabled by default at 1/8 grid; both selected events
+        // must shift together by the snapped delta, not the raw mouse delta.
+        check(result.events[0].time>.5 &&
+              result.events[1].time>1.0,
+              "Multi-selection drag did not move both OSC events");
+        near(result.events[1].time-result.events[0].time,.5);
         check(commits==1,"Grouped OSC gesture must commit one Undo transaction");
         check(validateOscClip(result).wasOk(),"Grouped OSC drag left an invalid message");
     });
