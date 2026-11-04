@@ -272,7 +272,9 @@ double PianoRollEditor::gridStep() const { return snapEnabled() ? std::pow(.5,st
 bool PianoRollEditor::snapEnabled() const { return snap.getSelectedId()!=5; }
 void PianoRollEditor::updateCanvas() { canvas->setSize(std::max(viewport.getWidth()-14,keysWidth+(int)std::ceil(clip.lengthBeats*pixelsPerBeat)+24),rulerHeight+128*noteHeight); canvas->repaint(); }
 void PianoRollEditor::setFloating(bool floating) {
-    detach.setButtonText(floating ? "Reattach" : "Detach");
+    detach.setFloating(floating);
+    detach.setTooltip(floating ? "Reattach the MIDI editor to its dock." :
+                                  "Detach the MIDI editor into a separate window.");
 }
 void PianoRollEditor::notify(const MidiClip& before,bool complete) {
     if (!onEdit) return;
