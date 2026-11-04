@@ -462,6 +462,8 @@ public:
     void setRowColour(int row,int colour);
     void toggleColumnCollapsed(int column);
     void setAllColumnsCollapsed(bool collapsed);
+    void setTimelineVisible(bool visible); // same action for header and View menu
+    bool isTimelineVisible() const noexcept {return timelineVisible;}
     void activateCuelist(int index);
     void createCuelist();
     bool moveCuelist(int from,int to);
@@ -525,7 +527,8 @@ private:
     };
     CueGrid grid{*this}; PinnedCueHeaders cueHeaders{*this};
     PinnedColumnHeaders columnHeaders{*this}; CueMetricsOverlay cueMetrics{*this};
-    Timeline timeline{*this}; CueViewport viewport;
+    Timeline timeline{*this}; DockCollapseButton timelineCollapseButton;
+    CueViewport viewport;
     ColumnUtilities utilities{*this};
     juce::TextButton openButton{"Open"},saveButton{"Save"},newButton{"New"},addRowButton{"+"},addColumnButton{"+"};
     juce::TextButton preferencesButton{"Preferences"},helpButton{"Help"};
