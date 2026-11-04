@@ -20,7 +20,7 @@ void cuelistGuiMockupTests() {
         const int armedId=ui.show.rows[(size_t)ui.liveNextCueIndex()].id;
         check(initial>0 && ui.engine.getCellPlayback(audioCell).playing,
               "Baseline audio cue did not start");
-        ui.addCue();
+        ui.addCueForTest();
         ui.engine.processBlock(outputs,1,20,100);
         check(ui.engine.getCellPlayback(audioCell).playing &&
               ui.engine.getCellPlayback(audioCell).positionSeconds>initial,
