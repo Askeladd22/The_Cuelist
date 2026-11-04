@@ -13,6 +13,19 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.26] - 2026-11-04
+
+**Tipo:** correzione compilazione e allineamento test di regressione Windows.
+
+### Corretto
+- In `tests/WorkspaceLayoutTests.h`, il pulsante Timeline Collapse viene risolto come `juce::TextButton*`, evitando `error C2039: getTooltip non è un membro di juce::Component`. Mantiene la verifica di Collapse/Expand ai quattro formati di finestra.
+- In `tests/CuelistGuiMockupTests.h`, le prove LIVE richiamano `engine.collectRetired()` tra i blocchi audio quando si pubblicano modifiche ripetute. La simulazione segue così il recupero degli snapshot che `MainComponent::timerCallback()` esegue nel programma reale; non modifica le asserzioni su posizione, stato o GO.
+- Nessun cambiamento all'applicazione, al motore di playback, alle interfacce o al formato `.cuelist` v10.
+
+### Verifica
+- Log Windows riportato: compilazione di `The Cuelist.exe` riuscita, fallita `CuelistTests` sui tre accessi `getTooltip()` a tipo non adatto.
+- Nuova compilazione MSVC/CTest della PR richiesta prima dell'integrazione; nessuna build portable.
+
 ## [0.9.25] - 2026-11-04
 
 **Tipo:** UI nativa, collasso pannelli/editor MIDI.
