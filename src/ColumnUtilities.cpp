@@ -234,8 +234,11 @@ struct ColumnUtilities::Strip final : juce::Component {
             nextMidiScan=now+1000; lastMidiId=col.midiOutputId;
             const auto available=juce::MidiOutput::getAvailableDevices();
             bool connected=false;
+            const bool enabled=col.midiOutputId.isNotEmpty() &&
+                (!owner.appPreferences || owner.appPreferences->getBoolValue(
+                    "midiOutputEnabled_"+col.midiOutputId,true));
             for (const auto& device:available)
-                if (device.identifier==col.midiOutputId && col.midiOutputId.isNotEmpty())
+                if (enabled && device.identifier==col.midiOutputId)
                     connected=true;
             if (midiOutputValid!=connected) {
                 midiOutputValid=connected;
