@@ -17,11 +17,13 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 **Tipo:** redesign cromatico Industrial Orange, esclusivamente visivo.
 
+### Modificato
 - Allineati ai valori della specifica i token in `src/Theme.h`: `bg-main #101619`, `bg-panel #182227`, `bg-elevated #202C32`, `bg-hover #29373D`, `bg-selected #303B40`, `border-default #35434A`; arancio `#C66B42 / #D47A4F / #A95534`.
 - Tipi colonna indipendenti dall'accento: Audio `#8FA8B2`, MIDI `#B79A72`, OSC `#A18BB9`, Control `#7186A6`.
 - Stati indipendenti: GO `#8EAE91`, PANIC `#C66E69`, Warning `#D1A45B`; gerarchia testo `#E5E7E3 / #A5B0AE / #718087 / #536168`.
 - Conservati esattamente i sette colori custom delle cue assegnati prima di questo redesign, anche quando le stesse cue vengono caricate da file precedenti.
 - Gli alias storici del tema rimangono per compatibilità, ma i token semantici sono la fonte delle scelte cromatiche. Arancio leggermente schiarito solo per il testo piccolo, PANIC con testo scuro leggibile.
+### Test
 - Aggiornati i test dei token, delle cue, del mixer e del contrasto. **Nessuna modifica a layout, file .cuelist, engine, trasporto o input**, né a dimensioni e hitbox.
 - Build e CTest Windows da verificare in CI, controllo visivo reale su DPI/32:9 ancora necessario; nessun pacchetto portable.
 
