@@ -13,6 +13,27 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.27] - 2026-11-04
+
+**Tipo:** sistema temi selezionabili e revisione cromatica Industrial Orange.
+
+### Aggiunto
+- `palette::ThemeTokens`: due preset immutabili (Legacy e Industrial Orange) assegnati alla stessa tabella di token JUCE già utilizzata da tutti i componenti; nessun secondo sistema di styling.
+- Preferenza applicativa persistente `appearanceTheme`, selezionabile in View → Appearance e Settings → Appearance, con spunta sul tema attivo. Il cambio aggiorna immediatamente i colori di LookAndFeel, popup, controlli con override, tab e altri componenti visibili; non modifica il contenuto di Show o Undo.
+- Legacy usa i valori esatti del commit `e6f1c384` della 0.9.15, ultima palette pre-Industrial Orange: superfici, rame, testo, PANIC, GO, indicatori MIDI/OSC e tab selezionata.
+
+### Modificato
+- Industrial Orange applica i valori esatti della specifica: `bgMain #101619`, `bgPanel #182227`, `bgElevated #202C32`, `bgHover #29373D`, `bgSelected #303B40`, `borderDefault #35434A`; `accent #C66B42 / #D47A4F / #A95534`.
+- Tipi colonna: Audio `#8FA8B2`, MIDI `#B79A72`, OSC `#A18BB9`, Control `#7186A6`. GO/PLAY `#55B875`, PANIC `#E05A46`, WARNING `#E5A52E`, INFO `#55AFC5`, testo `#E5E7E3 / #A5B0AE / #718087 / #536168`. Il nuovo schema sostituisce i colori funzionali desaturati della 0.9.23.
+- Riempimento visibile delle clip Timeline in tinta tipologica con outline indipendente più luminoso, selezione in arancio, contrasto interno adattivo e feedback hover solo visivo.
+- Le cue colorate mostrano in Industrial Orange una superficie derivata da ciascuno dei sette colori personalizzati, con variante selected/hover; cue colorate selezionate marcate con un doppio rail chiaro/arancio per non confonderle con cue non colorate selezionate. I label scelgono automaticamente un inchiostro chiaro o scuro per massimizzare il contrasto.
+- Nessun cambiamento ai sette valori originali `cue1..cue7`, a `Row.colour`, ai file multimediali, all'audio/MIDI/OSC, alle azioni o al JSON v10. La Timeline usa i colori di **tipo** già definiti nel modello; non introduce nuovi campi colore per i clip.
+
+### Test
+- Asserzioni sui token Industrial Orange e sulle identità Legacy originali; controlli di contrasto e indipendenza fra selezione, stato, tipo e colore salvato.
+- Test cambio tema in tempo reale, salvataggio e riapertura preferenza, risoluzione popup LookAndFeel e integrità di `encodeShow()`.
+- Windows MSVC/CTest e verifica visiva DPI da confermare in CI; nessuna build portable.
+
 ## [0.9.26] - 2026-11-04
 
 **Tipo:** correzione compilazione e allineamento test di regressione Windows.
