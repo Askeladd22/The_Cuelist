@@ -279,7 +279,7 @@ Add an **OSC** column and enter the destination **host/IP address and UDP port**
 
 - Event messages contain an OSC address, event time and ordered typed arguments.
 - Arguments use `i:` (int32), `f:` (float32), `s:` (string), and `b:` (boolean), for example `i:7; f:0.5; s:scene; b:true`.
-- Automation lanes hold a shared OSC address/argument and one or more non-overlapping ramp segments. Add and move control points, resize permitted segments and adjust start/end values.
+- **Double-click a track header** to edit the common OSC address, typed argument list, 1-based automated numeric argument, and parameter minimum/maximum. Every segment on that track uses these settings; incompatible changes are rejected without modifying the clip. **Double-click a ramp** to adjust only its start/end values. Intermediate points remain untouched. Ctrl-click to select several events or ramps, drag a multi-selection together, or use Duplicate/Delete; Ctrl-drag empty timeline space draws a selection marquee.
 - Events and automation share the editor's horizontal timeline; vertical scrolling follows the same track alignment.
 - Clips may use Seconds or Beats; conversion uses the selected cue's tempo map.
 - MIDI/OSC events are timestamped against the audio callback's common monotonic origin, but actual delivery can be delayed by device workers and the operating system.

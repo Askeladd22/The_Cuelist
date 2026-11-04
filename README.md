@@ -4,9 +4,9 @@
 
 The Cuelist is a desktop application for preparing and executing cue-based live productions, theatre performances, concerts and installations. It brings audio playback, MIDI sequences, OSC events and MIDI-controller mappings into one operator-focused workspace. It is not a digital audio workstation and does not include native video or timecode playback.
 
-**Application version:** [`0.9.17`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
+**Application version:** [`0.9.18`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
 
-> **0.9.17 separates the live Cuelist transport from the viewed Cuelist and is not a live-show certification.** The beta numbering has ended, but rehearsals with real devices, licensing verification and Windows DPI/ultrawide visual review remain necessary before commercial distribution or production reliance. CI alone does not prove hardware reliability or end-to-end timing.
+> **0.9.18 reorganizes OSC track settings and strengthens OSC multi-selection; it is not a live-show certification.** The beta numbering has ended, but rehearsals with real devices, licensing verification and Windows DPI/ultrawide visual review remain necessary before commercial distribution or production reliance. CI alone does not prove hardware reliability or end-to-end timing.
 
 ## Versione e storico aggiornamenti
 
@@ -24,6 +24,10 @@ versioni 0.7/0.8/0.9 e delle 86 PR precedentemente integrate (con
 link alle PR), distinguendo la cronologia di sviluppo dalle release
 pubbliche. La versione del progetto salvato `.cuelist` (**schema v10**)
 è indipendente dal numero del software.
+
+## 0.9.18 — Editor OSC: tracce e selezione multipla
+
+L'editor OSC nativo separa ora le **impostazioni della track** (indirizzo OSC, argomenti tipizzati, indice dell'argomento automatizzato, minimo e massimo) dai **valori della Ramp** (inizio e fine). Il doppio clic sulla testata apre la configurazione condivisa della traccia, il doppio clic su un segmento modifica i suoi estremi. Gli aggiornamenti sono transazionali e preservano la compatibilità con i messaggi multi-argomento e i progetti schema v10. Restano disponibili selezione multipla Ctrl/cornice, spostamento collettivo, Duplicate e Delete; uno spostamento produce una sola transazione Undo. La palette Industrial Orange, il motore e il routing non cambiano.
 
 ## 0.9.17 — VIEW e LIVE separati
 

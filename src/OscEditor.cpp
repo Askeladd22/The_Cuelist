@@ -283,7 +283,8 @@ void OscClipEditor::paint(juce::Graphics& g) {
               {6,y+5,70,20},12,selected ? palette::amber : palette::muted,true);
         const auto& address=placeholder ? juce::String("Double-click to add a ramp")
             : clip.tracks[(size_t)track].message.address;
-        label(g,address,{left+9,y+3,std::max(1,axisWidth()-18),20},
+        label(g,placeholder ? address : address+"  /  double-click header to configure",
+              {left+9,y+3,std::max(1,axisWidth()-18),20},
               12,palette::muted);
         if (placeholder) continue;
         const auto& lane=clip.tracks[(size_t)track];
@@ -613,7 +614,7 @@ void OscClipEditor::mouseDoubleClick(const juce::MouseEvent& e) {
     if (track<0) return;
     if (track<(int)clip.tracks.size() &&
         (e.position.x<axisLeft() || e.position.y<laneTop(track)+20)) {
-        editTrackAddress(track); return;
+        editTrackSettings(track); return;
     }
     if (e.position.x<axisLeft() || e.position.x>axisLeft()+axisWidth()) return;
     const int index=automationAt(e.position.x,e.position.y);
@@ -699,7 +700,7 @@ void OscClipEditor::showContext(const juce::MouseEvent& e) {
     menu.addItem(1,"Edit",selectedEvent>=0 || selectedAutomation>=0);
     menu.addItem(2,"Duplicate",selectedEvent>=0 || selectedAutomation>=0);
     menu.addItem(3,"Delete",selectedEvent>=0 || selectedAutomation>=0);
-    menu.addItem(4,"OSC track address",selectedTrack>=0);
+    menu.addItem(4,"OSC track settings",selectedTrack>=0);
     auto safe=juce::Component::SafePointer<OscClipEditor>(this);
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(this),[safe](int item) {
         if (!safe) return;
@@ -709,7 +710,7 @@ void OscClipEditor::showContext(const juce::MouseEvent& e) {
         } else if (item==2) safe->duplicateSelection();
         else if (item==3) safe->deleteSelection();
         else if (item==4 && safe->selectedTrack>=0)
-            safe->editTrackAddress(safe->selectedTrack);
+            safe->editTrackSettings(safe->selectedTrack);
     });
 }
 void OscClipEditor::addEvent() {
@@ -745,26 +746,56 @@ void OscClipEditor::createAutomationAt(double start,int trackIndex) {
     chooseAutomation((int)clip.automations.size()-1);
     notify(before);
 }
-void OscClipEditor::editTrackAddress(int index) {
+void OscClipEditor::editTrackSettings(int index) {
     if (index<0 || index>=(int)clip.tracks.size()) return;
-    const auto address=clip.tracks[(size_t)index].message.address;
-    auto* dialog=new juce::AlertWindow("OSC track address",
-        "Shared by all segments in this track.",
+    const auto original=clip.tracks[(size_t)index];
+    auto* dialog=new juce::AlertWindow(
+        "OSC track settings",
+        "Shared by every automation segment on this track. "
+        "Edit address, typed arguments, numeric target and range here.",
         juce::MessageBoxIconType::NoIcon,this);
-    dialog->addTextEditor("address",address,"OSC address");
-    dialog->addButton("Save",1); dialog->addButton("Cancel",0);
+    dialog->addTextEditor("address",original.message.address,"OSC address");
+    dialog->addTextEditor("args",describeArguments(original.message.arguments),
+                          "Ordered arguments: i:7; f:0.5; s:scene");
+    dialog->addTextEditor("argumentIndex",juce::String(original.argumentIndex+1),
+                          "Automated argument (1-based)");
+    dialog->addTextEditor("rangeMin",juce::String(original.rangeMin,3),"Minimum");
+    dialog->addTextEditor("rangeMax",juce::String(original.rangeMax,3),"Maximum");
+    dialog->addButton("Save",1);dialog->addButton("Cancel",0);
     auto safe=juce::Component::SafePointer<OscClipEditor>(this);
     const auto generation=revision;
     dialog->enterModalState(true,juce::ModalCallbackFunction::create(
         [safe,dialog,index,generation](int response) {
             if (!safe || response!=1 || generation!=safe->revision ||
                 index>=(int)safe->clip.tracks.size()) return;
-            const auto address=dialog->getTextEditorContents("address").trim();
+            auto settings=safe->clip.tracks[(size_t)index];
+            settings.message.address=
+                dialog->getTextEditorContents("address").trim();
+            std::vector<OscValue> args;
+            auto parse=OscClipEditor::parseArguments(
+                dialog->getTextEditorContents("args"),args);
+            const auto indexText=
+                dialog->getTextEditorContents("argumentIndex").trim();
+            double minimum=0,maximum=0;
+            if (parse.failed() || indexText.isEmpty() ||
+                indexText.retainCharacters("0123456789")!=indexText ||
+                !parseFiniteNumber(dialog->getTextEditorContents("rangeMin"),minimum) ||
+                !parseFiniteNumber(dialog->getTextEditorContents("rangeMax"),maximum)) {
+                safe->editHint="Invalid track settings. Check OSC types and numeric range.";
+                safe->repaint();return;
+            }
+            settings.message.arguments=std::move(args);
+            settings.argumentIndex=indexText.getIntValue()-1;
+            settings.rangeMin=minimum;settings.rangeMax=maximum;
+            auto modified=safe->clip;
+            if(auto result=updateOscTrackSettings(modified,index,settings);result.failed()) {
+                safe->editHint=result.getErrorMessage();
+                safe->repaint();return;
+            }
             const auto before=safe->clip;
-            for (int i=0;i<(int)safe->clip.automations.size();++i)
-                if (safe->trackForAutomation(i)==index)
-                    safe->clip.automations[(size_t)i].message.address=address;
-            safe->clip.tracks[(size_t)index].message.address=address;
+            safe->clip=std::move(modified);
+            safe->selectedTrack=index;
+            safe->editHint.clear();
             safe->notify(before);
         }),true);
 }
@@ -884,69 +915,51 @@ void OscClipEditor::editAutomation(int index) {
     chooseAutomation(index);
     const auto original=clip.automations[(size_t)index];
     const int trackIndex=trackForAutomation(index);
-    if (trackIndex<0) return;
-    const auto track=clip.tracks[(size_t)trackIndex];
+    if(trackIndex<0) return;
+    const auto& track=clip.tracks[(size_t)trackIndex];
     const auto type=original.message.arguments[(size_t)original.argumentIndex].type;
-    auto* dialog=new juce::AlertWindow("OSC ramp",
-        "Start and end values are independent of the parameter range.\n"
-        "Intermediate points retain their values. The argument index is 1-based.",
+    auto* dialog=new juce::AlertWindow(
+        "OSC ramp values",
+        "Change only the start and end values of this segment. "
+        "Double-click the track header to edit address, arguments, "
+        "target type and parameter range.",
         juce::MessageBoxIconType::NoIcon,this);
     dialog->addTextEditor("start",juce::String(original.points.front().value,3),"Start value");
     dialog->addTextEditor("end",juce::String(original.points.back().value,3),"End value");
-    dialog->addTextEditor("rangeMin",juce::String(track.rangeMin,3),"Parameter minimum");
-    dialog->addTextEditor("rangeMax",juce::String(track.rangeMax,3),"Parameter maximum");
-    dialog->addTextEditor("args",describeArguments(original.message.arguments),"OSC arguments (i:7; f:0.5)");
-    dialog->addTextEditor("argumentIndex",juce::String(original.argumentIndex+1),"Automated argument (1-based)");
-    dialog->addTextEditor("type",type==OscValueType::integer?"i":"f","Automated type: f or i");
-    dialog->addButton("Save",1); dialog->addButton("Cancel",0);
+    dialog->addButton("Save",1);dialog->addButton("Cancel",0);
     auto safe=juce::Component::SafePointer<OscClipEditor>(this);
     const auto generation=revision;
     dialog->enterModalState(true,juce::ModalCallbackFunction::create(
-        [safe,dialog,index,trackIndex,generation](int answer) {
-            if (!safe || answer!=1 || generation!=safe->revision ||
-                index>=(int)safe->clip.automations.size() ||
-                trackIndex>=(int)safe->clip.tracks.size()) return;
-            double start=0,end=0,min=0,max=0;
-            if (!parseFiniteNumber(dialog->getTextEditorContents("start"),start) ||
-                !parseFiniteNumber(dialog->getTextEditorContents("end"),end) ||
-                !parseFiniteNumber(dialog->getTextEditorContents("rangeMin"),min) ||
-                !parseFiniteNumber(dialog->getTextEditorContents("rangeMax"),max) ||
-                min>=max || start<min || start>max || end<min || end>max) return;
-            const auto type=dialog->getTextEditorContents("type").trim().toLowerCase();
-            if (type!="f" && type!="i") return;
-            const auto indexText=dialog->getTextEditorContents("argumentIndex").trim();
-            if (indexText.isEmpty() || indexText.retainCharacters("0123456789")!=indexText) return;
-            const int argumentIndex=indexText.getIntValue()-1;
-            std::vector<OscValue> arguments;
-            if (parseArguments(dialog->getTextEditorContents("args"),arguments).failed() ||
-                argumentIndex<0 || argumentIndex>=(int)arguments.size()) return;
-            arguments[(size_t)argumentIndex].type=
-                type=="i" ? OscValueType::integer : OscValueType::decimal;
-            if (type=="i" && (std::floor(start)!=start || std::floor(end)!=end)) return;
-            auto updated=safe->clip;
-            // All segments on a track share their OSC format and argument index.
-            for (int i=0;i<(int)safe->clip.automations.size();++i) {
-                if (safe->trackForAutomation(i)!=trackIndex) continue;
-                auto& a=updated.automations[(size_t)i];
-                a.message.arguments=arguments;
-                a.argumentIndex=argumentIndex;
-                if (i==index) {
-                    a.points.front().value=start;
-                    a.points.back().value=end;
-                }
-                for (const auto& point:a.points)
-                    if (point.value<min || point.value>max ||
-                        (type=="i" && std::floor(point.value)!=point.value))
-                        return;
+        [safe,dialog,index,trackIndex,type,generation](int response) {
+            if(!safe || response!=1 || generation!=safe->revision ||
+               index>=(int)safe->clip.automations.size() ||
+               trackIndex>=(int)safe->clip.tracks.size()) return;
+            double start=0,end=0;
+            if(!parseFiniteNumber(dialog->getTextEditorContents("start"),start) ||
+               !parseFiniteNumber(dialog->getTextEditorContents("end"),end)) {
+                safe->editHint="Enter valid numeric start and end values.";
+                safe->repaint();return;
             }
-            auto& target=updated.tracks[(size_t)trackIndex];
-            target.message.arguments=arguments;
-            target.argumentIndex=argumentIndex;
-            target.rangeMin=min; target.rangeMax=max;
-            if (validateOscClip(updated).failed()) return;
+            const auto& track=safe->clip.tracks[(size_t)trackIndex];
+            if(start<track.rangeMin || start>track.rangeMax ||
+               end<track.rangeMin || end>track.rangeMax ||
+               (type==OscValueType::integer &&
+                   (std::floor(start)!=start || std::floor(end)!=end))) {
+                safe->editHint="Ramp values must fit the track range and numeric type.";
+                safe->repaint();return;
+            }
+            auto modified=safe->clip;
+            auto& ramp=modified.automations[(size_t)index];
+            ramp.points.front().value=start;
+            ramp.points.back().value=end;
+            if(auto result=validateOscClip(modified);result.failed()) {
+                safe->editHint=result.getErrorMessage();
+                safe->repaint();return;
+            }
             const auto before=safe->clip;
-            safe->clip=std::move(updated);
+            safe->clip=std::move(modified);
             safe->selectedTrack=trackIndex;
+            safe->editHint.clear();
             safe->notify(before);
         }),true);
 }

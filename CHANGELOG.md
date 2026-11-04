@@ -13,6 +13,22 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.18] - 2026-11-04
+
+**Tipo:** OSC Editor — configurazione tracce e selezione multipla.
+
+### Modificato
+- Il doppio clic sulla testata di una traccia OSC apre un unico dialogo di configurazione condivisa: indirizzo, argomenti tipizzati (anche più argomenti), argomento numerico automatizzato, intervallo minimo/massimo.
+- Il dialogo di un singolo segmento Ramp contiene soltanto i valori iniziale e finale; mantiene gli eventuali punti intermedi e non modifica implicitamente la configurazione degli altri segmenti.
+- L'operazione `updateOscTrackSettings` copia il clip, applica il nuovo template a tutti i segmenti della traccia e convalida tutto prima di sostituire il modello; rifiuta type/range incompatibili senza alterazioni parziali.
+- Conservata la selezione multipla OSC già presente: Ctrl/click, rettangolo, spostamento collettivo, eliminazione e duplicazione. Un drag completo genera una sola transazione Undo.
+- Nessuna modifica alla pipeline OSC di rete, ai payload e tempi delle automazioni, al formato salvato (JSON v10) o alla palette Industrial Orange.
+
+### Test
+- Test automatico con due Ramp, argomenti OSC multipli e mutazione transazionale della testata; rollback su valori incompatibili e range insufficienti.
+- Test simulato della selezione Ctrl e dello spostamento di due eventi con un'unica transazione Undo.
+- Build/CTest Windows e verifica con ricevitori OSC reali da effettuare prima dell'uso in produzione; nessuna build portable.
+
 ## [0.9.17] - 2026-11-04
 
 **Tipo:** gestione indipendente delle Cuelist VIEW e LIVE.

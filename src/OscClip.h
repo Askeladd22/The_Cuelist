@@ -43,6 +43,9 @@ struct OscClip {
 // Valid OSC 1.0 messages with i, f, s, T and F type tags.
 // Packets have a fixed 1024-byte upper bound for lock-free RT dispatch.
 juce::Result validateOscClip(const OscClip&);
+// Atomic track-header edit: updates the OSC template, target argument and
+// parameter range of every ramp on the track, without altering point timing.
+juce::Result updateOscTrackSettings(OscClip&,int trackIndex,const OscTrack& settings);
 std::vector<uint8_t> encodeOscMessage(const OscEvent&);
 struct OscScheduledMessage { double seconds=0; std::vector<uint8_t> bytes; };
 // Prepared on the UI thread, with a bounded network event budget.

@@ -4,6 +4,77 @@
 #include <cstring>
 
 void oscAutomationV9Tests() {
+    test("OSC track header edit synchronizes multi-argument target transactionally",[] {
+        OscClip clip;clip.length=8;
+        OscTrack t;t.message.address="/light";
+        t.message.arguments={{OscValueType::integer,7,0,{}},
+                             {OscValueType::decimal,0,.1f,{}}};
+        t.argumentIndex=1;t.rangeMin=0;t.rangeMax=1;
+        clip.tracks.push_back(t);
+        for(int n=0;n<2;++n) {
+            OscAutomation ramp;ramp.message=t.message;ramp.argumentIndex=1;
+            ramp.time=n*2.0;ramp.duration=1;
+            ramp.points={{0,.25},{1,.75}};
+            clip.automations.push_back(ramp);
+        }
+        check(validateOscClip(clip).wasOk(),"Valid multi-argument OSC track rejected");
+        auto changed=t;changed.message.address="/colour";
+        changed.message.arguments[0].integer=12;
+        changed.rangeMin=-1;changed.rangeMax=2;
+        check(updateOscTrackSettings(clip,0,changed).wasOk(),"Track configuration edit rejected");
+        check(clip.tracks[0].message.address=="/colour" &&
+              clip.automations[0].message.address=="/colour" &&
+              clip.automations[1].message.address=="/colour" &&
+              clip.automations[0].message.arguments[0].integer==12 &&
+              clip.automations[0].argumentIndex==1 &&
+              clip.automations[1].points[1].value==.75,
+              "Track update lost target identity, constants, or existing ramp values");
+        auto invalid=changed;
+        invalid.message.arguments[1].type=OscValueType::integer;
+        const auto before=clip;
+        check(updateOscTrackSettings(clip,0,invalid).failed(),
+              "Fractional ramps allowed to become integer targets");
+        check(clip.tracks[0].message.address==before.tracks[0].message.address &&
+              clip.automations[0].message.arguments[1].type==OscValueType::decimal,
+              "Invalid settings partially altered OSC clip");
+        invalid=changed;invalid.rangeMax=.5;
+        check(updateOscTrackSettings(clip,0,invalid).failed(),
+              "Track accepted a range excluding an existing control point");
+        check(validateOscClip(clip).wasOk(),"Failed configuration left invalid OSC data");
+    });
+    test("OSC Ctrl-selection moves two events without changing their relative time",[] {
+        OscClip clip;clip.length=4;
+        clip.events={{.5,"/a",{}},{1.0,"/b",{}}};
+        int commits=0;
+        OscClipEditor editor(clip,{{0,120,4,4}},
+            [&](const OscClip&,const OscClip&,bool done) {if(done)++commits;});
+        editor.setSize(940,340);
+        const juce::Point<float> a{183.f,111.f},b{288.f,128.f};
+        const auto normal=cueViewFixtures::event(editor,a,a);
+        editor.mouseDown(normal);editor.mouseUp(normal);
+        const auto time=juce::Time::getCurrentTime();
+        auto control=[&](juce::Point<float> p) {
+            return juce::MouseEvent(
+                juce::Desktop::getInstance().getMainMouseSource(),p,
+                juce::ModifierKeys(juce::ModifierKeys::leftButtonModifier|
+                                   juce::ModifierKeys::ctrlModifier),
+                1,0,0,0,0,&editor,&editor,time,p,time,1,false);
+        };
+        editor.mouseDown(control(b));editor.mouseUp(control(b));
+        const juce::Point<float> moved{236.f,111.f};
+        editor.mouseDown(cueViewFixtures::event(editor,a,a));
+        editor.mouseDrag(cueViewFixtures::event(editor,moved,a,1,true));
+        editor.mouseUp(cueViewFixtures::event(editor,moved,a,1,true));
+        const auto& result=editor.getClip();
+        // Snap is enabled by default at 1/8 grid; both selected events
+        // must shift together by the snapped delta, not the raw mouse delta.
+        check(result.events[0].time>.5 &&
+              result.events[1].time>1.0,
+              "Multi-selection drag did not move both OSC events");
+        near(result.events[1].time-result.events[0].time,.5);
+        check(commits==1,"Grouped OSC gesture must commit one Undo transaction");
+        check(validateOscClip(result).wasOk(),"Grouped OSC drag left an invalid message");
+    });
     test("N7 OSC editor renders flat event and automation lanes without altering data",[] {
         OscClip source;
         source.length=4;

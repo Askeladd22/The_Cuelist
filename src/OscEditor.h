@@ -75,7 +75,7 @@ private:
     void chooseEvent(int index);
     void chooseAutomation(int index);
     void createAutomationAt(double start,int trackIndex);
-    void editTrackAddress(int index);
+    void editTrackSettings(int index);
     void notify(const OscClip& before,bool complete=true);
     void deleteSelection();
     void duplicateSelection();
