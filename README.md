@@ -4,9 +4,9 @@
 
 The Cuelist is a desktop application for preparing and executing cue-based live productions, theatre performances, concerts and installations. It brings audio playback, MIDI sequences, OSC events and MIDI-controller mappings into one operator-focused workspace. It is not a digital audio workstation and does not include native video or timecode playback.
 
-**Application version:** [`0.9.23`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
+**Application version:** [`0.9.24`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
 
-> **0.9.23 refines green, red and blue contrast within Industrial Orange; it is not a live-show certification.** The beta numbering has ended, but rehearsals with real devices, licensing verification and Windows DPI/ultrawide visual review remain necessary before commercial distribution or production reliance. CI alone does not prove hardware reliability or end-to-end timing.
+> **0.9.24 isolates live playback from non-destructive structure and MIDI output edits; it is not a live-show certification.** The beta numbering has ended, but rehearsals with real devices, licensing verification and Windows DPI/ultrawide visual review remain necessary before commercial distribution or production reliance. CI alone does not prove hardware reliability or end-to-end timing.
 
 ## Versione e storico aggiornamenti
 
@@ -24,6 +24,10 @@ versioni 0.7/0.8/0.9 e delle 86 PR precedentemente integrate (con
 link alle PR), distinguendo la cronologia di sviluppo dalle release
 pubbliche. La versione del progetto salvato `.cuelist` (**schema v10**)
 è indipendente dal numero del software.
+
+## 0.9.24 — Modifiche strutturali e MIDI Output senza arrestare il LIVE
+
+L'aggiunta di cue e colonne e il riordino di cue/colonne mantengono il playback, la posizione corrente e il prossimo GO individuato tramite ID stabile, anche se la riga viene spostata. La rinomina e la sola visualizzazione delle Cuelist restano indipendenti dalla LIVE. Il cambio MIDI Output non esegue più PANIC né riavvia il motore audio; un nuovo dispositivo riceve i messaggi dalla posizione corrente e la vecchia stream viene ritirata annullando i pacchetti in coda. La disconnessione o l'assenza di uscita lascia proseguire l'audio, con inoltro MIDI sospeso; il dispositivo selezionato può essere ripristinato per ID esatto. **Delete** della cue/colonna LIVE e modifica del tempo non sono stati alterati: richiedono una politica dedicata di migrazione dello stato prima di rimuovere l'arresto di sicurezza. Test automatici ed esiti nel changelog.
 
 ## 0.9.23 — Industrial Orange / contrasti operativi
 
