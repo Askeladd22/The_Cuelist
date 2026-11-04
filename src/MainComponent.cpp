@@ -829,6 +829,19 @@ void MainComponent::paint(juce::Graphics& g) {
           palette::muted,true);
     }
     }
+    // Drag/drop only changes tab ordering. A narrow insertion marker between
+    // tab slots mirrors the cue-row drop feedback without covering their names.
+    if (cuelistDragSource>=0 && cuelistDragTarget>=0 &&
+        cuelistDragSource!=cuelistDragTarget &&
+        cuelistDragTarget<(int)cuelistTabs.size() &&
+        cuelistTabs[(size_t)cuelistDragTarget] &&
+        cuelistTabs[(size_t)cuelistDragTarget]->isVisible()) {
+        const auto slot=cuelistTabs[(size_t)cuelistDragTarget]->getBounds();
+        const bool after=cuelistDragSource<cuelistDragTarget;
+        const float edge=(float)(after ? slot.getX()+82 : slot.getX()-2);
+        g.setColour(palette::teal);
+        g.fillRoundedRectangle(edge,42.f,3.f,30.f,1.5f);
+    }
     label(g,status,{geometry.viewport.getX(),h-35,std::max(1,geometry.editorX-200),25},12,palette::muted);
 }
 void MainComponent::showCuelistOverflowMenu() {
@@ -897,7 +910,8 @@ void MainComponent::updateCuelistDropTarget(int rootX) {
     }
     if (cuelistDragTarget!=candidate) {
         cuelistDragTarget=candidate;
-        refreshCuelistTabs(); // highlighted destination tab
+        refreshCuelistTabs(); // update insertion edge, no change to sorting
+        repaint();
     }
 }
 void MainComponent::refreshCuelistTabs() {
@@ -933,8 +947,7 @@ void MainComponent::refreshCuelistTabs() {
         const int x=left+(i-first)*slot;
         const bool active=i==show.activeCuelist;
         tab.setActiveVisual(active);
-        const auto colour=i==cuelistDragTarget ? palette::teal.withAlpha(.45f) :
-                          active ? palette::selectedTab : palette::panel;
+        const auto colour=active ? palette::selectedTab : palette::panel;
         auto name=show.cuelists[(size_t)i].name;
         tab.setButtonText(name.length()>13 ? name.substring(0,11)+"..." : name);
         tab.setTooltip(name+" - click: select; double-click: rename; drag: move.");
