@@ -669,7 +669,8 @@ private:
     std::optional<Cell> copiedCell;
     std::shared_ptr<const AudioClip> copiedAudio;
     ColumnType copiedType=ColumnType::audio;
-    juce::TextButton clipCollapseButton{"Collapse"}, clipCloseButton{"Close"};
+    DockCollapseButton clipCollapseButton;
+    juce::TextButton clipCloseButton{"Close"};
     juce::UndoManager editHistory;
     juce::File projectFile;
     juce::String status="Ready. Select an Audio cell and import a WAV file.";
