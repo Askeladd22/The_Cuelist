@@ -8,6 +8,10 @@ This English guide covers the software currently implemented in this repository.
 
 **Colour convention (Industrial Orange):** burned orange outlines and playhead mark the current selection and time cursor. Operational sage green (`#9BB892`) indicates GO or playing; terracotta red (`#C97870`) indicates PANIC/errors; muted steel blue (`#86A6BD`) marks Audio and technical information. Warm warning amber means NEXT or paused. Audio, MIDI, OSC and Control columns retain their separate type keys (slate, tan, violet, steel blue). Selection colour never replaces a clip's type key, and the application's seven custom cue colours are preserved.
 
+**MIDI editor window actions:** three compact icon buttons sit at the right of the Piano Roll toolbar: Collapse (up/down chevron), Detach (pop-out window) and Close (X). They share the same size and spacing. The floating editor's Detach button becomes Reattach, using an inward arrow.
+
+**Timeline Collapse:** click the arrow next to TIMELINE in its header to reclaim workspace space. When collapsed, the arrow stays accessible as a reopen grip at the bottom of the workspace; the View → Timeline menu toggles the same state and persists it across app launches.
+
 **OSC editor gestures:** right-drag across messages or ramps to select several elements; a short right-click still opens the context menu. Double-click the interior of an OSC ramp to insert a control point (Snap applies); drag any point to change its value or time. The obsolete Ramp start/end-value dialog is removed. Track headers remain the sole place to edit the OSC address, multi-argument template, target argument index and parameter range. The target index is required to preserve correct multi-argument messages.
 
 **Header Undo/Redo:** two curved-arrow controls appear immediately after Guide when the window is wide enough; on compact windows use Edit/More or Ctrl+Z, Ctrl+Y and Ctrl+Shift+Z. Their availability follows the shared edit history.
