@@ -280,7 +280,7 @@ void OscClipEditor::paint(juce::Graphics& g) {
         g.fillRect(left,y,axisWidth(),laneHeight-4);
         const bool selected=track==selectedTrack;
         label(g,placeholder ? "+ TRACK" : "OSC "+juce::String(track+1),
-              {6,y+5,70,20},12,selected ? palette::amber : palette::muted,true);
+              {6,y+5,70,20},12,selected ? palette::selection : palette::muted,true);
         const auto& address=placeholder ? juce::String("Double-click to add a ramp")
             : clip.tracks[(size_t)track].message.address;
         label(g,placeholder ? address : address+"  /  double-click header to configure",
@@ -302,10 +302,10 @@ void OscClipEditor::paint(juce::Graphics& g) {
                 x0,(float)y+20,std::max(1.0f,x1-x0),(float)laneHeight-24);
             g.setColour(palette::purple.withAlpha(active ? .18f : .10f));
             g.fillRect(segment);
-            g.setColour((active ? palette::amber : palette::purple)
+            g.setColour((active ? palette::selection : palette::purple)
                 .withAlpha(active ? .95f : .48f));
             g.drawRect(segment,active ? 1.2f : .65f);
-            g.setColour((active ? palette::amber : palette::text)
+            g.setColour((active ? palette::selection : palette::text)
                 .withAlpha(.8f));
             g.fillRect(x1-2,(float)y+laneHeight-37,4.f,18.f);
             juce::Path curve;
@@ -314,10 +314,10 @@ void OscClipEditor::paint(juce::Graphics& g) {
                 const float px=xForTime(a.time+point.time),py=yForValue(i,point.value);
                 if (p==0) curve.startNewSubPath(px,py);
                 else curve.lineTo(px,py);
-                g.setColour(active && p==selectedPoint ? palette::amber : palette::text);
+                g.setColour(active && p==selectedPoint ? palette::selection : palette::purple);
                 g.fillEllipse(px-4,py-4,8,8);
             }
-            g.setColour(active ? palette::amber : palette::purple);
+            g.setColour(palette::purple);
             g.strokePath(curve,juce::PathStrokeType(1.7f));
         }
     }
@@ -337,12 +337,12 @@ void OscClipEditor::paint(juce::Graphics& g) {
     g.fillRect(0,std::max(0,getHeight()-26),getWidth(),26);
     g.setColour(palette::line.withAlpha(.65f));
     g.drawHorizontalLine(std::max(0,getHeight()-26),0,(float)getWidth());
-    g.setColour(palette::amber.withAlpha(.7f));
+    g.setColour(palette::selection.withAlpha(.85f));
     g.drawVerticalLine((int)xForTime(cursor),(float)rulerTop,
                        (float)std::max(rulerTop,getHeight()-26));
     if (editHint.isNotEmpty())
         label(g,editHint,{13,getHeight()-24,std::max(1,getWidth()-26),20},
-              11,palette::amber);
+              11,palette::standby);
     else
         label(g,"OSC  |  "+juce::String((int)clip.events.size())+
               " events  /  "+juce::String((int)clip.tracks.size())+" tracks",

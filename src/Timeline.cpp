@@ -249,7 +249,7 @@ void Timeline::paint(juce::Graphics& g) {
             : palette::text.withAlpha(c%2==0 ? .025f : .008f));
         g.fillRect(0,y,getWidth(),trackHeight-1);
         if (c==owner.selectedColumn) {
-            g.setColour(palette::type((int)owner.show.columns[(size_t)c].type));
+            g.setColour(palette::selection);
             g.fillRect(0,y,2,trackHeight-1);
         }
         const auto& name=owner.show.columns[c].name;
@@ -286,7 +286,9 @@ void Timeline::paint(juce::Graphics& g) {
         // legible without colouring the entire clip as an AI-style badge.
         g.setColour(palette::input);
         g.fillRect(clipBounds);
-        g.setColour(colour.withAlpha(c==owner.selectedColumn ? .88f : .53f));
+        g.setColour(c==owner.selectedColumn ?
+                    palette::selection.withAlpha(.92f) :
+                    colour.withAlpha(.53f));
         g.drawRect(clipBounds,c==owner.selectedColumn ? 1.25f : .75f);
         g.setColour(colour.withAlpha(.84f));
         g.fillRect(x,(float)y,3.f,31.f);
@@ -336,7 +338,7 @@ void Timeline::paint(juce::Graphics& g) {
     if (owner.engine.monitoredRowId.load()==row.id) {
         const auto seconds=owner.engine.playheadSeconds.load(); const auto x=(float)(timelineStart+area*(seconds-viewStart)/length);
         if (x>=timelineStart && x<=getWidth()-20) {
-            g.setColour(palette::amber); g.drawLine(x,72,x,(float)bottom,1.5f);
+            g.setColour(palette::selection); g.drawLine(x,72,x,(float)bottom,1.5f);
             juce::Path marker; marker.addTriangle(x-5,71,x+5,71,x,78); g.fillPath(marker);
         }
     }

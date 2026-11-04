@@ -4,9 +4,9 @@
 
 The Cuelist is a desktop application for preparing and executing cue-based live productions, theatre performances, concerts and installations. It brings audio playback, MIDI sequences, OSC events and MIDI-controller mappings into one operator-focused workspace. It is not a digital audio workstation and does not include native video or timecode playback.
 
-**Application version:** [`0.9.19`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
+**Application version:** [`0.9.20`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
 
-> **0.9.19 expands unified Undo/Redo across Show and mixer editing; it is not a live-show certification.** The beta numbering has ended, but rehearsals with real devices, licensing verification and Windows DPI/ultrawide visual review remain necessary before commercial distribution or production reliance. CI alone does not prove hardware reliability or end-to-end timing.
+> **0.9.20 completes the Industrial Orange state-colour hierarchy; it is not a live-show certification.** The beta numbering has ended, but rehearsals with real devices, licensing verification and Windows DPI/ultrawide visual review remain necessary before commercial distribution or production reliance. CI alone does not prove hardware reliability or end-to-end timing.
 
 ## Versione e storico aggiornamenti
 
@@ -24,6 +24,10 @@ versioni 0.7/0.8/0.9 e delle 86 PR precedentemente integrate (con
 link alle PR), distinguendo la cronologia di sviluppo dalle release
 pubbliche. La versione del progetto salvato `.cuelist` (**schema v10**)
 è indipendente dal numero del software.
+
+## 0.9.20 — Industrial Orange / gerarchia cromatica
+
+Rifinitura **solo cromatica** della palette approvata: bordo e rail di selezione in arancio bruciato, GO e playback in verde operativo, NEXT/PAUSED e segnalazioni in ambra warning, tipologie Audio/MIDI/OSC/Control nei rispettivi colori indipendenti. Playhead e clip selezionati nella Timeline usano l'arancio, senza alterare i tratti semantici dei clip. Le curve OSC restano viola con outline e punti selezionati arancio; indicatori MIDI/OSC tecnici e meter CPU/RAM non usano più l'accento del brand. Restano inalterati layout, geometria, interazioni, routing, dati dello Show e sette colori assegnabili alle cue.
 
 ## 0.9.19 — Undo/Redo condivisi per gli edit dello Show
 

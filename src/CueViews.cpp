@@ -96,8 +96,8 @@ void drawLoopIcon(juce::Graphics& g,juce::Rectangle<int> bounds,juce::Colour col
 void playPauseIcon(juce::Graphics& g,juce::Rectangle<int> box,bool pause,
                    bool hovered=false) {
     const IconButtonState state{true,hovered,false,pause,false};
-    drawIconButtonSurface(g,box.toFloat(),palette::teal,state);
-    const auto ink=iconButtonInk(palette::teal,state);
+    drawIconButtonSurface(g,box.toFloat(),palette::playing,state);
+    const auto ink=iconButtonInk(palette::playing,state);
     g.setColour(ink);
     if (drawNotoSymbol(g,(juce::juce_wchar)(pause ? 0x23F8 : 0x25B6),
                        box,17.5f,ink))
@@ -114,7 +114,7 @@ void playPauseIcon(juce::Graphics& g,juce::Rectangle<int> box,bool pause,
 }
 void transportButton(juce::Graphics& g,juce::Rectangle<int> box,bool stop,
                      bool enabled,float iconSize=17.5f,bool hovered=false) {
-    const auto accent=stop ? palette::red : palette::teal;
+    const auto accent=stop ? palette::red : palette::playing;
     const IconButtonState state{enabled,hovered,false,false,false};
     drawIconButtonSurface(g,box.toFloat(),accent,state);
     const auto ink=iconButtonInk(accent,state);
@@ -263,7 +263,7 @@ void CueGrid::paint(juce::Graphics& g) {
         g.setColour(selected ? palette::raised.interpolatedWith(palette::panel,.20f) : base);
         g.fillRect(0,y,getWidth(),rowHeight);
         if (playing) {
-            g.setColour(palette::teal.withAlpha(selected?.08f:.10f));
+            g.setColour(palette::playing.withAlpha(selected?.08f:.10f));
             g.fillRect(0,y,getWidth(),rowHeight);
         }
         if (next) {
@@ -276,7 +276,7 @@ void CueGrid::paint(juce::Graphics& g) {
         }
         // Parallel status rails remain unambiguous for selected NEXT cues.
         if (selected) {
-            g.setColour(palette::text.withAlpha(.78f));
+            g.setColour(palette::selection.withAlpha(.94f));
             g.fillRect(0,y,2,rowHeight);
         }
         if (next) {
@@ -284,7 +284,7 @@ void CueGrid::paint(juce::Graphics& g) {
             g.fillRect(selected?2:0,y,3,rowHeight);
         }
         if (playing) {
-            g.setColour(palette::teal);
+            g.setColour(palette::playing);
             g.fillRect(selected?(next?5:2):(next?3:0),y,2,rowHeight);
         }
         if (row.colour>0 && !next && !playing) {
@@ -297,7 +297,7 @@ void CueGrid::paint(juce::Graphics& g) {
         smallButton(g,"v",{5,y+27,18,18},
                     r+1<(int)show.rows.size(),false,true);
         smallButton(g,"x",{27,y+13,18,20},true,true,true);
-        g.setColour(next ? palette::amber : palette::teal);
+        g.setColour(palette::go);
         g.fillRoundedRectangle(rowGoBounds(y).toFloat(),5.f);
         if (hoverGo) {
             g.setColour(palette::text.withAlpha(.76f));
@@ -312,8 +312,8 @@ void CueGrid::paint(juce::Graphics& g) {
               rowNameBounds(y),15,palette::text,true);
         const auto state=playing?"PLAYING":paused?"PAUSED":
                          next?"NEXT CUE":row.muted?"MUTED":"STANDBY";
-        const auto stateInk=playing ? palette::teal :
-                            paused || next ? palette::amber :
+        const auto stateInk=playing ? palette::playing :
+                            paused || next ? palette::standby :
                             row.muted ? palette::red : palette::muted;
         label(g,juce::String(r+1).paddedLeft('0',2)+" / "+state,
               rowStatusBounds(y),10,stateInk,true);
@@ -373,8 +373,8 @@ void CueGrid::paint(juce::Graphics& g) {
             }
             if (selectedCell || drop) {
                 const bool focused=owner.hasKeyboardFocus(true);
-                g.setColour(drop ? palette::amber :
-                    tone.withAlpha(focused ? .92f : .63f));
+                g.setColour(drop ? palette::standby :
+                    palette::selection.withAlpha(focused ? .94f : .72f));
                 g.drawRoundedRectangle(box.reduced(1.f),3.f,
                                        drop || focused ? 1.65f : 1.1f);
             } else if (loaded) {
@@ -414,7 +414,7 @@ void CueGrid::paint(juce::Graphics& g) {
                 // Runtime-driven dot; never infer playback from loaded media.
                 const bool active=playback.playing || playback.paused || playback.waiting;
                 if (active) {
-                    g.setColour(playback.playing?palette::teal:palette::amber);
+                    g.setColour(playback.playing?palette::playing:palette::standby);
                     g.fillEllipse((float)x+10,(float)y+31,5.f,5.f);
                 }
                 // Preserve numeric position/duration while paused; the
@@ -422,11 +422,12 @@ void CueGrid::paint(juce::Graphics& g) {
                 label(g,playback.waiting?"WAITING":
                         timeText(playback.positionSeconds)+" / "+timeText(seconds),
                      {x+(active?19:9),y+26,w-(active?84:74),16},10,
-                     playback.playing?palette::teal:
-                     playback.paused||playback.waiting?palette::amber:tone);
+                     playback.playing?palette::playing:
+                     playback.paused||playback.waiting?palette::standby:tone);
                 const auto progress=seconds>0?juce::jlimit(0.,1.,playback.positionSeconds/seconds):0.;
                 g.setColour(palette::line);g.fillRect(x+7,y+45,w-14,3);
-                g.setColour(playback.waiting||playback.paused?palette::amber:tone);
+                g.setColour(playback.waiting||playback.paused?palette::standby:
+                            playback.playing?palette::playing:tone);
                 g.fillRect((float)x+7,(float)y+45,(float)((w-14)*progress),3.f);
             } else label(g,missing?"MEDIA MISSING":
                            column.type==ColumnType::audio?"+ WAV/MP3":
@@ -1080,13 +1081,13 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
             paused=paused||state.paused;
         }
         // Match the N3.3 CueGrid row surface exactly: the persistent
-        // 3px copper pinned-edge rail is painted over all rows at the end.
+        // 3px Industrial Orange pinned-edge rail is painted above rows.
         const auto base=(r&1)==0 ? palette::panel :
             palette::panel.interpolatedWith(palette::raised,.10f);
         g.setColour(selected ? palette::raised.interpolatedWith(palette::panel,.20f) : base);
         g.fillRect(3,y,getWidth()-3,CueGrid::rowHeight);
         if (playing) {
-            g.setColour(palette::teal.withAlpha(selected?.08f:.10f));
+            g.setColour(palette::playing.withAlpha(selected?.08f:.10f));
             g.fillRect(3,y,getWidth()-3,CueGrid::rowHeight);
         }
         if (next) {
@@ -1101,8 +1102,9 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
         // Narrow independent status signals; keep BPM and toggles readable.
         // One understated cue-state accent spans both metrics columns.
         // The original status remains visible in the cue-name lane.
-        const auto accent=playing ? palette::teal :
-            next ? palette::amber :
+        const auto accent=playing ? palette::playing :
+            next ? palette::standby :
+            selected ? palette::selection :
             row.colour>0 ? cueTone : palette::text;
         if(selected || next || playing || row.colour>0) {
             g.setColour(accent.withAlpha(selected && !playing && !next ?
@@ -1129,16 +1131,16 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
             g.fillRoundedRectangle(toggle.toFloat(),4.f);
         }
         // Preserve the original binary Auto Stop behavior and switch geometry.
-        g.setColour(row.stopOnNext?palette::teal.withAlpha(.30f):
+        g.setColour(row.stopOnNext?palette::selection.withAlpha(.30f):
                    palette::muted.withAlpha(.20f));
         g.fillRoundedRectangle((float)toggle.getX()+3.f,
                                (float)toggle.getY()+2.f,31.f,19.f,9.f);
-        g.setColour(row.stopOnNext?palette::teal:palette::muted);
+        g.setColour(row.stopOnNext?palette::selection:palette::muted);
         g.fillEllipse((float)toggle.getX()+(row.stopOnNext?19.f:6.f),
                       (float)toggle.getY()+5.f,13.f,13.f);
         label(g,row.stopOnNext?"ON":"OFF",
               {toggle.getX()+39,toggle.getY()+1,36,21},10,
-              row.stopOnNext?palette::teal:palette::muted,true);
+              row.stopOnNext?palette::selection:palette::muted,true);
 
         // The 94px separator corresponds to the same original two zones.
         g.setColour(palette::line.withAlpha(.28f));
