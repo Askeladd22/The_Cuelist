@@ -58,62 +58,65 @@ int main() {
     juce::ScopedJuceInitialiser_GUI initialiseJuce;
     // Exact graphite/copper tokens plus readable foregrounds on the native
     // dark surfaces. These are logical checks, not a Windows/DPI visual test.
-    test("Graphite/Copper palette preserves canonical colour tokens", [] {
-        const std::array<juce::Colour,19> actual{
-            palette::swatch::graphiteBlack, palette::swatch::graphiteInput,
-            palette::swatch::graphitePanel, palette::swatch::graphiteToolbar,
-            palette::swatch::graphiteRaised, palette::swatch::graphiteLine,
-            palette::swatch::warmWhite, palette::swatch::warmGrey,
-            palette::swatch::copper, palette::swatch::copperLight,
-            palette::swatch::copperDark, palette::swatch::brass,
-            palette::swatch::amber, palette::swatch::violet,
-            palette::swatch::slateBlue, palette::swatch::slateSage,
-            palette::swatch::success, palette::swatch::error,
-            palette::swatch::danger
+    test("Industrial Orange design tokens match the approved specification", [] {
+        const std::array<juce::Colour,20> actual{
+            palette::swatch::bgMain,palette::swatch::bgPanel,
+            palette::swatch::bgElevated,palette::swatch::bgHover,
+            palette::swatch::bgSelected,palette::swatch::borderDefault,
+            palette::swatch::accentPrimary,palette::swatch::accentHover,
+            palette::swatch::accentPressed,palette::swatch::typeAudio,
+            palette::swatch::typeMidi,palette::swatch::typeOsc,
+            palette::swatch::typeControl,palette::swatch::statusGo,
+            palette::swatch::statusPanic,palette::swatch::statusWarning,
+            palette::swatch::statusInfo,palette::swatch::textPrimary,
+            palette::swatch::textSecondary,palette::swatch::textMuted
         };
-        const std::array<unsigned int,19> expected{
-            0xff121416,0xff1b1e20,0xff24272a,0xff2b2f32,
-            0xff34393c,0xff474b4f,0xfff2ede5,0xffc2b8aa,
-            0xffcf8b62,0xffe4a77e,0xff5c3b2d,0xffd9b577,
-            0xffdebd88,0xffb7a1bf,0xff8ea7b8,0xffa1b5a4,
-            0xff8cbd9f,0xffe48c7f,0xffab5146
+        const std::array<unsigned int,20> expected{
+            0xff101619,0xff182227,0xff202c32,0xff29373d,
+            0xff303b40,0xff35434a,0xffc66b42,0xffd47a4f,
+            0xffa95534,0xff8fa8b2,0xffb79a72,0xffa18bb9,
+            0xff7186a6,0xff8eae91,0xffc66e69,0xffd1a45b,
+            0xff8fa8b2,0xffe5e7e3,0xffa5b0ae,0xff718087
         };
-        for (size_t i=0;i<actual.size();++i)
-            check(actual[i].getARGB()==expected[i],"Graphite/Copper token drift");
-        check(palette::background==palette::swatch::graphiteBlack,
-              "Cue canvas is no longer neutral graphite");
-        check(palette::panic==palette::swatch::danger,
-              "PANIC lost its dedicated warning background");
-        check(palette::go==palette::swatch::success,
-              "GO lost its independent green operational code");
-        check(palette::copper==palette::teal,
-              "Legacy JUCE accent token no longer maps to copper");
+        for(size_t i=0;i<actual.size();++i)
+            check(actual[i].getARGB()==expected[i],"Industrial Orange token mismatch");
+        check(palette::type(0)==palette::swatch::typeAudio &&
+              palette::type(1)==palette::swatch::typeMidi &&
+              palette::type(2)==palette::swatch::typeOsc &&
+              palette::type(3)==palette::swatch::typeControl,
+              "Column colours must remain semantic and not use the global orange");
+        check(palette::swatch::cue1.getARGB()==0xffe4a77e &&
+              palette::swatch::cue7.getARGB()==0xffd9b577,
+              "Existing custom cue swatches changed during theme update");
     });
-    test("Graphite/Copper small labels retain 4.5:1 contrast", [] {
+    test("Industrial Orange readable primary actions and labels", [] {
         const auto linear=[](float channel) {
-            return channel<=0.04045f ? channel/12.92 :
-                   std::pow((channel+0.055)/1.055,2.4);
+            return channel<=0.04045f ? channel/12.92f :
+                   std::pow((channel+0.055f)/1.055f,2.4f);
         };
-        const auto luminance=[&](juce::Colour colour) {
-            return 0.2126*linear(colour.getFloatRed())+
-                   0.7152*linear(colour.getFloatGreen())+
-                   0.0722*linear(colour.getFloatBlue());
+        const auto luminance=[&](juce::Colour c) {
+            return 0.2126f*linear(c.getFloatRed())+
+                   0.7152f*linear(c.getFloatGreen())+
+                   0.0722f*linear(c.getFloatBlue());
         };
-        const auto ratio=[&](juce::Colour ink,juce::Colour surface) {
-            const auto a=luminance(ink),b=luminance(surface);
-            return (std::max(a,b)+0.05)/(std::min(a,b)+0.05);
+        const auto ratio=[&](juce::Colour a,juce::Colour b) {
+            const auto x=luminance(a),y=luminance(b);
+            return (std::max(x,y)+.05f)/(std::min(x,y)+.05f);
         };
-        for (const auto surface : {palette::background,palette::input,
-                                   palette::panel,palette::toolbar,
-                                   palette::raised}) {
-            check(ratio(palette::text,surface)>=4.5,"Primary text contrast");
-            check(ratio(palette::muted,surface)>=4.5,"Secondary text contrast");
-            check(ratio(palette::red,surface)>=4.5,"Warning label contrast");
+        for(const auto surface:{palette::background,palette::input,
+                                 palette::panel,palette::toolbar,
+                                 palette::raised}) {
+            check(ratio(palette::text,surface)>=4.5f,"Primary text contrast");
+            check(ratio(palette::muted,surface)>=4.5f,"Secondary text contrast");
         }
-        check(ratio(palette::background,palette::go)>=4.5,
-              "Dark GO button caption must be readable on green");
-        check(ratio(palette::text,palette::panic)>=4.5,
-              "Light PANIC button caption must be readable on copper");
+        check(ratio(palette::teal,palette::raised)>=4.5f,
+              "Accessible accent ink on selected graphite");
+        check(ratio(palette::red,palette::raised)>=4.5f,
+              "Accessible warning ink on selected graphite");
+        check(ratio(palette::background,palette::go)>=4.5f,
+              "Dark GO label on green");
+        check(ratio(palette::background,palette::panic)>=4.5f,
+              "Dark PANIC label on coral");
     });
     pianoRollTests();
     registerMidiTests();
