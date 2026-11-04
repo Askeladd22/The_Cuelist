@@ -385,13 +385,14 @@ MainComponent::MainComponent(bool startAudio) {
         });
     };
     newButton.onClick=[this] { withDiscardConfirmation([this] { if(projectLoader) projectLoader->cancel(); closeMidiClip(); closeOscClip(); editHistory.clearUndoHistory(); stopAll(); show=makeShow(); clips.clear(); projectFile={}; selectedRow=selectedColumn=nextCue=0;
+        liveCuelist=show.activeCuelist; liveNextCue=0;
         resetActiveMapping(); refreshControlSettings();
         dirty=false; if (recoveryEnabled) {
             if (recoveryWriter) recoveryWriter->flush();
             ProjectRecovery::discard(ProjectRecovery::defaultDirectory());
             preserveDeferredRecovery=false;
         }
-        engine.publish(makeRenderState(show,clips)); refresh(); status="New show. Import files into Audio cells."; }); };
+        engine.publish(makeLiveRenderState()); refresh(); status="New show. Import files into Audio cells."; }); };
     openButton.onClick=[this] { withDiscardConfirmation([this] { openProject(); }); };
     preflightButton.setName("showPreflight");
     diagnosticsButton.setName("showDiagnostics");
@@ -725,8 +726,12 @@ void MainComponent::paint(juce::Graphics& g) {
     g.setColour(palette::amber.withAlpha(.11f));
     g.fillRoundedRectangle(12.0f,(float)h-339,156.0f,51.0f,8.0f);
     label(g,"ON DECK",{20,h-333,145,16},11,palette::amber,true);
-    label(g,nextCue<(int)show.rows.size() ? "NEXT  /  "+juce::String(nextCue+1).paddedLeft('0',2) :
-          "END OF SHOW",{20,h-314,148,24},17,palette::text,true);
+    const auto& liveRows=liveCuelist==show.activeCuelist || liveCuelist<0 ||
+                             liveCuelist>=(int)show.cuelists.size()
+        ? show.rows : show.cuelists[(size_t)liveCuelist].rows;
+    label(g,liveNextCue<(int)liveRows.size() ?
+          "LIVE  /  "+juce::String(liveNextCue+1).paddedLeft('0',2) :
+          "END OF LIVE",{20,h-314,148,24},17,palette::text,true);
     // Output meter removed from the sidebar; audio peak telemetry remains
     // available in the Master and channel meters.
     // Continue the non-scrollable metrics surface beneath the mixer. This
@@ -960,10 +965,12 @@ void MainComponent::refreshCuelistTabs() {
         const int x=left+(i-first)*slot;
         const bool active=i==show.activeCuelist;
         tab.setActiveVisual(active);
+        tab.setLiveVisual(i==liveCuelist);
         const auto colour=active ? palette::selectedTab : palette::panel;
         auto name=show.cuelists[(size_t)i].name;
         tab.setButtonText(name.length()>13 ? name.substring(0,11)+"..." : name);
-        tab.setTooltip(name+" - click: select; double-click: rename; drag: move.");
+        tab.setTooltip(name+(i==liveCuelist ? " [LIVE]" : " [VIEW]")+
+                       " - click: view; GO continues on LIVE Cuelist; double-click: rename; drag: move.");
         tab.setColour(juce::TextButton::buttonColourId,colour);
         tab.setBounds(x,43,count>1 ? 64 : 81,buttonHeight);
         close.setColour(juce::TextButton::buttonColourId,colour);
@@ -1496,7 +1503,9 @@ void MainComponent::refresh() {
 bool MainComponent::select(int row,int column) {
     if (row<0 || row>=(int)show.rows.size() || column<0 || column>=(int)show.columns.size() || !applyInspector()) return false;
     // Collapsed cells remain selectable as cues, but not editable.
-    nextCue=row; selectedRow=row; selectedColumn=column; syncClipEditor(); syncOscEditor(); refreshInspector();
+    nextCue=row;
+    if (liveCuelist==show.activeCuelist) liveNextCue=row;
+    selectedRow=row; selectedColumn=column; syncClipEditor(); syncOscEditor(); refreshInspector();
     const int top=CueGrid::headerHeight+row*CueGrid::rowHeight, bottom=top+CueGrid::rowHeight;
     int viewY=viewport.getViewPositionY();
     // The top 72px are occupied by a pinned heading, not usable row space.
@@ -1508,10 +1517,20 @@ bool MainComponent::select(int row,int column) {
     viewport.setViewPosition(viewport.getViewPositionX(),std::max(0,viewY));
     repaint(); grid.repaint(); timeline.repaint(); return true;
 }
+std::unique_ptr<RenderState> MainComponent::makeLiveRenderState() const {
+    if (liveCuelist<0 || liveCuelist>=(int)show.cuelists.size() ||
+        liveCuelist==show.activeCuelist)
+        return makeRenderState(show,clips);
+    Show live=show;
+    live.rows=show.cuelists[(size_t)liveCuelist].rows;
+    live.activeCuelist=liveCuelist;
+    return makeRenderState(live,clips);
+}
 void MainComponent::changed(const juce::String& text,bool stopPlayback) {
     if (projectLoader) projectLoader->cancel(); // never overwrite newer edits
-    if (stopPlayback) { engine.panic(); resetActiveMapping(); }
-    engine.publish(makeRenderState(show,clips),!stopPlayback);
+    const bool stopLive=stopPlayback && liveCuelist==show.activeCuelist;
+    if (stopLive) { engine.panic(); resetActiveMapping(); }
+    engine.publish(makeLiveRenderState(),!stopLive);
     dirty=true; status=text; refresh();
 }
 void MainComponent::openUserGuide() {
@@ -1703,6 +1722,14 @@ bool MainComponent::send(int id,bool row,bool stop) {
 }
 void MainComponent::triggerRow(int row) {
     if (!select(row,selectedColumn)) return;
+    // An explicit cue GO on a browsed Cuelist intentionally takes over the
+    // transport. Browsing a tab alone never changes the live source.
+    if (liveCuelist!=show.activeCuelist) {
+        stopAll();
+        liveCuelist=show.activeCuelist;
+        liveNextCue=row;
+        refreshCuelistTabs();
+    }
     bool rowPausing=false;
     for (const auto& cell:show.rows[row].cells) {
         const auto action=show.rows[row].overrideBehaviour ? show.rows[row].behaviour : cell.behaviour;
@@ -1724,7 +1751,7 @@ void MainComponent::triggerRow(int row) {
     }
     engine.publish(makeRenderState(show,clips));
     if (send(show.rows[row].id,true)) {
-        nextCue=row+1;
+        nextCue=row+1; liveNextCue=nextCue;
         // The mapping changes when the audio callback acknowledges execution,
         // not when this command is merely accepted into its lock-free queue.
         // Physical-button edges remain tracked across the pending transition.
@@ -1732,6 +1759,7 @@ void MainComponent::triggerRow(int row) {
     repaint(); grid.repaint();
 }
 void MainComponent::toggleRowPlayPause(int row) {
+    if (liveCuelist!=show.activeCuelist) { triggerRow(row); return; }
     if(row<0 || row>=(int)show.rows.size() || !applyInspector()) return;
     // A pause/resume must not change the armed Next Cue or Inspector selection.
     bool active=false,paused=false;
@@ -1749,9 +1777,39 @@ void MainComponent::toggleRowPlayPause(int row) {
     status=active ? "Cue paused." : "Cue resumed.";
     grid.repaint();repaint();
 }
-void MainComponent::goNext() { if (nextCue<(int)show.rows.size()) triggerRow(nextCue); else { status="End of sequence. Select a cue to restart."; repaint(); } }
+void MainComponent::goNext() {
+    if(liveCuelist==show.activeCuelist) {
+        if(nextCue<(int)show.rows.size()) triggerRow(nextCue);
+        else { status="End of live sequence. Select a cue to restart."; repaint(); }
+        return;
+    }
+    if(liveCuelist<0 || liveCuelist>=(int)show.cuelists.size()) return;
+    const auto& liveRows=show.cuelists[(size_t)liveCuelist].rows;
+    if(liveNextCue<0 || liveNextCue>=(int)liveRows.size()) {
+        status="End of live Cuelist. Return to its tab to rearm.";repaint();return;
+    }
+    const auto& cue=liveRows[(size_t)liveNextCue];
+    for(size_t index=0;index<show.columns.size() && index<cue.cells.size();++index)
+        if(show.columns[index].type==ColumnType::midi &&
+           cue.cells[index].midi && cue.cells[index].followsRow &&
+           show.columns[index].midiOutputId.isNotEmpty())
+            (void)engine.setMidiOutput(show.columns[index].midiOutputId);
+    engine.publish(makeLiveRenderState());
+    if(send(cue.id,true)) {
+        ++liveNextCue;
+        status="GO sent to live Cuelist: "+show.cuelists[(size_t)liveCuelist].name+
+               ". Browsed tab unchanged.";
+    }
+    repaint();grid.repaint();refreshCuelistTabs();
+}
 void MainComponent::triggerCell() {
     if (!applyInspector()) return;
+    if(liveCuelist!=show.activeCuelist) {
+        stopAll();
+        liveCuelist=show.activeCuelist;
+        liveNextCue=nextCue;
+        refreshCuelistTabs();
+    }
     auto& c=show.rows[selectedRow].cells[selectedColumn];
     if (show.columns[selectedColumn].type==ColumnType::control) {
         editControlSet(selectedRow,selectedColumn); return;
