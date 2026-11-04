@@ -392,7 +392,8 @@ MainComponent::MainComponent(bool startAudio) {
             ProjectRecovery::discard(ProjectRecovery::defaultDirectory());
             preserveDeferredRecovery=false;
         }
-        engine.publish(makeLiveRenderState()); refresh(); status="New show. Import files into Audio cells."; }); };
+        engine.publish(makeLiveRenderState()); markHistoryBaseline();
+        refresh(); status="New show. Import files into Audio cells."; }); };
     openButton.onClick=[this] { withDiscardConfirmation([this] { openProject(); }); };
     preflightButton.setName("showPreflight");
     diagnosticsButton.setName("showDiagnostics");
@@ -525,7 +526,7 @@ MainComponent::MainComponent(bool startAudio) {
     if (startAudio) { auto error=engine.initialise(); if (error.isNotEmpty()) status="Audio unavailable: "+error; }
     else status="Offline mode: audio device not opened.";
     refreshControlSettings();
-    engine.publish(makeRenderState(show,clips)); refresh(); startTimerHz(25);
+    engine.publish(makeLiveRenderState()); refresh(); startTimerHz(25);
     recoveryEnabled=juce::JUCEApplication::getInstance()!=nullptr;
     if (recoveryEnabled) {
         recoveryWriter=std::make_unique<RecoveryCheckpointWriter>(ProjectRecovery::defaultDirectory());
@@ -1483,6 +1484,7 @@ void MainComponent::resized() {
     positionInlineNameEditor();
 }
 void MainComponent::refresh() {
+    checkpointHistory("Edit Show");
     selectedRow=juce::jlimit(0,(int)show.rows.size()-1,selectedRow);
     selectedColumn=juce::jlimit(0,(int)show.columns.size()-1,selectedColumn);
     visibleClipCount=0;
@@ -1531,6 +1533,7 @@ std::unique_ptr<RenderState> MainComponent::makeLiveRenderState() const {
 }
 void MainComponent::changed(const juce::String& text,bool stopPlayback) {
     if (projectLoader) projectLoader->cancel(); // never overwrite newer edits
+    checkpointHistory(text);
     const bool stopLive=stopPlayback && liveCuelist==show.activeCuelist;
     if (stopLive) { engine.panic(); resetActiveMapping(); }
     engine.publish(makeLiveRenderState(),!stopLive);
@@ -1752,7 +1755,7 @@ void MainComponent::triggerRow(int row) {
         if (identifier.isNotEmpty())
             (void)engine.setMidiOutput(identifier);
     }
-    engine.publish(makeRenderState(show,clips));
+    engine.publish(makeLiveRenderState());
     if (send(show.rows[row].id,true)) {
         nextCue=row+1; liveNextCue=nextCue;
         // The mapping changes when the audio callback acknowledges execution,
@@ -1827,7 +1830,7 @@ void MainComponent::triggerCell() {
         // Attempt to open only a configured route. Missing routes are a
         // global warning in the mixer, not a per-cell playback error.
         if (identifier.isNotEmpty()) (void)engine.setMidiOutput(identifier);
-        engine.publish(makeRenderState(show,clips));
+        engine.publish(makeLiveRenderState());
     }
     send(c.id,false);
 }
@@ -1851,10 +1854,11 @@ void MainComponent::setMasterAudio(float level) {
     if (std::abs(show.masterGain-value)<1.0e-6f) return;
     show.masterGain=value;
     dirty=true;
-    engine.publish(makeRenderState(show,clips));
+    engine.publish(makeLiveRenderState());
     // The engine already receives the mapped value immediately. Keep the
     // actual JUCE fader in lockstep without invoking its onGainChanged hook.
     masterSlider.setGainDb(GainMeterFader::fromLinear(show.masterGain));
+    checkpointHistory("setMasterAudio");
     status="MASTER audio gain updated."; repaint();
 }
 void MainComponent::setMasterPan(float pan) {
@@ -1862,28 +1866,32 @@ void MainComponent::setMasterPan(float pan) {
     const float value=juce::jlimit(-1.0f,1.0f,pan);
     if (std::abs(show.masterPan-value)<1.0e-6f) return;
     show.masterPan=value; dirty=true;
-    engine.publish(makeRenderState(show,clips));
+    engine.publish(makeLiveRenderState());
     masterPan.setValue(show.masterPan,juce::dontSendNotification);
+    checkpointHistory("setMasterPan");
     status="MASTER pan updated."; utilities.repaint(); repaint();
 }
 void MainComponent::setMasterMute(bool muted) {
     if (show.masterMuted==muted) return;
     show.masterMuted=muted; dirty=true;
-    engine.publish(makeRenderState(show,clips));
+    engine.publish(makeLiveRenderState());
+    checkpointHistory("setMasterMute");
     status=muted ? "PCM MASTER muted." : "PCM MASTER unmuted.";
     utilities.repaint(); repaint();
 }
 void MainComponent::setMasterOutput(int channel) {
     if(channel<0 || channel>1022 || channel%2!=0 || show.masterOutput==channel) return;
     show.masterOutput=channel; dirty=true;
-    engine.publish(makeRenderState(show,clips));
+    engine.publish(makeLiveRenderState());
+    checkpointHistory("setMasterOutput");
     status="Master Bus Main Out set to "+juce::String(channel+1)+"/"+juce::String(channel+2)+".";
     utilities.refreshRouting(); repaint();
 }
 void MainComponent::setSafetyLimiter(bool enabled) {
     if(show.safetyLimiterEnabled==enabled) return;
     show.safetyLimiterEnabled=enabled; dirty=true;
-    engine.publish(makeRenderState(show,clips));
+    engine.publish(makeLiveRenderState());
+    checkpointHistory("setSafetyLimiter");
     status=enabled ? "Master Safety Limiter enabled." : "Master Safety Limiter bypassed.";
     safetyLimiter.setToggleState(enabled,juce::dontSendNotification);
     repaint();
@@ -1893,7 +1901,8 @@ void MainComponent::setColumnMasterSend(int column,bool enabled) {
        show.columns[(size_t)column].type!=ColumnType::audio ||
        show.columns[(size_t)column].masterSend==enabled) return;
     show.columns[(size_t)column].masterSend=enabled;
-    dirty=true; engine.publish(makeRenderState(show,clips));
+    dirty=true; engine.publish(makeLiveRenderState());
+    checkpointHistory("setColumnMasterSend");
     status=enabled ? "L/R: column sent to stereo Master Bus." : "L/R: column removed from Master Bus.";
     utilities.syncAudioControls(column); repaint();
 }
@@ -1902,7 +1911,8 @@ void MainComponent::setColumnDirectPostFader(int column,bool post) {
        show.columns[(size_t)column].type!=ColumnType::audio ||
        show.columns[(size_t)column].directPostFader==post) return;
     show.columns[(size_t)column].directPostFader=post;
-    dirty=true; engine.publish(makeRenderState(show,clips));
+    dirty=true; engine.publish(makeLiveRenderState());
+    checkpointHistory("setColumnDirectPostFader");
     status=post ? "Direct Out: POST column fader." : "Direct Out: PRE column fader.";
     utilities.refresh(); repaint();
 }
@@ -1911,7 +1921,8 @@ void MainComponent::setColumnDirectEnabled(int column,bool enabled) {
        show.columns[(size_t)column].type!=ColumnType::audio ||
        show.columns[(size_t)column].directOutputEnabled==enabled) return;
     show.columns[(size_t)column].directOutputEnabled=enabled;
-    dirty=true; engine.publish(makeRenderState(show,clips));
+    dirty=true; engine.publish(makeLiveRenderState());
+    checkpointHistory("setColumnDirectEnabled");
     status=enabled ? "Direct Output enabled." : "Direct Output off (L/R unchanged).";
     utilities.refresh(); repaint();
 }
@@ -1921,7 +1932,8 @@ void MainComponent::setDataOutputMuted(int column,bool muted) {
     if((col.type!=ColumnType::midi && col.type!=ColumnType::osc) || col.muted==muted) return;
     col.muted=muted;
     dirty=true;
-    engine.publish(makeRenderState(show,clips));
+    engine.publish(makeLiveRenderState());
+    checkpointHistory("setDataOutputMuted");
     status=muted ? "Data output muted (cue timeline remains active)."
                  : "Data output unmuted.";
     utilities.refresh();
@@ -1932,10 +1944,11 @@ void MainComponent::setColumnUtilities(int column,float level,float pan,bool mut
     auto& col=show.columns[column];
     col.gain=juce::jlimit(0.0f,4.0f,level); col.pan=juce::jlimit(-1.0f,1.0f,pan);
     col.muted=muted; col.phaseInverted=inverted;
-    dirty=true; engine.publish(makeRenderState(show,clips));
+    dirty=true; engine.publish(makeLiveRenderState());
     // Mapped changes and direct GUI edits share the same one-way UI sync.
     // A plain repaint cannot move a GainMeterFader's stored thumb position.
     utilities.syncAudioControls(column);
+    checkpointHistory("setColumnUtilities");
     status="Column utilities updated."; repaint();
 }
 void MainComponent::setColumnOutput(int column,int outputIndex) {
@@ -1943,7 +1956,8 @@ void MainComponent::setColumnOutput(int column,int outputIndex) {
         || outputIndex<0 || outputIndex>1022) return;
     show.columns[column].output=outputIndex;
     show.columns[column].directOutputEnabled=true; dirty=true;
-    engine.publish(makeRenderState(show,clips));
+    engine.publish(makeLiveRenderState());
+    checkpointHistory("setColumnOutput");
     status="Column audio output updated."; utilities.refresh(); repaint();
 }
 void MainComponent::stopAll() {

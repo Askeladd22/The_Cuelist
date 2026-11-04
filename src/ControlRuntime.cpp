@@ -222,7 +222,8 @@ bool MainComponent::addMappingBinding(ControlBinding b) {
     const auto valid=validateShow(candidate);
     if (valid.failed()) { status=valid.getErrorMessage(); return false; }
     show=std::move(candidate); refreshControlSettings();
-    dirty=true; status="Mapping added."; repaint(); return true;
+    dirty=true; checkpointHistory("Add Control Mapping");
+    status="Mapping added."; repaint(); return true;
 }
 
 bool MainComponent::deleteMappingBinding(int id) {
@@ -231,7 +232,8 @@ bool MainComponent::deleteMappingBinding(int id) {
     bindings.erase(std::remove_if(bindings.begin(),bindings.end(),
         [id](const auto& b){return b.id==id;}),bindings.end());
     if (bindings.size()==n) return false;
-    refreshControlSettings(); dirty=true; status="Mapping removed."; repaint();
+    refreshControlSettings(); dirty=true; checkpointHistory("Remove Control Mapping");
+    status="Mapping removed."; repaint();
     return true;
 }
 
@@ -242,6 +244,7 @@ int MainComponent::createMappingPreset(const juce::String& name) {
     candidate.controls.presets.push_back({id,label});
     if (validateShow(candidate).failed()) return 0;
     show=std::move(candidate); refreshControlSettings(); dirty=true;
+    checkpointHistory("Create Mapping preset");
     status="Preset "+label+" created."; repaint(); return id;
 }
 
@@ -254,6 +257,7 @@ bool MainComponent::assignMappingPreset(int rowId,int presetId) {
     for (auto& row:candidate.rows) if (row.id==rowId) {row.mappingPresetId=presetId;found=true;break;}
     if (!found || validateShow(candidate).failed()) return false;
     show=std::move(candidate); refreshControlSettings(); dirty=true;
+    checkpointHistory("Assign Mapping preset");
     status="Control Mapping preset assigned."; repaint(); return true;
 }
 
@@ -595,6 +599,10 @@ void MainComponent::dispatchControl(const ControlEvent& input) {
         else stopAll();
         return;
     }
+    // Physical MIDI/OSC controller motion is transport automation, not an
+    // operator editing transaction. Never add hundreds of snapshots per
+    // second to the global Undo history.
+    juce::ScopedValueSetter<bool> suspended(historySuspended,true);
     if (binding.target==ControlTarget::masterGain) {
         const float bounded=mappedFaderGain(*action,audioFaderCeilingDb());
         if (shouldApplyMappedValue(show.masterGain,bounded))
@@ -649,6 +657,10 @@ void MainComponent::dispatchControl(const ControlEvent& input) {
                 binding.oscAddress,action->scaled))
                 status="OSC control: invalid destination or queue full.";
         }
+    }
+    if(historySuppressedChanged) {
+        historySuppressedChanged=false;
+        markHistoryBaseline(); // Exclude live controller motion from Undo.
     }
 }
 

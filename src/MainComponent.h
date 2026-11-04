@@ -23,6 +23,7 @@ class PianoRollEditor;
 class OscClipEditor;
 class ControlPanel;
 class MidiUndoAction;
+class ShowUndoAction;
 // A tab supports direct double-click renaming while preserving normal
 // single-click selection (without changing the independent live transport).
 // Vector panel-state icons stay crisp at Windows display scaling and avoid
@@ -509,7 +510,7 @@ public:
     int selectedRow=0, selectedColumn=0;
     AudioEngine engine;
 private:
-    friend class CueGrid; friend class PinnedCueHeaders; friend class PinnedColumnHeaders; friend class CueMetricsOverlay; friend class Timeline; friend class MidiUndoAction; friend class ColumnUtilities; friend class ControlPanel;
+    friend class CueGrid; friend class PinnedCueHeaders; friend class PinnedColumnHeaders; friend class CueMetricsOverlay; friend class Timeline; friend class MidiUndoAction; friend class ShowUndoAction; friend class ColumnUtilities; friend class ControlPanel;
     Theme theme;
     std::unique_ptr<juce::PropertiesFile> appPreferences;
     int faderCeilingDb=6;
@@ -690,7 +691,22 @@ private:
     ColumnType copiedType=ColumnType::audio;
     DockCollapseButton clipCollapseButton;
     juce::TextButton clipCloseButton{"Close"};
-    juce::UndoManager editHistory;
+    // Single application-level history. Snapshots capture only Show metadata
+    // and shared PCM handles; audio sample buffers are never duplicated.
+    juce::UndoManager editHistory{16384,5};
+    struct HistorySnapshot {
+        Show model;
+        ClipMap media;
+    };
+    HistorySnapshot historyBaseline;
+    juce::String historyBaselineJson;
+    bool historyReady=false,restoringHistory=false;
+    bool historySuspended=false,historySuppressedChanged=false;
+    juce::String lastHistoryLabel;
+    juce::int64 lastHistoryTime=0;
+    void markHistoryBaseline();
+    void checkpointHistory(const juce::String&);
+    bool restoreHistorySnapshot(const HistorySnapshot&,const juce::String&);
     // UI tab selection and live transport advance independently. The latter
     // is identified by Cuelist index; row/cell IDs stay stable within each list.
     int liveCuelist=0,liveNextCue=0;

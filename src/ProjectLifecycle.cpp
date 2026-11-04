@@ -144,7 +144,7 @@ bool MainComponent::commitPreparedProject(Show candidate,const juce::File& sourc
     selectedRow=selectedColumn=nextCue=0;
     liveCuelist=show.activeCuelist; liveNextCue=0;
     resetActiveMapping();refreshControlSettings();
-    engine.publish(makeLiveRenderState());refresh();
+    engine.publish(makeLiveRenderState());markHistoryBaseline();refresh();
     // Remember only committed projects, after the new selection/Inspector
     // have been rebuilt; updating the sidebar invokes resized().
     if(!recovering) rememberRecentProject(source);

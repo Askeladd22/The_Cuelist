@@ -4,9 +4,9 @@
 
 The Cuelist is a desktop application for preparing and executing cue-based live productions, theatre performances, concerts and installations. It brings audio playback, MIDI sequences, OSC events and MIDI-controller mappings into one operator-focused workspace. It is not a digital audio workstation and does not include native video or timecode playback.
 
-**Application version:** [`0.9.18`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
+**Application version:** [`0.9.19`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
 
-> **0.9.18 reorganizes OSC track settings and strengthens OSC multi-selection; it is not a live-show certification.** The beta numbering has ended, but rehearsals with real devices, licensing verification and Windows DPI/ultrawide visual review remain necessary before commercial distribution or production reliance. CI alone does not prove hardware reliability or end-to-end timing.
+> **0.9.19 expands unified Undo/Redo across Show and mixer editing; it is not a live-show certification.** The beta numbering has ended, but rehearsals with real devices, licensing verification and Windows DPI/ultrawide visual review remain necessary before commercial distribution or production reliance. CI alone does not prove hardware reliability or end-to-end timing.
 
 ## Versione e storico aggiornamenti
 
@@ -24,6 +24,10 @@ versioni 0.7/0.8/0.9 e delle 86 PR precedentemente integrate (con
 link alle PR), distinguendo la cronologia di sviluppo dalle release
 pubbliche. La versione del progetto salvato `.cuelist` (**schema v10**)
 è indipendente dal numero del software.
+
+## 0.9.19 — Undo/Redo condivisi per gli edit dello Show
+
+L'UndoManager già condiviso dagli editor MIDI e OSC include ora le principali modifiche al modello `Show`: struttura e ordinamento di cue, righe, colonne e Cuelist; nomi, colori, Auto Stop, impostazioni clip, Master, assegnazioni e mixer. Gli snapshot conservano i riferimenti ai clip Audio senza duplicare PCM, hanno una cronologia limitata e sono ricostruiti/validati prima del ripristino. Le modifiche a una tab solo VIEW conservano la LIVE; un ripristino che cambia le cue o i parametri live arresta cautelativamente il trasporto. I semplici cambi di visualizzazione e i comandi GO/Stop/PANIC non sono azioni Undo. Le gesture MIDI/OSC mantengono la cronologia locale già integrata nello stesso UndoManager. Test automatici aggiunti per ordine degli interventi, duplicazioni e isolamento della LIVE.
 
 ## 0.9.18 — Editor OSC: tracce e selezione multipla
 
@@ -188,7 +192,7 @@ e BPM/Auto Stop ancora fissi. Vedere la
 | **MIDI** | MIDI note-clip creation/import, built-in Piano Roll, named output selection, cue tempo mapping, editing and transport. |
 | **OSC** | Timed UDP events, typed arguments and automation ramps with editable control points; per-column destination. |
 | **Control Mapping** | MIDI Learn, global/column/preset/cue mappings and layered Control Sets with priorities, takeover modes, curves and selected audio/MIDI/OSC targets. |
-| **Workspace** | Zoomable Timeline; fixed BPM/Auto Stop; collapse/expand of the Inspector and columns; cue-specific notepad; configurable editor dock; Undo/Redo for supported MIDI/OSC edits. |
+| **Workspace** | Zoomable Timeline; fixed BPM/Auto Stop; collapse/expand of the Inspector and columns; cue-specific notepad; configurable editor dock; Unified Undo/Redo for supported Show and MIDI/OSC edits. |
 | **Operations** | Preflight, Diagnostics, crash-recovery checkpoints, transactional project loading, offline tests and an optional hardware inventory utility. |
 
 ### Typography
@@ -230,7 +234,7 @@ A shared dark editor component is used for cue/column/Cuelist renames, BPM and m
 
 The cue grid keeps **Cuelist and Audio/MIDI/OSC/Control column headings pinned while scrolling vertically**. Column headings follow the same horizontal scroll position as their cells, including collapse/reorder controls. BPM and Auto Stop remain fixed at the right. The vertical cue scrollbar now appears on the **left edge** of the Cue List when needed, so the final cells meet the BPM / Auto Stop divider without a dark 9px gutter. Short Cuelists reserve no unnecessary scrollbar space. The Cue List / BPM divider remains continuous across the scrolling grid and mixer. Row values and switches are clipped beneath fixed headers while scrolling vertically, and the row's Play/Pause, Stop and menu actions have separate hit targets. Cell Play/Stop buttons likewise use distinct, larger targets. The row-level Auto Stop switch has a separate **CELLS +/−** disclosure for cell-specific stop settings. **Double-click a Cuelist tab or the Cuelist name in the cue-grid header to rename it**; both always show the same saved name. The `×` action deletes a Cuelist after confirmation, but the last remaining Cuelist cannot be deleted. A separate overflow menu appears only when tabs no longer fit. The Inspector can collapse into a narrow right-side tab and reopen without losing committed edits. Cue notes are saved with their cue.
 
-Undo/Redo use the existing MIDI/OSC edit history; they are **not** a universal undo system for every action in the application.
+Undo/Redo share a single bounded history for supported Show operations, clip and row edits, Master/mixer adjustments and MIDI/OSC gestures. Runtime GO, Stop, PANIC and VIEW-only tab changes are never undoable.
 
 ## Getting started
 
