@@ -68,8 +68,14 @@ WorkspaceLayout calculateWorkspaceLayout(const WorkspaceLayoutInput& input) {
     const int requestIncrease=std::max(0,result.effectiveTimelineAdjustment);
     const int gridDecrease=std::min(requestIncrease,gridBudget);
     result.effectiveDockHeight=baseDockHeight-(requestIncrease-gridDecrease);
-    const int gridHeight=baseGridHeight-gridDecrease+
+    int gridHeight=baseGridHeight-gridDecrease+
         std::max(0,-result.effectiveTimelineAdjustment);
+    if (!input.timelineVisible) {
+        // Give the Timeline's entire former footprint back to the cue
+        // workspace; the MIDI/OSC dock keeps its existing height.
+        gridHeight+=std::max(minimumTimelineHeight,
+            input.height-gridHeight-result.effectiveDockHeight-201);
+    }
     const int utilityHeight=input.height<800 ? 180 : 208;
     // The fixed BPM/Auto Stop band is OUTSIDE the scrollable column region.
     const int lowerWidth=result.editorX-workspaceSeparation-cueLeft;
@@ -84,10 +90,13 @@ WorkspaceLayout calculateWorkspaceLayout(const WorkspaceLayoutInput& input) {
     result.dockClose={615,result.dockY+4,82,26};
     result.dockEditor={cueLeft,result.dockY,lowerWidth,result.effectiveDockHeight};
     result.timeline={cueLeft,result.dockY+result.effectiveDockHeight,lowerWidth,
-        std::max(minimumTimelineHeight,input.height-gridHeight-result.effectiveDockHeight-201)};
+        input.timelineVisible ? std::max(minimumTimelineHeight,
+            input.height-gridHeight-result.effectiveDockHeight-201) : 0};
 
-    result.timelineResize={cueLeft+(lowerWidth-104)/2,
-        result.timeline.getY()-7,104,12};
+    result.timelineResize=input.timelineVisible
+        ? juce::Rectangle<int>{cueLeft+(lowerWidth-104)/2,
+                               result.timeline.getY()-7,104,12}
+        : juce::Rectangle<int>{};
     result.metrics={result.viewport.getRight(),result.viewport.getY(),
         input.pinnedMetricsWidth,result.viewport.getHeight()};
     result.cueHeaders={result.viewport.getX(),result.viewport.getY(),

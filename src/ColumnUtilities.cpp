@@ -20,6 +20,8 @@ struct ColumnUtilities::Strip final : juce::Component {
     bool midiActivityInitialized=false;
     double activityUntil=0;
     juce::ComboBox output;
+    juce::Label midiOutputWarning;
+    bool midiOutputValid=false;
     juce::TextButton directMode{"POST"};
     MasterSendButton masterSend;
     juce::TextButton oscDestination{"OSC / destination"};
@@ -62,6 +64,14 @@ struct ColumnUtilities::Strip final : juce::Component {
         configureMixerPan(pan);
         gain.setName("columnGainDb"); pan.setName("columnPan"); mute.setName("columnMute"); phase.setName("columnPhase");
         addAndMakeVisible(output); output.setName("columnOutput");
+        addAndMakeVisible(midiOutputWarning);
+        midiOutputWarning.setName("noMidiOutputWarning");
+        midiOutputWarning.setText("No MIDI Output",juce::dontSendNotification);
+        midiOutputWarning.setColour(juce::Label::textColourId,palette::red);
+        midiOutputWarning.setFont(font(11.f,true));
+        midiOutputWarning.setJustificationType(juce::Justification::centredLeft);
+        midiOutputWarning.setTooltip("No valid MIDI output is selected. MIDI events are skipped; other cues continue.");
+        midiOutputWarning.setVisible(false);
         addAndMakeVisible(directMode); directMode.setName("columnDirectPrePost");
         directMode.setTooltip("Direct Output only: PRE bypasses column fader, POST follows it. Master L/R stays POST.");
         directMode.onClick=[this] {
@@ -181,6 +191,8 @@ struct ColumnUtilities::Strip final : juce::Component {
         directMode.setVisible(col.type==ColumnType::audio && !col.collapsed);
         oscDestination.setVisible(col.type==ColumnType::osc && !col.collapsed);
         output.setVisible(!col.collapsed && (col.type==ColumnType::audio || col.type==ColumnType::midi));
+        midiOutputWarning.setVisible(col.type==ColumnType::midi &&
+                                     !col.collapsed && !midiOutputValid);
         const bool control=col.type==ColumnType::control;
         controlPriority.setVisible(control && !col.collapsed);
         controlEdit.setVisible(control && !col.collapsed);
@@ -221,6 +233,17 @@ struct ColumnUtilities::Strip final : juce::Component {
             if (routingType==ColumnType::midi && lastMidiId==col.midiOutputId && now<nextMidiScan) return;
             nextMidiScan=now+1000; lastMidiId=col.midiOutputId;
             const auto available=juce::MidiOutput::getAvailableDevices();
+            bool connected=false;
+            const bool enabled=col.midiOutputId.isNotEmpty() &&
+                (!owner.appPreferences || owner.appPreferences->getBoolValue(
+                    "midiOutputEnabled_"+col.midiOutputId,true));
+            for (const auto& device:available)
+                if (enabled && device.identifier==col.midiOutputId)
+                    connected=true;
+            if (midiOutputValid!=connected) {
+                midiOutputValid=connected;
+                midiOutputWarning.setVisible(!col.collapsed && !connected);
+            }
             juce::String signature=col.midiOutputId+"|";
             for (const auto& device:available) signature+=device.identifier+"/"+device.name+"|";
             if (routingType==ColumnType::midi && midiSignature==signature) return;
@@ -289,6 +312,7 @@ struct ColumnUtilities::Strip final : juce::Component {
         const auto type=owner.show.columns[(size_t)index].type;
         output.setBounds(6,type==ColumnType::audio ? 8 : 4,
                          type==ColumnType::audio ? w-67 : w-12,25);
+        midiOutputWarning.setBounds(7,30,std::max(1,w-14),20);
         directMode.setBounds(w-56,8,50,25);
         oscDestination.setBounds(6,4,w-12,28);
         gain.setBounds(collapsed ? (w-34)/2 : 7,collapsed ? 23 : 33,
@@ -310,7 +334,7 @@ struct ColumnUtilities::Strip final : juce::Component {
                               &phaseLearnHotspot,&sendLearnHotspot})
             if (hotspot->isVisible()) hotspot->toFront(false);
         dataMute.setBounds(collapsed ? (w-30)/2 : (w-32)/2,h-36,30,29);
-        midiActivity.setBounds(collapsed ? (w-22)/2 : 12,collapsed ? 40 : 42,
+        midiActivity.setBounds(collapsed ? (w-22)/2 : 12,collapsed ? 40 : 62,
                                 collapsed ? 23 : 46,17);
         oscActivity.setBounds(collapsed ? (w-22)/2 : 12,collapsed ? 40 : 42,
                                collapsed ? 23 : 46,17);

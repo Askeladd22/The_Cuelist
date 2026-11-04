@@ -628,6 +628,14 @@ private:
         MainComponent& owner;
         int original=208;
     } dockResize{*this};
+    // Passive splitter at the top of the dock; resize hit targets stay intact.
+    struct EditorDivider final : juce::Component {
+        EditorDivider() { setInterceptsMouseClicks(false,false); setName("editorTopDivider"); }
+        void paint(juce::Graphics& g) override {
+            g.setColour(palette::line.withAlpha(.8f));
+            g.fillRect(getLocalBounds());
+        }
+    } editorDivider;
     juce::ComboBox rowBehaviour;
     juce::ToggleButton rowMute{"Mute entire cue"},rowLoop{"Loop all clips"};
     bool rowSettings=false;
@@ -669,12 +677,14 @@ private:
     std::optional<Cell> copiedCell;
     std::shared_ptr<const AudioClip> copiedAudio;
     ColumnType copiedType=ColumnType::audio;
-    juce::TextButton clipCollapseButton{"Collapse"}, clipCloseButton{"Close"};
+    DockCollapseButton clipCollapseButton;
+    juce::TextButton clipCloseButton{"Close"};
     juce::UndoManager editHistory;
     juce::File projectFile;
     juce::String status="Ready. Select an Audio cell and import a WAV file.";
     bool dirty=false;
     bool inspectorVisible=true; // UI-only; never persisted in the Show file
+    bool timelineVisible=true, showClock=true, showCpuMeter=true, showRamMeter=true;
     int visibleClipCount=0;
     float systemCpuPercent=-1.f,systemRamPercent=-1.f;
     int systemTelemetryTicks=0;

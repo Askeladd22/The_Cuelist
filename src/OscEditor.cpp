@@ -22,7 +22,7 @@ OscClipEditor::OscClipEditor(OscClip value,std::vector<TempoPoint> points,
     setLookAndFeel(&theme); setName("sharedOscEditor"); setWantsKeyboardFocus(true);
     for (juce::Component* component:std::initializer_list<juce::Component*>{
         &unit,&resolution,&grid,&snap,&add,&remove,&duplicate,&detach,
-        &zoomOut,&zoomIn,&zoomFit})
+        &zoomOut,&zoomIn,&zoomFit,&undo,&redo})
         addAndMakeVisible(component);
     unit.setName("oscTimeUnit");
     unit.addItem("Seconds",1); unit.addItem("Beat",2);
@@ -57,6 +57,9 @@ OscClipEditor::OscClipEditor(OscClip value,std::vector<TempoPoint> points,
     snap.onClick=[this] { repaint(); };
     add.setName("oscAddAutomation"); add.setTooltip("Add a new OSC automation track.");
     zoomOut.setName("oscZoomOut"); zoomIn.setName("oscZoomIn"); zoomFit.setName("oscZoomFit");
+    undo.setName("oscEditorUndo"); redo.setName("oscEditorRedo");
+    undo.setTooltip("Undo the previous OSC edit (Ctrl+Z).");
+    redo.setTooltip("Redo the OSC edit (Ctrl+Y / Ctrl+Shift+Z).");
     remove.setName("oscRemoveMessage"); duplicate.setName("oscDuplicate");
     remove.setTooltip("Delete the selected OSC event, automation, or point.");
     duplicate.setTooltip("Duplicate the selected OSC event or automation.");
@@ -75,7 +78,10 @@ OscClipEditor::OscClipEditor(OscClip value,std::vector<TempoPoint> points,
     detach.setName("oscDetach");
     detach.setTooltip("Detach the OSC editor into a floating window, or reattach it.");
     detach.onClick=[this] { if (onDetach) onDetach(); };
-    for (auto* button:{&add,&remove,&duplicate,&detach,&zoomOut,&zoomIn,&zoomFit}) button->setWantsKeyboardFocus(false);
+    undo.onClick=[this] { if (onUndo) onUndo(); };
+    redo.onClick=[this] { if (onRedo) onRedo(); };
+    for (auto* button:{&add,&remove,&duplicate,&detach,&zoomOut,&zoomIn,
+                       &zoomFit,&undo,&redo}) button->setWantsKeyboardFocus(false);
     ensureTracks();
     setSize(940,320);
 }
@@ -99,6 +105,7 @@ void OscClipEditor::resized() {
     resolution.setBounds(layout.resolution);
     zoomOut.setBounds(layout.zoomOut);
     zoomIn.setBounds(layout.zoomIn); zoomFit.setBounds(layout.zoomFit);
+    undo.setBounds(layout.undo); redo.setBounds(layout.redo);
     repaint();
 }
 float OscClipEditor::xForTime(double time) const {

@@ -2,6 +2,34 @@
 #include "WorkspaceLayout.h"
 
 void workspaceLayoutTests() {
+    test("View Timeline collapse reclaims vertical space independently",[] {
+        for (const auto dimensions:std::initializer_list<juce::Point<int>>{
+                 {1180,820},{1440,900},{1647,895},{1920,1080}}) {
+            WorkspaceLayoutInput input;
+            input.width=dimensions.x; input.height=dimensions.y;
+            input.activeDockHeight=208; input.columnEndX=318+6*152;
+            input.rowCount=12;
+            const auto open=calculateWorkspaceLayout(input);
+            input.timelineVisible=false;
+            const auto hidden=calculateWorkspaceLayout(input);
+            check(hidden.timeline.getHeight()==0 && hidden.timelineResize.isEmpty(),
+                  "Collapsed Timeline retained paint area or drag handle");
+            check(hidden.viewport.getHeight()>open.viewport.getHeight() &&
+                  hidden.utilities.getBottom()==hidden.dockEditor.getY(),
+                  "Collapsed Timeline did not return height to Cue Grid");
+            check(hidden.dockEditor.getHeight()==open.dockEditor.getHeight() &&
+                  hidden.metrics.getHeight()==hidden.viewport.getHeight() &&
+                  hidden.viewport.getWidth()==open.viewport.getWidth(),
+                  "Timeline toggle unexpectedly changed dock or pinned metrics");
+            check(hidden.dockEditor.getBottom()<=dimensions.y-47,
+                  "Collapsed Timeline encroached into footer");
+            input.timelineVisible=true;
+            const auto reopened=calculateWorkspaceLayout(input);
+            check(reopened.timeline==open.timeline &&
+                  reopened.viewport==open.viewport,
+                  "Expanding Timeline did not restore baseline geometry");
+        }
+    });
     test("Inspector side rail reclaims cue, mixer and Timeline space",[] {
         for (const auto dimensions:std::initializer_list<juce::Point<int>>{
                  {1180,820},{1440,900},{1647,895},{1920,1080}}) {

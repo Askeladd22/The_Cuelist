@@ -38,7 +38,7 @@ MainComponent::MainComponent(bool startAudio) {
          &goButton,&panicButton,&deviceButton,&controlButton,&collapseAllButton,&inspectorSideTab,
          &cuelistOverflowButton,&addCuelistButton,&cuelistMoveLeft,&cuelistMoveRight,&undoButton,&redoButton,&globalMidiLearn,&globalOscLearn,&quickControlTargets,&quickLearnMapSelector,&cancelQuickLearn,&goLearnHotspot,&panicLearnHotspot,&helpButton,&dockResize,&timelineResize,&importButton,&midiEditButton,&oscEditButton,&playCellButton,&stopCellButton,&clearButton,&tempoButton,&applyButton,
          &cellTab,&rowTab,&rowGain,&rowBehaviour,&rowMute,&rowLoop,&rowName,&cellName,&bpm,&cueNotes,&behaviour,&follow,&loop,&cellAutoStop,&gainDb,&viewport,&timeline,&utilities,
-         &clipCollapseButton,&clipCloseButton,&cueHeaders,&columnHeaders,&cueMetrics,&preflightButton,&diagnosticsButton,&preferencesButton,&projectNameLabel,&inlineNameEditor}) addAndMakeVisible(c);
+         &clipCollapseButton,&clipCloseButton,&editorDivider,&cueHeaders,&columnHeaders,&cueMetrics,&preflightButton,&diagnosticsButton,&preferencesButton,&projectNameLabel,&inlineNameEditor}) addAndMakeVisible(c);
     for (juce::TextButton* b : std::initializer_list<juce::TextButton*>{&openButton,&saveButton,&newButton,&addRowButton,&addColumnButton,&goButton,&panicButton,&deviceButton,&controlButton,&collapseAllButton,&inspectorSideTab,
                     &cuelistOverflowButton,&addCuelistButton,&cuelistMoveLeft,&cuelistMoveRight,&undoButton,&redoButton,&globalMidiLearn,&globalOscLearn,&helpButton,
                     &importButton,&midiEditButton,&oscEditButton,&playCellButton,&stopCellButton,&clearButton,&tempoButton,&applyButton,
@@ -181,11 +181,13 @@ MainComponent::MainComponent(bool startAudio) {
     dockResize.setName("clipEditorResizeHandle");
     dockResize.setTooltip("Drag up or down to resize the docked Clip Editor.");
     clipCollapseButton.setName("clipEditorCollapse");
+    clipCollapseButton.setTooltip("Collapse the docked MIDI/OSC editor; click again to expand.");
     clipCloseButton.setName("clipEditorClose");
     clipCollapseButton.setVisible(false); clipCloseButton.setVisible(false);
     clipCollapseButton.onClick=[this] {
         clipCollapsed=!clipCollapsed;
         clipCollapseButton.setButtonText(clipCollapsed ? "Expand" : "Collapse");
+        clipCollapseButton.setCollapsed(clipCollapsed);
         resized(); repaint();
     };
     clipCloseButton.onClick=[this] { closeMidiClip(); closeOscClip(); };
@@ -253,6 +255,10 @@ MainComponent::MainComponent(bool startAudio) {
     prefOptions.folderName="The Cuelist";
     appPreferences=std::make_unique<juce::PropertiesFile>(prefOptions);
     faderCeilingDb=appPreferences->getIntValue("audioFaderCeilingDb",6)==0 ? 0 : 6;
+    showClock=appPreferences->getBoolValue("viewShowClock",true);
+    showCpuMeter=appPreferences->getBoolValue("viewShowCpu",true);
+    showRamMeter=appPreferences->getBoolValue("viewShowRam",true);
+    timelineVisible=appPreferences->getBoolValue("viewTimelineVisible",true);
     recentOpenButton.setName("recentProjectOpen");
     recentMoreButton.setName("recentProjectsAll");
     recentOpenButton.setTooltip("Choose a saved Cuelist project");
@@ -566,7 +572,8 @@ WorkspaceLayout MainComponent::workspaceLayout() const {
     return calculateWorkspaceLayout({getWidth(),getHeight(),activeDockHeight,
         grid.columnX((int)show.columns.size()),(int)show.rows.size(),
         CueGrid::headerHeight,CueGrid::rowHeight,CueMetricsOverlay::width,
-        CueGrid::nameWidth,timelineHeightAdjustment,inspectorVisible});
+        CueGrid::nameWidth,timelineHeightAdjustment,inspectorVisible,
+        timelineVisible});
 }
 
 void MainComponent::paint(juce::Graphics& g) {
@@ -643,23 +650,29 @@ void MainComponent::paint(juce::Graphics& g) {
         appPreferences->getBoolValue("clock12Hour",false);
     const float timeSize=(float)(telemetry.clock.getWidth()>=160?35:
                                  telemetry.clock.getWidth()>=150?33:30);
-    label(g,clockTime.formatted(clock12?"%I:%M:%S":"%H:%M:%S"),
-          clock12 ? telemetry.timeText : telemetry.clock.reduced(4,9),
-          timeSize,palette::text,true,juce::Justification::centred);
-    if (clock12)
-        label(g,clockTime.formatted("%p"),telemetry.meridiemText,12,
-              palette::teal,true,juce::Justification::centredRight);
+    if (showClock) {
+        label(g,clockTime.formatted(clock12?"%I:%M:%S":"%H:%M:%S"),
+              clock12 ? telemetry.timeText : telemetry.clock.reduced(4,9),
+              timeSize,palette::text,true,juce::Justification::centred);
+        if (clock12)
+            label(g,clockTime.formatted("%p"),telemetry.meridiemText,12,
+                  palette::teal,true,juce::Justification::centredRight);
+    }
 
     // Real measured CPU/RAM values and meters are unchanged; only their
     // typography and available horizontal room have increased.
-    label(g,"CPU",telemetry.cpuLabel,14,palette::text,true);
-    label(g,HeaderTelemetryLayout::percentage(systemCpuPercent,true),
-          telemetry.cpuValue,14,palette::text,true,
-          juce::Justification::centredRight);
-    label(g,"RAM",telemetry.ramLabel,14,palette::text,true);
-    label(g,HeaderTelemetryLayout::percentage(systemRamPercent,false),
-          telemetry.ramValue,14,palette::text,true,
-          juce::Justification::centredRight);
+    if (showCpuMeter) {
+        label(g,"CPU",telemetry.cpuLabel,14,palette::text,true);
+        label(g,HeaderTelemetryLayout::percentage(systemCpuPercent,true),
+              telemetry.cpuValue,14,palette::text,true,
+              juce::Justification::centredRight);
+    }
+    if (showRamMeter) {
+        label(g,"RAM",telemetry.ramLabel,14,palette::text,true);
+        label(g,HeaderTelemetryLayout::percentage(systemRamPercent,false),
+              telemetry.ramValue,14,palette::text,true,
+              juce::Justification::centredRight);
+    }
     const auto meter=[&](juce::Rectangle<float> bounds,float percentage,
                          juce::Colour colour) {
         g.setColour(palette::line);
@@ -671,8 +684,8 @@ void MainComponent::paint(juce::Graphics& g) {
                                               percentage/100.0f)),3.f);
         }
     };
-    meter(telemetry.cpuMeter,systemCpuPercent,palette::teal);
-    meter(telemetry.ramMeter,systemRamPercent,palette::amber);
+    if (showCpuMeter) meter(telemetry.cpuMeter,systemCpuPercent,palette::teal);
+    if (showRamMeter) meter(telemetry.ramMeter,systemRamPercent,palette::amber);
 
     label(g,"I/O ACTIVITY",telemetry.activityHeading,11,palette::muted,true);
     const double now=juce::Time::getMillisecondCounterHiRes();
@@ -829,6 +842,19 @@ void MainComponent::paint(juce::Graphics& g) {
           palette::muted,true);
     }
     }
+    // Drag/drop only changes tab ordering. A narrow insertion marker between
+    // tab slots mirrors the cue-row drop feedback without covering their names.
+    if (cuelistDragSource>=0 && cuelistDragTarget>=0 &&
+        cuelistDragSource!=cuelistDragTarget &&
+        cuelistDragTarget<(int)cuelistTabs.size() &&
+        cuelistTabs[(size_t)cuelistDragTarget] &&
+        cuelistTabs[(size_t)cuelistDragTarget]->isVisible()) {
+        const auto slot=cuelistTabs[(size_t)cuelistDragTarget]->getBounds();
+        const bool after=cuelistDragSource<cuelistDragTarget;
+        const float edge=(float)(after ? slot.getX()+82 : slot.getX()-2);
+        g.setColour(palette::teal);
+        g.fillRoundedRectangle(edge,42.f,3.f,30.f,1.5f);
+    }
     label(g,status,{geometry.viewport.getX(),h-35,std::max(1,geometry.editorX-200),25},12,palette::muted);
 }
 void MainComponent::showCuelistOverflowMenu() {
@@ -897,7 +923,8 @@ void MainComponent::updateCuelistDropTarget(int rootX) {
     }
     if (cuelistDragTarget!=candidate) {
         cuelistDragTarget=candidate;
-        refreshCuelistTabs(); // highlighted destination tab
+        refreshCuelistTabs(); // update insertion edge, no change to sorting
+        repaint();
     }
 }
 void MainComponent::refreshCuelistTabs() {
@@ -933,8 +960,7 @@ void MainComponent::refreshCuelistTabs() {
         const int x=left+(i-first)*slot;
         const bool active=i==show.activeCuelist;
         tab.setActiveVisual(active);
-        const auto colour=i==cuelistDragTarget ? palette::teal.withAlpha(.45f) :
-                          active ? palette::selectedTab : palette::panel;
+        const auto colour=active ? palette::selectedTab : palette::panel;
         auto name=show.cuelists[(size_t)i].name;
         tab.setButtonText(name.length()>13 ? name.substring(0,11)+"..." : name);
         tab.setTooltip(name+" - click: select; double-click: rename; drag: move.");
@@ -1049,6 +1075,12 @@ void MainComponent::showOperatorMenu(int index) {
         case 5: { // View: old Fader Range and Clock were not removed.
             m.addItem(base+1,inspectorVisible ? "Collapse Inspector" :
                                               "Expand Inspector");
+            m.addItem(base+2,timelineVisible ? "Collapse Timeline" :
+                                               "Expand Timeline");
+            m.addSeparator();
+            m.addItem(base+14,"Show Clock",true,showClock);
+            m.addItem(base+15,"Show CPU Meter",true,showCpuMeter);
+            m.addItem(base+16,"Show RAM Meter",true,showRamMeter);
             // Collapse all remains directly on the cue header; a second
             // identical menu command only adds operator noise.
             m.addSeparator();
@@ -1173,6 +1205,20 @@ void MainComponent::dispatchOperatorMenu(int group,int command) {
         break;
     case 5:
         if (command==1) inspectorSideTab.triggerClick();
+        else if (command==2) {
+            timelineVisible=!timelineVisible;
+            if (appPreferences) appPreferences->setValue("viewTimelineVisible",timelineVisible);
+            resized(); repaint();
+        }
+        else if (command>=14 && command<=16) {
+            bool* target=command==14 ? &showClock :
+                         command==15 ? &showCpuMeter : &showRamMeter;
+            *target=!*target;
+            if (appPreferences) appPreferences->setValue(
+                command==14 ? "viewShowClock" :
+                command==15 ? "viewShowCpu" : "viewShowRam",*target);
+            repaint();
+        }
         else if (command==10 || command==11)
             setAudioFaderCeilingDb(command==10 ? 6 : 0);
         else if (command==12 || command==13) {
@@ -1276,7 +1322,14 @@ void MainComponent::resized() {
     utilities.setBounds(geometry.utilities);
     utilities.syncScroll(viewport.getViewPositionX());
     clipCollapseButton.setVisible(docked);
+    clipCollapseButton.setCollapsed(clipCollapsed);
     clipCloseButton.setVisible(docked);
+    editorDivider.setVisible(docked);
+    if (docked) {
+        editorDivider.setBounds(geometry.dockEditor.getX(),geometry.dockY-2,
+                                geometry.dockEditor.getWidth(),2);
+        editorDivider.toFront(false);
+    }
     dockResize.setVisible(docked && !clipCollapsed);
     if (docked && !clipCollapsed) {
         dockResize.setBounds(geometry.dockResize);
@@ -1293,7 +1346,7 @@ void MainComponent::resized() {
             const int y=geometry.dockY+
                 (clipCollapsed ? 4 : compact ? 36 : 4);
             clipCollapseButton.setBounds(
-                x+(clipCollapsed ? 14 : compact ? 290 : 541),y,86,26);
+                x+(clipCollapsed ? 14 : compact ? 290 : 541),y,28,26);
             clipCloseButton.setBounds(
                 x+(clipCollapsed ? 109 : compact ? 383 : 634),y,82,26);
         } else if (clipEditor && !clipWindow && !clipCollapsed &&
@@ -1307,11 +1360,11 @@ void MainComponent::resized() {
                 geometry.dockEditor.getWidth());
             const auto origin=geometry.dockEditor.getPosition();
             clipCollapseButton.setBounds(
-                layout.collapse.translated(origin.x,origin.y));
+                layout.collapse.translated(origin.x,origin.y).withWidth(28));
             clipCloseButton.setBounds(
                 layout.close.translated(origin.x,origin.y));
         } else {
-            clipCollapseButton.setBounds(geometry.dockCollapse);
+            clipCollapseButton.setBounds(geometry.dockCollapse.withWidth(28));
             clipCloseButton.setBounds(geometry.dockClose);
         }
         clipCollapseButton.toFront(false); clipCloseButton.toFront(false);
@@ -1325,8 +1378,10 @@ void MainComponent::resized() {
         }
     }
     timeline.setBounds(geometry.timeline);
+    timeline.setVisible(timelineVisible);
     timelineResize.setBounds(geometry.timelineResize);
-    timelineResize.toFront(false);
+    timelineResize.setVisible(timelineVisible);
+    if (timelineVisible) timelineResize.toFront(false);
     const int x=geometry.inspectorLeft, inner=geometry.inspectorInnerWidth;
     cellTab.setVisible(false);rowTab.setVisible(false);
     rowBehaviour.setVisible(false);rowMute.setVisible(false);rowGain.setVisible(false);
@@ -1661,8 +1716,11 @@ void MainComponent::triggerRow(int row) {
         if (action==Behaviour::stop || ((action==Behaviour::pauseResume || action==Behaviour::pauseRestart) && rowPausing)
             || (action==Behaviour::continuePlaying && engine.getCellPlayback(cell.id).playing)) continue;
         const auto& identifier=show.columns[c].midiOutputId;
-        if (identifier.isEmpty()) { message("Select the column MIDI output "+juce::String((int)c+1)+" before GO."); return; }
-        auto ready=engine.setMidiOutput(identifier); if (ready.failed()) { message(ready.getErrorMessage()); return; }
+        // A missing or disconnected MIDI output must never abort an Audio/OSC
+        // cue. The router drops packets for invalid routes and refreshes the
+        // configured device on reconnect; neither case blocks GO.
+        if (identifier.isNotEmpty())
+            (void)engine.setMidiOutput(identifier);
     }
     engine.publish(makeRenderState(show,clips));
     if (send(show.rows[row].id,true)) {
@@ -1705,8 +1763,9 @@ void MainComponent::triggerCell() {
         || c.behaviour==Behaviour::pauseRestart || c.behaviour==Behaviour::continuePlaying));
     if (show.columns[selectedColumn].type==ColumnType::midi && needsOutput) {
         const auto& identifier=show.columns[selectedColumn].midiOutputId;
-        if (identifier.isEmpty()) { message("Select a MIDI output in the column utilities."); return; }
-        auto ready=engine.setMidiOutput(identifier); if (ready.failed()) { message(ready.getErrorMessage()); return; }
+        // Attempt to open only a configured route. Missing routes are a
+        // global warning in the mixer, not a per-cell playback error.
+        if (identifier.isNotEmpty()) (void)engine.setMidiOutput(identifier);
         engine.publish(makeRenderState(show,clips));
     }
     send(c.id,false);

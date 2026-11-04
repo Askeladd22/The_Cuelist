@@ -106,7 +106,7 @@ inline void pianoRollTests() {
             const auto t=MidiEditorToolbarLayout::atWidth(editor->getWidth());
             if(!t.compact) continue;
             const auto pos=editor->getPosition();
-            check(collapse->getBounds()==t.collapse.translated(pos.x,pos.y) &&
+            check(collapse->getBounds()==t.collapse.translated(pos.x,pos.y).withWidth(28) &&
                   close->getBounds()==t.close.translated(pos.x,pos.y),
                   "MIDI dock controls do not follow the actual editor layout");
             for(const auto& action:{t.undo,t.redo,t.detach}) {
@@ -117,7 +117,8 @@ inline void pianoRollTests() {
             }
         }
         auto* collapseButton=dynamic_cast<juce::Button*>(collapse);
-        check(collapseButton!=nullptr,"MIDI collapse button unavailable");
+        check(collapseButton!=nullptr && collapse->getWidth()==28,
+              "MIDI dock edge-grip missing or not compact");
         collapseButton->triggerClick();
         auto* timeline=cueViewFixtures::find<Timeline>(ui);
         check(timeline && collapse->getBottom()<=timeline->getY() &&
