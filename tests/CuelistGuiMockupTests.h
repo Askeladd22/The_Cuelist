@@ -2,6 +2,80 @@
 #include "ProjectMediaLoader.h"
 
 void cuelistGuiMockupTests() {
+    test("LIVE audio and armed GO survive cue add, row move and column reorder",[] {
+        MainComponent ui(false);
+        // 12 seconds at 100 Hz, long enough to exercise several edits.
+        auto audio=std::make_shared<AudioClip>();
+        audio->sampleRate=100;audio->samples.setSize(1,1200);
+        for(int i=0;i<1200;++i)audio->samples.setSample(0,i,.3f);
+        const int audioCell=ui.show.rows[0].cells[0].id;
+        ui.clips[audioCell]=audio;
+        addRow(ui.show,"Armed second cue");
+        ui.engine.connected.store(true);
+        ui.triggerRow(0);
+        float buffer[20]{};
+        float* outputs[]{buffer};
+        ui.engine.processBlock(outputs,1,20,100);
+        const double initial=ui.engine.getCellPlayback(audioCell).positionSeconds;
+        const int armedId=ui.show.rows[(size_t)ui.liveNextCueIndex()].id;
+        check(initial>0 && ui.engine.getCellPlayback(audioCell).playing,
+              "Baseline audio cue did not start");
+        ui.addCue();
+        ui.engine.processBlock(outputs,1,20,100);
+        check(ui.engine.getCellPlayback(audioCell).playing &&
+              ui.engine.getCellPlayback(audioCell).positionSeconds>initial,
+              "Adding a cue interrupted playback or reset its position");
+        check(ui.show.rows[(size_t)ui.liveNextCueIndex()].id==armedId,
+              "Adding a cue changed the stable armed GO identity");
+        check(ui.moveCueRow(1,0),"Cue drag reorder did not succeed");
+        ui.engine.processBlock(outputs,1,20,100);
+        check(ui.engine.getCellPlayback(audioCell).playing &&
+              ui.show.rows[(size_t)ui.liveNextCueIndex()].id==armedId,
+              "Cue reorder stopped audio or changed the next armed cue");
+        addColumn(ui.show,ColumnType::midi,{});
+        ui.changed("MIDI column added");
+        ui.engine.processBlock(outputs,1,20,100);
+        check(ui.engine.getCellPlayback(audioCell).playing,
+              "Adding a column interrupted active audio");
+        ui.reorderColumn(0,1);
+        ui.engine.processBlock(outputs,1,20,100);
+        check(ui.engine.getCellPlayback(audioCell).playing &&
+              ui.engine.getCellPlayback(audioCell).positionSeconds>initial+.6,
+              "Column reorder lost the active audio voice and position");
+        check(ui.engine.acknowledgedCueId.load()==ui.show.rows[1].id,
+              "Structural edits unexpectedly reset the acknowledged LIVE cue");
+    });
+    test("Selecting unavailable MIDI output preserves running audio and cue clock",[] {
+        MainComponent ui(false);
+        auto audio=std::make_shared<AudioClip>();
+        audio->sampleRate=100;audio->samples.setSize(1,1200);
+        for(int i=0;i<1200;++i)audio->samples.setSample(0,i,.2f);
+        const int id=ui.show.rows[0].cells[0].id;
+        ui.clips[id]=audio;
+        addColumn(ui.show,ColumnType::midi,{});
+        ui.engine.connected.store(true);
+        ui.triggerRow(0);
+        float buffer[30]{};
+        float* out[]{buffer};
+        ui.engine.processBlock(out,1,30,100);
+        const double before=ui.engine.getCellPlayback(id).positionSeconds;
+        const int runningId=ui.engine.acknowledgedCueId.load();
+        const int midiIndex=(int)ui.show.columns.size()-1;
+        ui.setMidiOutput(midiIndex,"intentionally-missing-device-0924");
+        ui.engine.processBlock(out,1,30,100);
+        check(ui.show.columns[(size_t)midiIndex].midiOutputId==
+                "intentionally-missing-device-0924" &&
+              ui.engine.getCellPlayback(id).playing &&
+              ui.engine.getCellPlayback(id).positionSeconds>before &&
+              ui.engine.acknowledgedCueId.load()==runningId,
+              "Unplugged MIDI selection stopped or restarted the live audio cue");
+        ui.setMidiOutput(midiIndex,{});
+        ui.engine.processBlock(out,1,30,100);
+        check(ui.engine.getCellPlayback(id).playing &&
+              ui.engine.getCellPlayback(id).positionSeconds>before+.3 &&
+              ui.engine.acknowledgedCueId.load()==runningId,
+              "Clearing MIDI output during GO interrupted audio transport");
+    });
     test("VIEW Cuelist switches without stopping the live transport", [] {
         MainComponent ui(false);
         addRow(ui.show,"Following live cue");
