@@ -1661,8 +1661,11 @@ void MainComponent::triggerRow(int row) {
         if (action==Behaviour::stop || ((action==Behaviour::pauseResume || action==Behaviour::pauseRestart) && rowPausing)
             || (action==Behaviour::continuePlaying && engine.getCellPlayback(cell.id).playing)) continue;
         const auto& identifier=show.columns[c].midiOutputId;
-        if (identifier.isEmpty()) { message("Select the column MIDI output "+juce::String((int)c+1)+" before GO."); return; }
-        auto ready=engine.setMidiOutput(identifier); if (ready.failed()) { message(ready.getErrorMessage()); return; }
+        // A missing or disconnected MIDI output must never abort an Audio/OSC
+        // cue. The router drops packets for invalid routes and refreshes the
+        // configured device on reconnect; neither case blocks GO.
+        if (identifier.isNotEmpty())
+            (void)engine.setMidiOutput(identifier);
     }
     engine.publish(makeRenderState(show,clips));
     if (send(show.rows[row].id,true)) {
@@ -1705,8 +1708,9 @@ void MainComponent::triggerCell() {
         || c.behaviour==Behaviour::pauseRestart || c.behaviour==Behaviour::continuePlaying));
     if (show.columns[selectedColumn].type==ColumnType::midi && needsOutput) {
         const auto& identifier=show.columns[selectedColumn].midiOutputId;
-        if (identifier.isEmpty()) { message("Select a MIDI output in the column utilities."); return; }
-        auto ready=engine.setMidiOutput(identifier); if (ready.failed()) { message(ready.getErrorMessage()); return; }
+        // Attempt to open only a configured route. Missing routes are a
+        // global warning in the mixer, not a per-cell playback error.
+        if (identifier.isNotEmpty()) (void)engine.setMidiOutput(identifier);
         engine.publish(makeRenderState(show,clips));
     }
     send(c.id,false);
