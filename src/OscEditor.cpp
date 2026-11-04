@@ -86,6 +86,11 @@ OscClipEditor::OscClipEditor(OscClip value,std::vector<TempoPoint> points,
     setSize(940,320);
 }
 OscClipEditor::~OscClipEditor() { setLookAndFeel(nullptr); }
+void OscClipEditor::refreshAppearance() {
+    theme.applyColourTokens();
+    sendLookAndFeelChange();
+    repaint();
+}
 void OscClipEditor::setFloating(bool floating) { detach.setButtonText(floating?"Reattach":"Detach"); }
 void OscClipEditor::loadClip(const OscClip& next) {
     ++revision; clip=next; selectedEvent=selectedTrack=selectedAutomation=selectedPoint=-1;
