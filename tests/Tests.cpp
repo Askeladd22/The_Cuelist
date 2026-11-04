@@ -56,6 +56,53 @@ void test(const char* name, const std::function<void()>& body) {
 #include "ArchitectureV8Tests.h"
 int main() {
     juce::ScopedJuceInitialiser_GUI initialiseJuce;
+    // Exact reference swatches plus readable foregrounds on every base UI
+    // surface. These are logical theme checks, not a substitute for Windows QA.
+    test("Forest/Teal palette matches the approved twelve image swatches", [] {
+        const std::array<juce::Colour,12> actual{
+            palette::swatch::black, palette::swatch::forest,
+            palette::swatch::deepPine, palette::swatch::pine,
+            palette::swatch::leaf, palette::swatch::petrol,
+            palette::swatch::sage, palette::swatch::aqua,
+            palette::swatch::verdant, palette::swatch::ivory,
+            palette::swatch::copper, palette::swatch::white
+        };
+        const std::array<unsigned int,12> expected{
+            0xff070802,0xff112710,0xff182f25,0xff243f2e,
+            0xff32642f,0xff2a6b71,0xff57a29d,0xff6ae7e3,
+            0xff31b964,0xffeef5c1,0xffb84729,0xfff8f8f8
+        };
+        for (size_t i=0;i<actual.size();++i)
+            check(actual[i].getARGB()==expected[i],"Palette swatch drift");
+        check(palette::background==palette::swatch::black,
+              "Cue canvas should retain the approved near-black");
+        check(palette::panic==palette::swatch::copper,
+              "Panic fill should use the approved terracotta");
+        check(palette::go==palette::swatch::verdant,
+              "GO fill should use the approved green");
+    });
+    test("Forest/Teal small labels retain 4.5:1 contrast", [] {
+        const auto linear=[](float channel) {
+            return channel<=0.04045f ? channel/12.92 :
+                   std::pow((channel+0.055)/1.055,2.4);
+        };
+        const auto luminance=[&](juce::Colour colour) {
+            return 0.2126*linear(colour.getFloatRed())+
+                   0.7152*linear(colour.getFloatGreen())+
+                   0.0722*linear(colour.getFloatBlue());
+        };
+        const auto ratio=[&](juce::Colour ink,juce::Colour surface) {
+            const auto a=luminance(ink),b=luminance(surface);
+            return (std::max(a,b)+0.05)/(std::min(a,b)+0.05);
+        };
+        for (const auto surface : {palette::background,palette::input,
+                                   palette::panel,palette::toolbar,
+                                   palette::raised}) {
+            check(ratio(palette::text,surface)>=4.5,"Primary text contrast");
+            check(ratio(palette::muted,surface)>=4.5,"Secondary text contrast");
+            check(ratio(palette::red,surface)>=4.5,"Warning label contrast");
+        }
+    });
     pianoRollTests();
     registerMidiTests();
     oscTests();
