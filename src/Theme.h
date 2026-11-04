@@ -26,7 +26,7 @@ inline const juce::Colour graphiteBlack{0xff121416},
                           slateBlue{0xff8ea7b8},
                           slateSage{0xffa1b5a4},
                           success{0xff8cbd9f},
-                          error{0xffdb8175},
+                          error{0xffe48c7f},
                           danger{0xffab5146};
  // Keep historical swatch identifiers as aliases only. A component compiled
  // against an older token name still receives the new neutral colour.
