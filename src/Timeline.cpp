@@ -336,7 +336,7 @@ void Timeline::paint(juce::Graphics& g) {
     if (owner.engine.monitoredRowId.load()==row.id) {
         const auto seconds=owner.engine.playheadSeconds.load(); const auto x=(float)(timelineStart+area*(seconds-viewStart)/length);
         if (x>=timelineStart && x<=getWidth()-20) {
-            g.setColour(palette::amber); g.drawLine(x,72,x,(float)bottom,1.5f);
+            g.setColour(palette::selection); g.drawLine(x,72,x,(float)bottom,1.5f);
             juce::Path marker; marker.addTriangle(x-5,71,x+5,71,x,78); g.fillPath(marker);
         }
     }
