@@ -4,76 +4,185 @@
 #include <cmath>
 namespace cuelist {
 namespace palette {
-// Industrial Orange – approved structural/brand tokens, with a restrained
-// high-contrast sage/brick/steel adjustment to operational status colours.
-// Retain the long-standing API aliases for the native JUCE controls.
-namespace swatch {
-inline const juce::Colour bgMain{0xff101619}, bgPanel{0xff182227},
-                          bgElevated{0xff202c32}, bgHover{0xff29373d},
-                          bgSelected{0xff303b40}, borderDefault{0xff35434a};
-inline const juce::Colour accentPrimary{0xffc66b42},
-                          accentHover{0xffd47a4f}, accentPressed{0xffa95534};
-inline const juce::Colour typeAudio{0xff86a6bd}, typeMidi{0xffb79a72},
-                          typeOsc{0xffa18bb9}, typeControl{0xff7186a6};
-inline const juce::Colour statusGo{0xff9bb892}, statusPanic{0xffc97870},
-                          statusWarning{0xffd1a45b},statusInfo{0xff86a6bd};
-inline const juce::Colour textPrimary{0xffe5e7e3},
-                          textSecondary{0xffa5b0ae}, textMuted{0xff718087},
-                          textDisabled{0xff536168};
-// The seven operator-selectable cue swatches retain their previous hex values.
-// Changing the theme must not recolour saved operator cue choices.
-inline const juce::Colour cue1{0xffe4a77e},cue2{0xffdebd88},
-                          cue3{0xffe48c7f},cue4{0xffb7a1bf},
-                          cue5{0xff8ea7b8},cue6{0xffa1b5a4},
-                          cue7{0xffd9b577};
-// Legacy symbolic names remain valid for components not yet renamed.
-inline const juce::Colour graphiteBlack=bgMain,graphiteInput=bgPanel,
-                          graphitePanel=bgPanel,graphiteToolbar=bgElevated,
-                          graphiteRaised=bgSelected,graphiteLine=borderDefault,
-                          warmWhite=textPrimary,warmGrey=textSecondary,
-                          copper=accentPrimary,copperLight=accentHover,
-                          copperDark=accentPressed,brass=cue7,amber=typeMidi,
-                          violet=typeOsc,slateBlue=cue5,slateSage=cue6,
-                          success=statusGo,error=statusPanic,danger=statusPanic,
-                          petrol=cue5,sage=cue6,leaf=cue7;
+// One mutable token table, two immutable source presets. The Legacy numbers
+// below are copied from the last pre-Industrial Orange Theme.h (v0.9.15,
+// commit e6f1c384). They are NOT approximate reconstructions.
+enum class Appearance { legacy, industrialOrange };
+struct ThemeTokens {
+    uint32_t bgMain,bgPanel,bgElevated,bgHover,bgSelected,borderDefault;
+    uint32_t accentPrimary,accentHover,accentPressed;
+    uint32_t typeAudio,typeMidi,typeOsc,typeControl;
+    uint32_t statusGo,statusPanic,statusWarning,statusInfo;
+    uint32_t textPrimary,textSecondary,textMuted,textDisabled;
+};
+inline constexpr ThemeTokens legacyTokens{
+    0xff121416,0xff24272a,0xff2b2f32,0xff2b2f32,0xff34393c,0xff474b4f,
+    0xffcf8b62,0xffe4a77e,0xff5c3b2d,
+    0xffe4a77e,0xffdebd88,0xffb7a1bf,0xff8ea7b8,
+    0xff8cbd9f,0xffab5146,0xffdebd88,0xff8ea7b8,
+    0xfff2ede5,0xffc2b8aa,0xffc2b8aa,0xff918a82
+};
+inline constexpr ThemeTokens industrialTokens{
+    0xff101619,0xff182227,0xff202c32,0xff29373d,0xff303b40,0xff35434a,
+    0xffc66b42,0xffd47a4f,0xffa95534,
+    0xff8fa8b2,0xffb79a72,0xffa18bb9,0xff7186a6,
+    0xff55b875,0xffe05a46,0xffe5a52e,0xff55afc5,
+    0xffe5e7e3,0xffa5b0ae,0xff718087,0xff536168
+};
+inline Appearance activeAppearance=Appearance::industrialOrange;
+inline const ThemeTokens& tokens(Appearance id) {
+    return id==Appearance::legacy ? legacyTokens : industrialTokens;
 }
-inline const juce::Colour background=swatch::bgMain,
-                          input=swatch::bgPanel,
-                          panel=swatch::bgPanel,
-                          toolbar=swatch::bgElevated,
-                          raised=swatch::bgSelected,
-                          line=swatch::borderDefault,
-                          hover=swatch::bgHover;
-inline const juce::Colour copper=swatch::accentPrimary,
-                          accent=swatch::accentPrimary,
-                          accentHover=swatch::accentHover,
-                          accentPressed=swatch::accentPressed,
-                          text=swatch::textPrimary,
-                          muted=swatch::textSecondary,
-                          dimmed=swatch::textMuted,
-                          disabled=swatch::textDisabled,
-                          // Text and fine glyphs use a brighter derived
-                          // orange; the identity token itself stays #C66B42.
-                          teal=swatch::accentPrimary.interpolatedWith(
-                              swatch::textPrimary,0.45f),
-                          amber=swatch::typeMidi,
-                          purple=swatch::typeOsc,
-                          red=swatch::statusPanic.interpolatedWith(
-                              swatch::textPrimary,0.35f),
-                          go=swatch::statusGo,
-                          panic=swatch::statusPanic,
-                          warning=swatch::statusWarning,
-                          selectedTab=swatch::bgSelected,
-                          // Distinct visual roles: a selected component keeps its
-                          // type-colour identity but gains a brand-colour outline.
-                          selection=swatch::accentPrimary,
-                          playing=swatch::statusGo,
-                          standby=swatch::statusWarning,
-                          technicalInfo=swatch::statusInfo;
+inline const char* displayName(Appearance id) {
+    return id==Appearance::legacy ? "Legacy — Graphite / Copper" :
+                                    "Industrial Orange";
+}
+namespace swatch {
+// Changing the theme reassigns these tokens once on the message/UI thread.
+// Existing native JUCE drawing code reads the SAME token names as before.
+inline juce::Colour bgMain{industrialTokens.bgMain},
+    bgPanel{industrialTokens.bgPanel},bgElevated{industrialTokens.bgElevated},
+    bgHover{industrialTokens.bgHover},bgSelected{industrialTokens.bgSelected},
+    borderDefault{industrialTokens.borderDefault};
+inline juce::Colour accentPrimary{industrialTokens.accentPrimary},
+    accentHover{industrialTokens.accentHover},accentPressed{industrialTokens.accentPressed};
+inline juce::Colour typeAudio{industrialTokens.typeAudio},
+    typeMidi{industrialTokens.typeMidi},typeOsc{industrialTokens.typeOsc},
+    typeControl{industrialTokens.typeControl};
+inline juce::Colour statusGo{industrialTokens.statusGo},
+    statusPanic{industrialTokens.statusPanic},statusWarning{industrialTokens.statusWarning},
+    statusInfo{industrialTokens.statusInfo};
+inline juce::Colour textPrimary{industrialTokens.textPrimary},
+    textSecondary{industrialTokens.textSecondary},textMuted{industrialTokens.textMuted},
+    textDisabled{industrialTokens.textDisabled};
+// These seven user-assignable cue values are intentionally NOT themed,
+// because saved Show rows contain their IDs (1–7).
+inline const juce::Colour cue1{0xffe4a77e},cue2{0xffdebd88},
+    cue3{0xffe48c7f},cue4{0xffb7a1bf},cue5{0xff8ea7b8},
+    cue6{0xffa1b5a4},cue7{0xffd9b577};
+// Compatibility aliases for earlier native components.
+inline juce::Colour graphiteBlack=bgMain,graphiteInput=bgPanel,
+    graphitePanel=bgPanel,graphiteToolbar=bgElevated,graphiteRaised=bgSelected,
+    graphiteLine=borderDefault,warmWhite=textPrimary,warmGrey=textSecondary,
+    copper=accentPrimary,copperLight=accentHover,copperDark=accentPressed,
+    brass=cue7,amber=typeMidi,violet=typeOsc,slateBlue=cue5,
+    slateSage=cue6,success=statusGo,error=statusPanic,danger=statusPanic,
+    petrol=cue5,sage=cue6,leaf=cue7;
+}
+inline juce::Colour background=swatch::bgMain,input=swatch::bgPanel,
+    panel=swatch::bgPanel,toolbar=swatch::bgElevated,raised=swatch::bgSelected,
+    line=swatch::borderDefault,hover=swatch::bgHover;
+inline juce::Colour copper=swatch::accentPrimary,
+    accent=swatch::accentPrimary,accentHover=swatch::accentHover,
+    accentPressed=swatch::accentPressed,text=swatch::textPrimary,
+    muted=swatch::textSecondary,dimmed=swatch::textMuted,
+    disabled=swatch::textDisabled,
+    teal=swatch::accentPrimary.interpolatedWith(swatch::textPrimary,.45f),
+    amber=swatch::typeMidi,purple=swatch::typeOsc,
+    red=swatch::statusPanic.interpolatedWith(swatch::textPrimary,.35f),
+    go=swatch::statusGo,panic=swatch::statusPanic,
+    warning=swatch::statusWarning,selectedTab=swatch::bgSelected,
+    selection=swatch::accentPrimary,playing=swatch::statusGo,
+    standby=swatch::statusWarning,technicalInfo=swatch::statusInfo;
 inline juce::Colour type(int i) {
-    return i==0 ? swatch::typeAudio :
-           i==1 ? swatch::typeMidi :
+    return i==0 ? swatch::typeAudio : i==1 ? swatch::typeMidi :
            i==2 ? swatch::typeOsc : swatch::typeControl;
+}
+inline void activate(Appearance chosen) {
+    activeAppearance=chosen;
+    const auto& t=tokens(chosen);
+    swatch::bgMain=juce::Colour(t.bgMain);
+    swatch::bgPanel=juce::Colour(t.bgPanel);
+    swatch::bgElevated=juce::Colour(t.bgElevated);
+    swatch::bgHover=juce::Colour(t.bgHover);
+    swatch::bgSelected=juce::Colour(t.bgSelected);
+    swatch::borderDefault=juce::Colour(t.borderDefault);
+    swatch::accentPrimary=juce::Colour(t.accentPrimary);
+    swatch::accentHover=juce::Colour(t.accentHover);
+    swatch::accentPressed=juce::Colour(t.accentPressed);
+    swatch::typeAudio=juce::Colour(t.typeAudio);
+    swatch::typeMidi=juce::Colour(t.typeMidi);
+    swatch::typeOsc=juce::Colour(t.typeOsc);
+    swatch::typeControl=juce::Colour(t.typeControl);
+    swatch::statusGo=juce::Colour(t.statusGo);
+    swatch::statusPanic=juce::Colour(t.statusPanic);
+    swatch::statusWarning=juce::Colour(t.statusWarning);
+    swatch::statusInfo=juce::Colour(t.statusInfo);
+    swatch::textPrimary=juce::Colour(t.textPrimary);
+    swatch::textSecondary=juce::Colour(t.textSecondary);
+    swatch::textMuted=juce::Colour(t.textMuted);
+    swatch::textDisabled=juce::Colour(t.textDisabled);
+    swatch::graphiteBlack=swatch::bgMain;
+    // Legacy used #1B1E20 for the input, independently of its panel.
+    swatch::graphiteInput=chosen==Appearance::legacy ?
+                          juce::Colour(0xff1b1e20) : swatch::bgPanel;
+    swatch::graphitePanel=swatch::bgPanel;
+    swatch::graphiteToolbar=swatch::bgElevated;
+    swatch::graphiteRaised=swatch::bgSelected;
+    swatch::graphiteLine=swatch::borderDefault;
+    swatch::warmWhite=swatch::textPrimary;
+    swatch::warmGrey=swatch::textSecondary;
+    swatch::copper=swatch::accentPrimary;
+    swatch::copperLight=swatch::accentHover;
+    swatch::copperDark=swatch::accentPressed;
+    swatch::amber=swatch::typeMidi;
+    swatch::violet=swatch::typeOsc;
+    swatch::success=swatch::statusGo;
+    swatch::error=chosen==Appearance::legacy ?
+        juce::Colour(0xffe48c7f) : swatch::statusPanic;
+    swatch::danger=swatch::statusPanic;
+    background=swatch::bgMain;
+    input=swatch::graphiteInput;
+    panel=swatch::bgPanel;
+    toolbar=swatch::bgElevated;
+    raised=swatch::bgSelected;
+    line=swatch::borderDefault;
+    hover=swatch::bgHover;
+    accent=swatch::accentPrimary;
+    accentHover=swatch::accentHover;
+    accentPressed=swatch::accentPressed;
+    text=swatch::textPrimary;
+    muted=swatch::textSecondary;
+    dimmed=swatch::textMuted;
+    disabled=swatch::textDisabled;
+    // Pre-Industrial UI drew with CopperLight, not the darker raw copper.
+    copper=chosen==Appearance::legacy ? swatch::copperLight : accent;
+    teal=chosen==Appearance::legacy ? swatch::copperLight :
+         accent.interpolatedWith(text,.45f);
+    amber=swatch::typeMidi;
+    purple=swatch::typeOsc;
+    red=chosen==Appearance::legacy ? juce::Colour(0xffe48c7f) :
+        swatch::statusPanic.interpolatedWith(text,.35f);
+    go=swatch::statusGo;
+    panic=swatch::statusPanic;
+    warning=swatch::statusWarning;
+    selectedTab=chosen==Appearance::legacy ? swatch::copperDark : swatch::bgSelected;
+    selection=chosen==Appearance::legacy ? teal : accent;
+    playing=go;
+    standby=warning;
+    technicalInfo=swatch::statusInfo;
+}
+inline float relativeLuminance(juce::Colour c) {
+    const auto component=[](float s) {
+        return s<=.04045f ? s/12.92f : std::pow((s+.055f)/1.055f,2.4f);
+    };
+    return .2126f*component(c.getFloatRed())+
+           .7152f*component(c.getFloatGreen())+
+           .0722f*component(c.getFloatBlue());
+}
+inline juce::Colour readableInk(juce::Colour surface) {
+    const auto y=relativeLuminance(surface);
+    const auto light=relativeLuminance(text),dark=relativeLuminance(background);
+    const auto lightRatio=(std::max(y,light)+.05f)/(std::min(y,light)+.05f);
+    const auto darkRatio=(std::max(y,dark)+.05f)/(std::min(y,dark)+.05f);
+    return lightRatio>=darkRatio ? text : background;
+}
+inline juce::Colour cueSurface(juce::Colour base,juce::Colour custom,
+                               bool selected,bool hovered) {
+    if(activeAppearance==Appearance::legacy || custom.isTransparent())return base;
+    // Draw custom colours on the cue body, leaving the selection outline
+    // independent of the saved (unchanged) cue colour.
+    return base.interpolatedWith(custom,selected ? .62f : hovered ? .59f : .55f);
 }
 }
 // Small icon buttons share one restrained surface, but retain their own
