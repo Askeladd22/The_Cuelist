@@ -273,6 +273,9 @@ bool PianoRollEditor::snapEnabled() const { return snap.getSelectedId()!=5; }
 void PianoRollEditor::updateCanvas() { canvas->setSize(std::max(viewport.getWidth()-14,keysWidth+(int)std::ceil(clip.lengthBeats*pixelsPerBeat)+24),rulerHeight+128*noteHeight); canvas->repaint(); }
 void PianoRollEditor::setFloating(bool floating) {
     detach.setFloating(floating);
+    // Accessible name and existing automation/tests retain the semantic
+    // label; only the button's paint changes to a vector icon.
+    detach.setButtonText(floating ? "Reattach" : "Detach");
     detach.setTooltip(floating ? "Reattach the MIDI editor to its dock." :
                                   "Detach the MIDI editor into a separate window.");
 }
