@@ -13,6 +13,27 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.24] - 2026-11-04
+
+**Tipo:** correzione stabilità trasporto LIVE e routing MIDI.
+
+### Corretto
+- `addCue`, `showColumnMenu`, `moveCueRow`, `reorderRow`, `reorderColumn`, duplicazione e inserimento cue non eseguono più `changed(..., true)`: il motore adotta snapshot con `preservePlayback`, mantenendo le voci esistenti grazie agli ID di cella stabili.
+- Riordini e inserimenti mantengono l'ID della cue **armata per il prossimo GO**, anziché fare coincidere impropriamente il cursore di playback con il nuovo indice visuale.
+- `setMidiOutput` non invia più PANIC e non forza il reconnect di dispositivi già aperti. Anche una destinazione MIDI indisponibile rimane una selezione esplicita: le sole uscite MIDI sono sospese, mentre cue e audio continuano.
+- `RenderState::inheritPlayback` trasferisce clock, cursore e stato delle voci MIDI tra route differenti, eseguendo il resync delle note sulla nuova destinazione senza ripartire da zero.
+- `MidiOutputRouter::stream` ritira la vecchia stream, ne incrementa l'epoch per scartare i pacchetti programmati, e segnala al worker il rilascio delle note ancora in carico. Il callback non invia ulteriori pacchetti a stream ritirate.
+- Al ritorno di un dispositivo precedentemente indisponibile, il timer tenta il recupero esclusivamente per ID configurato e ripubblica lo snapshot conservando il playback, senza sostituzioni automatiche.
+
+### Limiti e sicurezza
+- L'eliminazione della cue o colonna LIVE, di una Cuelist LIVE intera e l'editing della mappa tempi non sono modificati. Attualmente rimangono operazioni distruttive con confine di sicurezza: servono regole esplicite per le voci già attive o eliminate. Nessuna politica arbitraria introdotta.
+- Il formato `.cuelist` v10, Audio/OSC, palette e layout grafico non cambiano.
+
+### Test
+- Nuovi test di audio in esecuzione mentre vengono aggiunte/spostate cue e colonne, incluso controllo della posizione e dell'ID del prossimo GO.
+- Test di cambio MIDI Output verso un device inesistente e ritorno a output vuoto durante una cue audio; test unitari su eredità del cursore MIDI e invalidazione dei pacchetti del vecchio stream.
+- Windows CTest, MIDI fisico hotplug e invio sul nuovo port da verificare prima del merge; nessun pacchetto portable.
+
 ## [0.9.23] - 2026-11-04
 
 **Tipo:** miglioramento esclusivamente cromatico di Industrial Orange.

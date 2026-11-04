@@ -56,12 +56,20 @@ void RenderState::inheritPlayback(const RenderState& previous) noexcept {
     // Copy only scalar runtime state. Shared media ownership stays entirely on the UI thread.
     for (auto& v:voices) for (const auto& old:previous.voices)
         if (v.cellId==old.cellId && v.clip.get()==old.clip.get() && v.isMidi==old.isMidi && v.isOsc==old.isOsc
-            && (!v.isMidi || (v.midiHash==old.midiHash && v.midiOutputId==old.midiOutputId))
+            && (!v.isMidi || v.midiHash==old.midiHash)
             && (!v.isOsc || (v.oscHash==old.oscHash && v.oscColumnId==old.oscColumnId))) {
+            // The output port is routing, not the logical identity of the
+            // MIDI clip. Preserve its cursor and cue clock when switching ports.
+            const bool routeChanged=v.isMidi &&
+                (v.midiOutputId!=old.midiOutputId || v.midiRoute!=old.midiRoute);
             v.position=old.position; v.playing=old.playing; v.paused=old.paused; v.delaySeconds=old.delaySeconds;
             v.rowMode=old.rowMode; v.pendingSeek=old.pendingSeek;
-            v.heldNotes=old.heldNotes; v.midiCursor=old.midiCursor; v.midiNeedsSync=old.midiNeedsSync;
-            v.heldVelocity=old.heldVelocity;
+            v.midiCursor=old.midiCursor;
+            v.midiNeedsSync=routeChanged || old.midiNeedsSync;
+            if(!routeChanged) {
+                v.heldNotes=old.heldNotes;
+                v.heldVelocity=old.heldVelocity;
+            } // On a different route, rescan at the same time, not beat zero.
             v.oscCursor=old.oscCursor; v.oscNeedsSync=old.oscNeedsSync;
             if (v.rowMode && v.startSeconds!=old.startSeconds)
                 for (const auto& row:previous.rows) if (row.id==v.rowId) placeOnTimeline(v,row.seconds);
@@ -519,6 +527,9 @@ void AudioEngine::setMidiOutputEnabled(const juce::String& id,bool enabled) {
     midiRouter.setOutputEnabled(id,enabled);
 }
 juce::Result AudioEngine::setMidiOutput(const juce::String& identifier,bool reconnect) { return midiRouter.open(identifier,reconnect); }
+int AudioEngine::midiOutputRoute(const juce::String& identifier) const {
+    return midiRouter.route(identifier);
+}
 void AudioEngine::refreshMidiOutputs() { midiRouter.refresh(); }
 AudioEngine::~AudioEngine() {
     devices.removeAudioCallback(this); devices.closeAudioDevice();

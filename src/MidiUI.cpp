@@ -220,13 +220,20 @@ bool MainComponent::redoEdit() {
     return ok;
 }
 void MainComponent::setMidiOutput(int column,const juce::String& identifier) {
-    if (column<0 || column>=(int)show.columns.size() || show.columns[column].type!=ColumnType::midi) return;
-    if (identifier.isNotEmpty()) {
-        engine.panic();
-        auto ready=engine.setMidiOutput(identifier,true);
-        if (ready.failed()) { message(ready.getErrorMessage()); utilities.refresh(); return; }
-    }
-    show.columns[column].midiOutputId=identifier;
-    changed(identifier.isEmpty() ? "MIDI output disabled." : "Column MIDI output updated.",true);
+    if (column<0 || column>=(int)show.columns.size() ||
+        show.columns[column].type!=ColumnType::midi)return;
+    if(show.columns[column].midiOutputId==identifier)return;
+    // This is a routing edit, not a transport command. Never emit PANIC,
+    // reset the audio callback or force-reopen an already working device.
+    const auto ready=identifier.isEmpty() ? juce::Result::ok() :
+        engine.setMidiOutput(identifier);
+    // Retain the explicitly selected ID even if it is currently unplugged:
+    // audio and the cue clock keep running, MIDI messages are skipped, and
+    // the exact device can reconnect later (never silently substituted).
+    show.columns[(size_t)column].midiOutputId=identifier;
+    changed(identifier.isEmpty() ? "MIDI output disabled; audio continues." :
+        ready.wasOk() ? "MIDI output changed without stopping playback." :
+        "MIDI output unavailable; audio continues and MIDI is skipped.");
+    utilities.refresh();
 }
 }

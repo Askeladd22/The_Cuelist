@@ -2131,6 +2131,21 @@ void MainComponent::timerCallback() {
             engine.setMidiOutputEnabled(dev.identifier,
                 appPreferences->getBoolValue("midiOutputEnabled_"+dev.identifier,true));
         engine.refreshMidiOutputs();
+        // A MIDI Output chosen while disconnected had no registered route.
+        // Register it only if that EXACT port reappears; republish the
+        // prepared snapshot so its MIDI voice receives the new route without
+        // interrupting Audio/OSC/row time. Existing routes are reconnected
+        // internally by refreshMidiOutputs() and need no audio reset.
+        const auto availableOutputs=juce::MidiOutput::getAvailableDevices();
+        bool restoredRoute=false;
+        for (const auto& col:show.columns) {
+            if (col.type!=ColumnType::midi || col.midiOutputId.isEmpty() ||
+                engine.midiOutputRoute(col.midiOutputId)>=0 ||
+                !hasExactMidiIdentifier(availableOutputs,col.midiOutputId))continue;
+            if (engine.setMidiOutput(col.midiOutputId).wasOk())
+                restoredRoute=true;
+        }
+        if(restoredRoute) engine.publish(makeLiveRenderState());
         // Take one inventory snapshot per refresh. The policy checks exact
         // device identifiers and never substitutes a similarly named port.
         const auto devices=juce::MidiInput::getAvailableDevices();

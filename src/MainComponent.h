@@ -456,6 +456,8 @@ public:
     std::optional<ControlEvent> consumeLearnedInput() { auto result=learnedInput; learnedInput.reset(); return result; }
     void dispatchControlForTest(const ControlEvent& event) { dispatchControl(event); }
     void refreshForTest() { refresh(); } // Test-only bridge; refresh remains private.
+    void addCueForTest() { addCue(); } // Exercises the real native Add Cue callback.
+    void commitModelEditForTest(const juce::String& label) { changed(label); }
     int activeCueMappingId() const noexcept { return activeCueId; }
     void setColumnOutput(int column,int output);
     void setAutoStop(int row,bool enabled);
@@ -710,6 +712,10 @@ private:
     // UI tab selection and live transport advance independently. The latter
     // is identified by Cuelist index; row/cell IDs stay stable within each list.
     int liveCuelist=0,liveNextCue=0;
+    // A row's stable identity, not its current index, is the armed GO cursor.
+    // -2: the edit targets a non-LIVE VIEW; -1: LIVE is at end of sequence.
+    int captureLiveArmedCueId() const;
+    void restoreLiveArmedCueId(int armedId);
     juce::File projectFile;
     juce::String status="Ready. Select an Audio cell and import a WAV file.";
     bool dirty=false;

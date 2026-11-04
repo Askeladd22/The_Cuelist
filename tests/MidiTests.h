@@ -14,6 +14,44 @@ inline Show show() {
 inline void bind(RenderState& state,Sink& sink) { for (auto& v:state.voices) { v.midiSink=&sink; v.midiRoute=7; } }
 }
 inline void registerMidiTests() {
+    test("MIDI output change inherits cursor and clock but not old held notes",[] {
+        auto show=midiFixtures::show();
+        auto original=makeRenderState(show,{});
+        auto& voice=original->voices[0];
+        voice.position=.875;
+        voice.playing=true;
+        voice.rowMode=true;
+        voice.midiCursor=1;
+        voice.midiNeedsSync=false;
+        voice.heldNotes[60]=1;
+        voice.heldVelocity[60]=100;
+        original->rows[0].playing=true;
+        original->rows[0].seconds=.875;
+        show.columns[0].midiOutputId="new-selected-port";
+        auto next=makeRenderState(show,{});
+        next->voices[0].midiRoute=5;
+        voice.midiRoute=3;
+        next->inheritPlayback(*original);
+        const auto& changed=next->voices[0];
+        near(changed.position,.875);
+        near(next->rows[0].seconds,.875);
+        check(changed.playing && changed.rowMode && changed.midiNeedsSync &&
+              changed.heldNotes[60]==0 &&
+              changed.midiOutputId=="new-selected-port",
+              "Switching output lost the active MIDI clock or copied old device notes");
+    });
+    test("MIDI route switch retires old stream and invalidates pending epochs",[] {
+        MidiOutputRouter router;
+        const auto previous=router.stream(12345,0,7);
+        const auto epoch=previous->epoch.load();
+        const auto replacement=router.stream(12345,1,7);
+        check(previous.get()!=replacement.get() &&
+              previous->retired.load(std::memory_order_acquire) &&
+              previous->epoch.load()>epoch &&
+              !replacement->retired.load(std::memory_order_acquire) &&
+              replacement->route==1,
+              "Old route retained scheduled MIDI ownership after output change");
+    });
     test("MIDI unassigned route does not block audio cue timeline",[] {
         auto s=makeShow();
         addColumn(s,ColumnType::midi,"MIDI 1");

@@ -10,6 +10,7 @@
 namespace cuelist {
 struct MidiStream {
     std::atomic<uint64_t> epoch {0};
+    std::atomic<bool> retired {false}; // former output cannot receive new packets
     uint64_t workerEpoch=0;
     int route=-1;
     // Device-sent activity for the owner MIDI column, not queued events.
