@@ -4,9 +4,9 @@
 
 The Cuelist is a desktop application for preparing and executing cue-based live productions, theatre performances, concerts and installations. It brings audio playback, MIDI sequences, OSC events and MIDI-controller mappings into one operator-focused workspace. It is not a digital audio workstation and does not include native video or timecode playback.
 
-**Application version:** [`0.9.22`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
+**Application version:** [`0.9.23`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
 
-> **0.9.22 corrects an obsolete header Undo/Redo regression test; it is not a live-show certification.** The beta numbering has ended, but rehearsals with real devices, licensing verification and Windows DPI/ultrawide visual review remain necessary before commercial distribution or production reliance. CI alone does not prove hardware reliability or end-to-end timing.
+> **0.9.23 refines green, red and blue contrast within Industrial Orange; it is not a live-show certification.** The beta numbering has ended, but rehearsals with real devices, licensing verification and Windows DPI/ultrawide visual review remain necessary before commercial distribution or production reliance. CI alone does not prove hardware reliability or end-to-end timing.
 
 ## Versione e storico aggiornamenti
 
@@ -24,6 +24,10 @@ versioni 0.7/0.8/0.9 e delle 86 PR precedentemente integrate (con
 link alle PR), distinguendo la cronologia di sviluppo dalle release
 pubbliche. La versione del progetto salvato `.cuelist` (**schema v10**)
 è indipendente dal numero del software.
+
+## 0.9.23 — Industrial Orange / contrasti operativi
+
+Rifinitura cromatica conservativa: **verde salvia `#9BB892`** per GO, PLAYING e stati disponibili; **rosso terracotta `#C97870`** per PANIC e segnalazioni di errore; **blu acciaio `#86A6BD`** per indicatori informativi e identificazione Audio. L'obiettivo è aumentare la riconoscibilità sul grafite senza tonalità neon o saturazioni da interfaccia gaming. Arancio identitario, MIDI/OSC/Control, sette colori personali delle cue, layout e comportamenti restano invariati. Aggiunti test sui token e sul contrasto.
 
 ## 0.9.22 — Correzione test Windows
 

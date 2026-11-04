@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.23] - 2026-11-04
+
+**Tipo:** miglioramento esclusivamente cromatico di Industrial Orange.
+
+### Modificato
+- Verde degli stati GO/PLAYING/AVAILABLE `#8EAE91` → `#9BB892`: salvia leggermente più chiara, senza verde lime.
+- Rosso di PANIC/errori `#C66E69` → `#C97870`: terracotta più distinguibile sul grafite; i piccoli indicatori rossi continuano a usare il derivato più chiaro già previsto per la leggibilità del testo.
+- Blu Audio/Info `#8FA8B2` → `#86A6BD`: acciaio leggermente più distinto dal fondo; Control `#7186A6`, MIDI `#B79A72` e OSC `#A18BB9` conservano la loro identità.
+- L'arancio di selezione `#C66B42`, i livelli grafite, il Warning ambra, il testo e i sette colori assegnabili alle cue restano esattamente invariati.
+- Nessuna modifica a layout, hitbox, rendering, MIDI, OSC, trasporto LIVE/VIEW, schema dei progetti `.cuelist` v10 o motore audio.
+
+### Test
+- Aggiornati gli HEX attesi e aggiunte asserzioni di contrasto per il verde in riproduzione e il blu informativo sul grafite, preservando le verifiche di testo e PANIC.
+- Verifica visiva Windows e test hardware ancora necessari; nessun pacchetto portable generato.
+
 ## [0.9.22] - 2026-11-04
 
 **Tipo:** correzione test di regressione del layout Undo/Redo, senza modifica del software operativo.

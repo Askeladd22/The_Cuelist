@@ -4,18 +4,19 @@
 #include <cmath>
 namespace cuelist {
 namespace palette {
-// Industrial Orange – exact approved structural, brand, semantic and state
-// tokens. Retain the long-standing API aliases for the native JUCE controls.
+// Industrial Orange – approved structural/brand tokens, with a restrained
+// high-contrast sage/brick/steel adjustment to operational status colours.
+// Retain the long-standing API aliases for the native JUCE controls.
 namespace swatch {
 inline const juce::Colour bgMain{0xff101619}, bgPanel{0xff182227},
                           bgElevated{0xff202c32}, bgHover{0xff29373d},
                           bgSelected{0xff303b40}, borderDefault{0xff35434a};
 inline const juce::Colour accentPrimary{0xffc66b42},
                           accentHover{0xffd47a4f}, accentPressed{0xffa95534};
-inline const juce::Colour typeAudio{0xff8fa8b2}, typeMidi{0xffb79a72},
+inline const juce::Colour typeAudio{0xff86a6bd}, typeMidi{0xffb79a72},
                           typeOsc{0xffa18bb9}, typeControl{0xff7186a6};
-inline const juce::Colour statusGo{0xff8eae91}, statusPanic{0xffc66e69},
-                          statusWarning{0xffd1a45b},statusInfo{0xff8fa8b2};
+inline const juce::Colour statusGo{0xff9bb892}, statusPanic{0xffc97870},
+                          statusWarning{0xffd1a45b},statusInfo{0xff86a6bd};
 inline const juce::Colour textPrimary{0xffe5e7e3},
                           textSecondary{0xffa5b0ae}, textMuted{0xff718087},
                           textDisabled{0xff536168};
