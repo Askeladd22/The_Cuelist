@@ -1087,7 +1087,7 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
         g.setColour(selected ? palette::raised.interpolatedWith(palette::panel,.20f) : base);
         g.fillRect(3,y,getWidth()-3,CueGrid::rowHeight);
         if (playing) {
-            g.setColour(palette::teal.withAlpha(selected?.08f:.10f));
+            g.setColour(palette::playing.withAlpha(selected?.08f:.10f));
             g.fillRect(3,y,getWidth()-3,CueGrid::rowHeight);
         }
         if (next) {
@@ -1131,16 +1131,16 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
             g.fillRoundedRectangle(toggle.toFloat(),4.f);
         }
         // Preserve the original binary Auto Stop behavior and switch geometry.
-        g.setColour(row.stopOnNext?palette::teal.withAlpha(.30f):
+        g.setColour(row.stopOnNext?palette::selection.withAlpha(.30f):
                    palette::muted.withAlpha(.20f));
         g.fillRoundedRectangle((float)toggle.getX()+3.f,
                                (float)toggle.getY()+2.f,31.f,19.f,9.f);
-        g.setColour(row.stopOnNext?palette::teal:palette::muted);
+        g.setColour(row.stopOnNext?palette::selection:palette::muted);
         g.fillEllipse((float)toggle.getX()+(row.stopOnNext?19.f:6.f),
                       (float)toggle.getY()+5.f,13.f,13.f);
         label(g,row.stopOnNext?"ON":"OFF",
               {toggle.getX()+39,toggle.getY()+1,36,21},10,
-              row.stopOnNext?palette::teal:palette::muted,true);
+              row.stopOnNext?palette::selection:palette::muted,true);
 
         // The 94px separator corresponds to the same original two zones.
         g.setColour(palette::line.withAlpha(.28f));
