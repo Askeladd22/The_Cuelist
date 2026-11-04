@@ -1517,14 +1517,17 @@ bool MainComponent::select(int row,int column) {
     viewport.setViewPosition(viewport.getViewPositionX(),std::max(0,viewY));
     repaint(); grid.repaint(); timeline.repaint(); return true;
 }
-std::unique_ptr<RenderState> MainComponent::makeLiveRenderState() const {
-    if (liveCuelist<0 || liveCuelist>=(int)show.cuelists.size() ||
-        liveCuelist==show.activeCuelist)
-        return makeRenderState(show,clips);
+Show MainComponent::liveShowSnapshot() const {
     Show live=show;
-    live.rows=show.cuelists[(size_t)liveCuelist].rows;
-    live.activeCuelist=liveCuelist;
-    return makeRenderState(live,clips);
+    if(liveCuelist>=0 && liveCuelist<(int)show.cuelists.size() &&
+       liveCuelist!=show.activeCuelist) {
+        live.rows=show.cuelists[(size_t)liveCuelist].rows;
+        live.activeCuelist=liveCuelist;
+    }
+    return live;
+}
+std::unique_ptr<RenderState> MainComponent::makeLiveRenderState() const {
+    return makeRenderState(liveShowSnapshot(),clips);
 }
 void MainComponent::changed(const juce::String& text,bool stopPlayback) {
     if (projectLoader) projectLoader->cancel(); // never overwrite newer edits
