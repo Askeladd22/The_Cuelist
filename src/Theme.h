@@ -62,7 +62,13 @@ inline const juce::Colour copper=swatch::accentPrimary,
                           go=swatch::statusGo,
                           panic=swatch::statusPanic,
                           warning=swatch::statusWarning,
-                          selectedTab=swatch::bgSelected;
+                          selectedTab=swatch::bgSelected,
+                          // Distinct visual roles: a selected component keeps its
+                          // type-colour identity but gains a brand-colour outline.
+                          selection=swatch::accentPrimary,
+                          playing=swatch::statusGo,
+                          standby=swatch::statusWarning,
+                          technicalInfo=swatch::statusInfo;
 inline juce::Colour type(int i) {
     return i==0 ? swatch::typeAudio :
            i==1 ? swatch::typeMidi :
