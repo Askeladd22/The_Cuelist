@@ -173,7 +173,7 @@ void Timeline::paint(juce::Graphics& g) {
     g.fillRect(0,0,getWidth(),45);
     if (owner.selectedRow<0 || owner.selectedRow>=(int)owner.show.rows.size()) return;
     const auto& row=owner.show.rows[owner.selectedRow];
-    label(g,"TIMELINE",{20,11,110,23},14,palette::text,true);
+    label(g,"TIMELINE",{20,11,88,23},14,palette::text,true); // arrow at x=112
     if (getHeight()>=detailedToolbarHeight) {
         label(g,"GRID",{143,11,52,23},11,palette::muted,true);
         label(g,"SNAP",{370,11,35,23},11,palette::muted,true);
