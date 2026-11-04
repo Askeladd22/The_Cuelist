@@ -4,55 +4,69 @@
 #include <cmath>
 namespace cuelist {
 namespace palette {
-// Graphite / Copper: neutral charcoal surfaces and a single warm copper
-// interaction accent. Operational colours remain distinct for safety: green
-// GO/available, amber MIDI/standby, violet OSC, red warnings/PANIC.
-// These tokens are the single source of truth across all native JUCE panels.
+// Industrial Orange – exact approved structural, brand, semantic and state
+// tokens. Retain the long-standing API aliases for the native JUCE controls.
 namespace swatch {
-inline const juce::Colour graphiteBlack{0xff121416},
-                          graphiteInput{0xff1b1e20},
-                          graphitePanel{0xff24272a},
-                          graphiteToolbar{0xff2b2f32},
-                          graphiteRaised{0xff34393c},
-                          graphiteLine{0xff474b4f},
-                          warmWhite{0xfff2ede5},
-                          warmGrey{0xffc2b8aa},
-                          copper{0xffcf8b62},
-                          copperLight{0xffe4a77e},
-                          copperDark{0xff5c3b2d},
-                          brass{0xffd9b577},
-                          amber{0xffdebd88},
-                          violet{0xffb7a1bf},
-                          slateBlue{0xff8ea7b8},
-                          slateSage{0xffa1b5a4},
-                          success{0xff8cbd9f},
-                          error{0xffe48c7f},
-                          danger{0xffab5146};
- // Keep historical swatch identifiers as aliases only. A component compiled
- // against an older token name still receives the new neutral colour.
- inline const juce::Colour petrol=slateBlue, sage=slateSage, leaf=brass;
+inline const juce::Colour bgMain{0xff101619}, bgPanel{0xff182227},
+                          bgElevated{0xff202c32}, bgHover{0xff29373d},
+                          bgSelected{0xff303b40}, borderDefault{0xff35434a};
+inline const juce::Colour accentPrimary{0xffc66b42},
+                          accentHover{0xffd47a4f}, accentPressed{0xffa95534};
+inline const juce::Colour typeAudio{0xff8fa8b2}, typeMidi{0xffb79a72},
+                          typeOsc{0xffa18bb9}, typeControl{0xff7186a6};
+inline const juce::Colour statusGo{0xff8eae91}, statusPanic{0xffc66e69},
+                          statusWarning{0xffd1a45b},statusInfo{0xff8fa8b2};
+inline const juce::Colour textPrimary{0xffe5e7e3},
+                          textSecondary{0xffa5b0ae}, textMuted{0xff718087},
+                          textDisabled{0xff536168};
+// The seven operator-selectable cue swatches retain their previous hex values.
+// Changing the theme must not recolour saved operator cue choices.
+inline const juce::Colour cue1{0xffe4a77e},cue2{0xffdebd88},
+                          cue3{0xffe48c7f},cue4{0xffb7a1bf},
+                          cue5{0xff8ea7b8},cue6{0xffa1b5a4},
+                          cue7{0xffd9b577};
+// Legacy symbolic names remain valid for components not yet renamed.
+inline const juce::Colour graphiteBlack=bgMain,graphiteInput=bgPanel,
+                          graphitePanel=bgPanel,graphiteToolbar=bgElevated,
+                          graphiteRaised=bgSelected,graphiteLine=borderDefault,
+                          warmWhite=textPrimary,warmGrey=textSecondary,
+                          copper=accentPrimary,copperLight=accentHover,
+                          copperDark=accentPressed,brass=cue7,amber=typeMidi,
+                          violet=typeOsc,slateBlue=cue5,slateSage=cue6,
+                          success=statusGo,error=statusPanic,danger=statusPanic,
+                          petrol=cue5,sage=cue6,leaf=cue7;
 }
-// Ordered lightness prevents losing the grid's hierarchy on small displays.
-inline const juce::Colour background=swatch::graphiteBlack,
-                          input=swatch::graphiteInput,
-                          panel=swatch::graphitePanel,
-                          toolbar=swatch::graphiteToolbar,
-                          raised=swatch::graphiteRaised,
-                          line=swatch::graphiteLine;
-// CopperLight, warmWhite and warmGrey maintain readable small text on the
-// brightest (#34393C) control surface. Avoid using dark copper as small ink.
-inline const juce::Colour text=swatch::warmWhite,
-                          muted=swatch::warmGrey,
-                          copper=swatch::copperLight,
-                          teal=copper,             // legacy API: UI accent, now copper
-                          amber=swatch::amber,    // MIDI / next
-                          purple=swatch::violet,  // OSC
-                          red=swatch::error,      // warning / missing
-                          go=swatch::success,     // GO / available
-                          panic=swatch::danger,   // destructive button background
-                          selectedTab=swatch::copperDark;
+inline const juce::Colour background=swatch::bgMain,
+                          input=swatch::bgPanel,
+                          panel=swatch::bgPanel,
+                          toolbar=swatch::bgElevated,
+                          raised=swatch::bgSelected,
+                          line=swatch::borderDefault,
+                          hover=swatch::bgHover;
+inline const juce::Colour copper=swatch::accentPrimary,
+                          accent=swatch::accentPrimary,
+                          accentHover=swatch::accentHover,
+                          accentPressed=swatch::accentPressed,
+                          text=swatch::textPrimary,
+                          muted=swatch::textSecondary,
+                          dimmed=swatch::textMuted,
+                          disabled=swatch::textDisabled,
+                          // Text and fine glyphs use a brighter derived
+                          // orange; the identity token itself stays #C66B42.
+                          teal=swatch::accentPrimary.interpolatedWith(
+                              swatch::textPrimary,0.45f),
+                          amber=swatch::typeMidi,
+                          purple=swatch::typeOsc,
+                          red=swatch::statusPanic.interpolatedWith(
+                              swatch::textPrimary,0.35f),
+                          go=swatch::statusGo,
+                          panic=swatch::statusPanic,
+                          warning=swatch::statusWarning,
+                          selectedTab=swatch::bgSelected;
 inline juce::Colour type(int i) {
-    return i==0 ? copper : i==1 ? amber : i==2 ? purple : swatch::slateBlue;
+    return i==0 ? swatch::typeAudio :
+           i==1 ? swatch::typeMidi :
+           i==2 ? swatch::typeOsc : swatch::typeControl;
 }
 }
 // Small icon buttons share one restrained surface, but retain their own
@@ -354,7 +368,7 @@ public:
             const auto surface=area.reduced(3,1).toFloat();
             g.setColour(palette::raised);
             g.fillRoundedRectangle(surface,4.0f);
-            g.setColour(palette::teal);
+            g.setColour(palette::accent);
             g.fillRoundedRectangle((float)area.getX()+3.0f,
                                    (float)area.getY()+4.0f,
                                    2.5f,(float)juce::jmax(1,area.getHeight()-8),1.0f);
