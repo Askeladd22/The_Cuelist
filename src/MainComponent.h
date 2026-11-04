@@ -386,6 +386,10 @@ public:
     void setMasterAudio(float gain);
     int audioFaderCeilingDb() const noexcept { return faderCeilingDb; }
     void setAudioFaderCeilingDb(int db);
+    void setAppearanceTheme(palette::Appearance id);
+    palette::Appearance appearanceTheme() const noexcept {
+        return palette::activeAppearance;
+    }
     void setMasterPan(float pan);
     void setMasterMute(bool muted);
     void setMasterOutput(int channel);
