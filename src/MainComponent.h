@@ -710,6 +710,10 @@ private:
     // UI tab selection and live transport advance independently. The latter
     // is identified by Cuelist index; row/cell IDs stay stable within each list.
     int liveCuelist=0,liveNextCue=0;
+    // A row's stable identity, not its current index, is the armed GO cursor.
+    // -2: the edit targets a non-LIVE VIEW; -1: LIVE is at end of sequence.
+    int captureLiveArmedCueId() const;
+    void restoreLiveArmedCueId(int armedId);
     juce::File projectFile;
     juce::String status="Ready. Select an Audio cell and import a WAV file.";
     bool dirty=false;
