@@ -253,6 +253,10 @@ MainComponent::MainComponent(bool startAudio) {
     prefOptions.folderName="The Cuelist";
     appPreferences=std::make_unique<juce::PropertiesFile>(prefOptions);
     faderCeilingDb=appPreferences->getIntValue("audioFaderCeilingDb",6)==0 ? 0 : 6;
+    showClock=appPreferences->getBoolValue("viewShowClock",true);
+    showCpuMeter=appPreferences->getBoolValue("viewShowCpu",true);
+    showRamMeter=appPreferences->getBoolValue("viewShowRam",true);
+    timelineVisible=appPreferences->getBoolValue("viewTimelineVisible",true);
     recentOpenButton.setName("recentProjectOpen");
     recentMoreButton.setName("recentProjectsAll");
     recentOpenButton.setTooltip("Choose a saved Cuelist project");
@@ -566,7 +570,8 @@ WorkspaceLayout MainComponent::workspaceLayout() const {
     return calculateWorkspaceLayout({getWidth(),getHeight(),activeDockHeight,
         grid.columnX((int)show.columns.size()),(int)show.rows.size(),
         CueGrid::headerHeight,CueGrid::rowHeight,CueMetricsOverlay::width,
-        CueGrid::nameWidth,timelineHeightAdjustment,inspectorVisible});
+        CueGrid::nameWidth,timelineHeightAdjustment,inspectorVisible,
+        timelineVisible});
 }
 
 void MainComponent::paint(juce::Graphics& g) {
@@ -643,23 +648,29 @@ void MainComponent::paint(juce::Graphics& g) {
         appPreferences->getBoolValue("clock12Hour",false);
     const float timeSize=(float)(telemetry.clock.getWidth()>=160?35:
                                  telemetry.clock.getWidth()>=150?33:30);
-    label(g,clockTime.formatted(clock12?"%I:%M:%S":"%H:%M:%S"),
-          clock12 ? telemetry.timeText : telemetry.clock.reduced(4,9),
-          timeSize,palette::text,true,juce::Justification::centred);
-    if (clock12)
-        label(g,clockTime.formatted("%p"),telemetry.meridiemText,12,
-              palette::teal,true,juce::Justification::centredRight);
+    if (showClock) {
+        label(g,clockTime.formatted(clock12?"%I:%M:%S":"%H:%M:%S"),
+              clock12 ? telemetry.timeText : telemetry.clock.reduced(4,9),
+              timeSize,palette::text,true,juce::Justification::centred);
+        if (clock12)
+            label(g,clockTime.formatted("%p"),telemetry.meridiemText,12,
+                  palette::teal,true,juce::Justification::centredRight);
+    }
 
     // Real measured CPU/RAM values and meters are unchanged; only their
     // typography and available horizontal room have increased.
-    label(g,"CPU",telemetry.cpuLabel,14,palette::text,true);
-    label(g,HeaderTelemetryLayout::percentage(systemCpuPercent,true),
-          telemetry.cpuValue,14,palette::text,true,
-          juce::Justification::centredRight);
-    label(g,"RAM",telemetry.ramLabel,14,palette::text,true);
-    label(g,HeaderTelemetryLayout::percentage(systemRamPercent,false),
-          telemetry.ramValue,14,palette::text,true,
-          juce::Justification::centredRight);
+    if (showCpuMeter) {
+        label(g,"CPU",telemetry.cpuLabel,14,palette::text,true);
+        label(g,HeaderTelemetryLayout::percentage(systemCpuPercent,true),
+              telemetry.cpuValue,14,palette::text,true,
+              juce::Justification::centredRight);
+    }
+    if (showRamMeter) {
+        label(g,"RAM",telemetry.ramLabel,14,palette::text,true);
+        label(g,HeaderTelemetryLayout::percentage(systemRamPercent,false),
+              telemetry.ramValue,14,palette::text,true,
+              juce::Justification::centredRight);
+    }
     const auto meter=[&](juce::Rectangle<float> bounds,float percentage,
                          juce::Colour colour) {
         g.setColour(palette::line);
@@ -671,8 +682,8 @@ void MainComponent::paint(juce::Graphics& g) {
                                               percentage/100.0f)),3.f);
         }
     };
-    meter(telemetry.cpuMeter,systemCpuPercent,palette::teal);
-    meter(telemetry.ramMeter,systemRamPercent,palette::amber);
+    if (showCpuMeter) meter(telemetry.cpuMeter,systemCpuPercent,palette::teal);
+    if (showRamMeter) meter(telemetry.ramMeter,systemRamPercent,palette::amber);
 
     label(g,"I/O ACTIVITY",telemetry.activityHeading,11,palette::muted,true);
     const double now=juce::Time::getMillisecondCounterHiRes();
@@ -1062,6 +1073,12 @@ void MainComponent::showOperatorMenu(int index) {
         case 5: { // View: old Fader Range and Clock were not removed.
             m.addItem(base+1,inspectorVisible ? "Collapse Inspector" :
                                               "Expand Inspector");
+            m.addItem(base+2,timelineVisible ? "Collapse Timeline" :
+                                               "Expand Timeline");
+            m.addSeparator();
+            m.addItem(base+14,"Show Clock",true,showClock);
+            m.addItem(base+15,"Show CPU Meter",true,showCpuMeter);
+            m.addItem(base+16,"Show RAM Meter",true,showRamMeter);
             // Collapse all remains directly on the cue header; a second
             // identical menu command only adds operator noise.
             m.addSeparator();
@@ -1186,6 +1203,20 @@ void MainComponent::dispatchOperatorMenu(int group,int command) {
         break;
     case 5:
         if (command==1) inspectorSideTab.triggerClick();
+        else if (command==2) {
+            timelineVisible=!timelineVisible;
+            if (appPreferences) appPreferences->setValue("viewTimelineVisible",timelineVisible);
+            resized(); repaint();
+        }
+        else if (command>=14 && command<=16) {
+            bool* target=command==14 ? &showClock :
+                         command==15 ? &showCpuMeter : &showRamMeter;
+            *target=!*target;
+            if (appPreferences) appPreferences->setValue(
+                command==14 ? "viewShowClock" :
+                command==15 ? "viewShowCpu" : "viewShowRam",*target);
+            repaint();
+        }
         else if (command==10 || command==11)
             setAudioFaderCeilingDb(command==10 ? 6 : 0);
         else if (command==12 || command==13) {
@@ -1338,8 +1369,10 @@ void MainComponent::resized() {
         }
     }
     timeline.setBounds(geometry.timeline);
+    timeline.setVisible(timelineVisible);
     timelineResize.setBounds(geometry.timelineResize);
-    timelineResize.toFront(false);
+    timelineResize.setVisible(timelineVisible);
+    if (timelineVisible) timelineResize.toFront(false);
     const int x=geometry.inspectorLeft, inner=geometry.inspectorInnerWidth;
     cellTab.setVisible(false);rowTab.setVisible(false);
     rowBehaviour.setVisible(false);rowMute.setVisible(false);rowGain.setVisible(false);
