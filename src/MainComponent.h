@@ -675,6 +675,7 @@ private:
     juce::String status="Ready. Select an Audio cell and import a WAV file.";
     bool dirty=false;
     bool inspectorVisible=true; // UI-only; never persisted in the Show file
+    bool timelineVisible=true, showClock=true, showCpuMeter=true, showRamMeter=true;
     int visibleClipCount=0;
     float systemCpuPercent=-1.f,systemRamPercent=-1.f;
     int systemTelemetryTicks=0;
