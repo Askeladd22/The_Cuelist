@@ -38,7 +38,7 @@ MainComponent::MainComponent(bool startAudio) {
          &goButton,&panicButton,&deviceButton,&controlButton,&collapseAllButton,&inspectorSideTab,
          &cuelistOverflowButton,&addCuelistButton,&cuelistMoveLeft,&cuelistMoveRight,&undoButton,&redoButton,&globalMidiLearn,&globalOscLearn,&quickControlTargets,&quickLearnMapSelector,&cancelQuickLearn,&goLearnHotspot,&panicLearnHotspot,&helpButton,&dockResize,&timelineResize,&importButton,&midiEditButton,&oscEditButton,&playCellButton,&stopCellButton,&clearButton,&tempoButton,&applyButton,
          &cellTab,&rowTab,&rowGain,&rowBehaviour,&rowMute,&rowLoop,&rowName,&cellName,&bpm,&cueNotes,&behaviour,&follow,&loop,&cellAutoStop,&gainDb,&viewport,&timeline,&utilities,
-         &clipCollapseButton,&clipCloseButton,&cueHeaders,&columnHeaders,&cueMetrics,&preflightButton,&diagnosticsButton,&preferencesButton,&projectNameLabel,&inlineNameEditor}) addAndMakeVisible(c);
+         &clipCollapseButton,&clipCloseButton,&editorDivider,&cueHeaders,&columnHeaders,&cueMetrics,&preflightButton,&diagnosticsButton,&preferencesButton,&projectNameLabel,&inlineNameEditor}) addAndMakeVisible(c);
     for (juce::TextButton* b : std::initializer_list<juce::TextButton*>{&openButton,&saveButton,&newButton,&addRowButton,&addColumnButton,&goButton,&panicButton,&deviceButton,&controlButton,&collapseAllButton,&inspectorSideTab,
                     &cuelistOverflowButton,&addCuelistButton,&cuelistMoveLeft,&cuelistMoveRight,&undoButton,&redoButton,&globalMidiLearn,&globalOscLearn,&helpButton,
                     &importButton,&midiEditButton,&oscEditButton,&playCellButton,&stopCellButton,&clearButton,&tempoButton,&applyButton,
@@ -181,11 +181,13 @@ MainComponent::MainComponent(bool startAudio) {
     dockResize.setName("clipEditorResizeHandle");
     dockResize.setTooltip("Drag up or down to resize the docked Clip Editor.");
     clipCollapseButton.setName("clipEditorCollapse");
+    clipCollapseButton.setTooltip("Collapse the docked MIDI/OSC editor; click again to expand.");
     clipCloseButton.setName("clipEditorClose");
     clipCollapseButton.setVisible(false); clipCloseButton.setVisible(false);
     clipCollapseButton.onClick=[this] {
         clipCollapsed=!clipCollapsed;
         clipCollapseButton.setButtonText(clipCollapsed ? "Expand" : "Collapse");
+        clipCollapseButton.setCollapsed(clipCollapsed);
         resized(); repaint();
     };
     clipCloseButton.onClick=[this] { closeMidiClip(); closeOscClip(); };
@@ -1320,7 +1322,14 @@ void MainComponent::resized() {
     utilities.setBounds(geometry.utilities);
     utilities.syncScroll(viewport.getViewPositionX());
     clipCollapseButton.setVisible(docked);
+    clipCollapseButton.setCollapsed(clipCollapsed);
     clipCloseButton.setVisible(docked);
+    editorDivider.setVisible(docked);
+    if (docked) {
+        editorDivider.setBounds(geometry.dockEditor.getX(),geometry.dockY-2,
+                                geometry.dockEditor.getWidth(),2);
+        editorDivider.toFront(false);
+    }
     dockResize.setVisible(docked && !clipCollapsed);
     if (docked && !clipCollapsed) {
         dockResize.setBounds(geometry.dockResize);
@@ -1337,7 +1346,7 @@ void MainComponent::resized() {
             const int y=geometry.dockY+
                 (clipCollapsed ? 4 : compact ? 36 : 4);
             clipCollapseButton.setBounds(
-                x+(clipCollapsed ? 14 : compact ? 290 : 541),y,86,26);
+                x+(clipCollapsed ? 14 : compact ? 290 : 541),y,28,26);
             clipCloseButton.setBounds(
                 x+(clipCollapsed ? 109 : compact ? 383 : 634),y,82,26);
         } else if (clipEditor && !clipWindow && !clipCollapsed &&
@@ -1351,11 +1360,11 @@ void MainComponent::resized() {
                 geometry.dockEditor.getWidth());
             const auto origin=geometry.dockEditor.getPosition();
             clipCollapseButton.setBounds(
-                layout.collapse.translated(origin.x,origin.y));
+                layout.collapse.translated(origin.x,origin.y).withWidth(28));
             clipCloseButton.setBounds(
                 layout.close.translated(origin.x,origin.y));
         } else {
-            clipCollapseButton.setBounds(geometry.dockCollapse);
+            clipCollapseButton.setBounds(geometry.dockCollapse.withWidth(28));
             clipCloseButton.setBounds(geometry.dockClose);
         }
         clipCollapseButton.toFront(false); clipCloseButton.toFront(false);
