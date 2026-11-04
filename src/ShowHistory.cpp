@@ -46,6 +46,7 @@ void MainComponent::markHistoryBaseline() {
     historyBaseline.media=clips; // shared_ptr values, never copied PCM samples
     historyBaselineJson=encodeShow(show);
     historyReady=true;
+    lastHistoryLabel.clear(); lastHistoryTime=0;
 }
 
 void MainComponent::checkpointHistory(const juce::String& description) {
@@ -55,8 +56,18 @@ void MainComponent::checkpointHistory(const juce::String& description) {
     const auto encoded=encodeShow(show);
     if(encoded==historyBaselineJson && clips==historyBaseline.media)return;
     HistorySnapshot after{show,clips};
-    editHistory.beginNewTransaction(description);
+    const auto now=juce::Time::currentTimeMillis();
+    const bool continuous=description=="setMasterAudio" ||
+                          description=="setMasterPan" ||
+                          description=="setColumnUtilities" ||
+                          description=="Move clip start" ||
+                          description=="Resize clip duration";
+    if(!continuous || description!=lastHistoryLabel ||
+       now-lastHistoryTime>350)
+        editHistory.beginNewTransaction(description);
     editHistory.perform(new ShowUndoAction(*this,historyBaseline,after,description));
+    lastHistoryLabel=continuous ? description : juce::String();
+    lastHistoryTime=now;
     historyBaseline=std::move(after);
     historyBaselineJson=encoded;
 }
