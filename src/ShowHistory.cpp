@@ -24,6 +24,15 @@ public:
         return owner && owner->restoreHistorySnapshot(before,"Undo: "+description);
     }
     int getSizeInUnits() override {return units;}
+    juce::UndoableAction* createCoalescedAction(juce::UndoableAction* next) override {
+        auto* newer=dynamic_cast<ShowUndoAction*>(next);
+        if(!newer || !owner || owner.getComponent()!=newer->owner.getComponent()
+           || description!=newer->description)
+            return nullptr;
+        auto* combined=new ShowUndoAction(*owner,before,newer->after,description);
+        combined->first=false; // Both component actions have been performed.
+        return combined;
+    }
 private:
     juce::Component::SafePointer<MainComponent> owner;
     MainComponent::HistorySnapshot before,after;
