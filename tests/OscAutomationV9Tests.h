@@ -42,17 +42,17 @@ void oscAutomationV9Tests() {
                 if(child->getName()==name) return child;
             return nullptr;
         };
-        const std::array<const char*,11> names{
+        const std::array<const char*,13> names{
             "oscAddAutomation","oscRemoveMessage","oscDuplicate",
             "oscGridVisible","oscSnapEnabled","oscGridResolution",
             "oscZoomOut","oscZoomIn","oscZoomFit",
-            "oscTimeUnit","oscDetach"};
+            "oscTimeUnit","oscDetach","oscEditorUndo","oscEditorRedo"};
         for(int width:{710,820,940,949,950,1180}) {
             editor.setSize(width,280);
             const auto t=OscEditorToolbarLayout::atWidth(width);
-            const std::array<juce::Rectangle<int>,11> bounds{
+            const std::array<juce::Rectangle<int>,13> bounds{
                 t.add,t.remove,t.duplicate,t.grid,t.snap,t.resolution,
-                t.zoomOut,t.zoomIn,t.zoomFit,t.unit,t.detach};
+                t.zoomOut,t.zoomIn,t.zoomFit,t.unit,t.detach,t.undo,t.redo};
             for(size_t i=0;i<names.size();++i) {
                 auto* c=find(names[i]);
                 check(c && c->isVisible() &&
