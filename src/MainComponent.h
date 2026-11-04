@@ -456,6 +456,8 @@ public:
     std::optional<ControlEvent> consumeLearnedInput() { auto result=learnedInput; learnedInput.reset(); return result; }
     void dispatchControlForTest(const ControlEvent& event) { dispatchControl(event); }
     void refreshForTest() { refresh(); } // Test-only bridge; refresh remains private.
+    void addCueForTest() { addCue(); } // Exercises the real native Add Cue callback.
+    void commitModelEditForTest(const juce::String& label) { changed(label); }
     int activeCueMappingId() const noexcept { return activeCueId; }
     void setColumnOutput(int column,int output);
     void setAutoStop(int row,bool enabled);
