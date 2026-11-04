@@ -1,8 +1,11 @@
 cmake_minimum_required(VERSION 3.22)
-project(TheCuelist VERSION 0.9.12 LANGUAGES C CXX)
+project(TheCuelist VERSION 0.9.13 LANGUAGES C CXX)
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION.txt" THE_CUELIST_DISPLAY_VERSION LIMIT_COUNT 1)
-if(NOT THE_CUELIST_DISPLAY_VERSION MATCHES "^0\\.9\\.11(-[a-zA-Z0-9.]+)?$")
-  message(FATAL_ERROR "VERSION.txt must match the release's CMake version.")
+# Derive the release match from PROJECT_VERSION, never from a second hardcoded
+# version. Each dot is made a literal regex character with a bracket class.
+string(REPLACE "." "[.]" THE_CUELIST_VERSION_PATTERN "${PROJECT_VERSION}")
+if(NOT THE_CUELIST_DISPLAY_VERSION MATCHES "^${THE_CUELIST_VERSION_PATTERN}(-[a-zA-Z0-9.]+)?$")
+  message(FATAL_ERROR "VERSION.txt (${THE_CUELIST_DISPLAY_VERSION}) must match the release's CMake version (${PROJECT_VERSION}).")
 endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

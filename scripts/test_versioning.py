@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import unittest
-from check_versioning import compare_version, check_changelog, semver, VersioningError
+from check_versioning import compare_version, check_changelog, check_cmake_version, semver, VersioningError
 
 
 class ChangelogGateTest(unittest.TestCase):
@@ -15,6 +15,16 @@ class ChangelogGateTest(unittest.TestCase):
         self.assertLess(compare_version("0.9.0-beta.33", "0.9.1"), 0)
         self.assertLess(compare_version("0.9.1", "0.9.2"), 0)
         self.assertEqual(compare_version("0.9.0+abc", "0.9.0+other"), 0)
+
+    def test_cmake_version_matches_version_file(self):
+        cmake = "project(TheCuelist VERSION 0.9.13 LANGUAGES C CXX)"
+        check_cmake_version("0.9.13", cmake)
+        check_cmake_version("0.9.13-beta.2", cmake)
+        for version in ("0.9.11", "0.9.12", "0.9.14"):
+            with self.subTest(version=version), self.assertRaises(VersioningError):
+                check_cmake_version(version, cmake)
+        with self.assertRaises(VersioningError):
+            check_cmake_version("0.9.13", "project(TheCuelist LANGUAGES C CXX)")
 
     def test_invalid_semver(self):
         for value in ("v0.9", "0.9", "01.9.0", "0.09.0", "0.9.0-beta.01",

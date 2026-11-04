@@ -16,6 +16,8 @@ import sys
 ROOT = Path(__file__).resolve().parent.parent
 VERSION_FILE = "VERSION.txt"
 CHANGELOG_FILE = "CHANGELOG.md"
+CMAKE_FILE = "CMakeLists.txt"
+CMAKE_PROJECT_VERSION = re.compile(r"\bproject\s*\(\s*TheCuelist\s+VERSION\s+(\d+\.\d+\.\d+)\b", re.I)
 SEMVER = re.compile(
     r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
     r"(?:-([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*))?"
@@ -111,6 +113,20 @@ def git(*args: str) -> str:
     return proc.stdout
 
 
+def check_cmake_version(version: str, cmake_contents: str) -> None:
+    """Check the CMake project VERSION matches the numeric part of VERSION.txt."""
+    parsed = semver(version)
+    expected = ".".join(str(part) for part in parsed[:3])
+    declared = CMAKE_PROJECT_VERSION.findall(cmake_contents)
+    if len(declared) != 1:
+        raise VersioningError("Expected exactly one TheCuelist project(VERSION ...) in CMakeLists.txt")
+    if declared[0] != expected:
+        raise VersioningError(
+            "CMake project version " + declared[0] +
+            " differs from VERSION.txt numeric version " + expected
+        )
+
+
 def check_pr(version: str, base: str, head: str) -> None:
     if not COMMIT.fullmatch(base or "") or not COMMIT.fullmatch(head or ""):
         raise VersioningError("Both base/head must be 40-character Git SHAs")
@@ -135,6 +151,7 @@ def main(argv: list[str] | None = None) -> int:
         version = (ROOT / VERSION_FILE).read_text(encoding="utf-8").strip()
         changes = (ROOT / CHANGELOG_FILE).read_text(encoding="utf-8")
         check_changelog(version, changes)
+        check_cmake_version(version, (ROOT / CMAKE_FILE).read_text(encoding="utf-8"))
         if (args.base_sha is None) != (args.head_sha is None):
             raise VersioningError("Specify both --base-sha and --head-sha")
         if args.base_sha is not None:
