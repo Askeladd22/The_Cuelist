@@ -33,7 +33,7 @@ void cuelistGuiMockupTests() {
               ui.show.rows[(size_t)ui.liveNextCueIndex()].id==armedId,
               "Cue reorder stopped audio or changed the next armed cue");
         addColumn(ui.show,ColumnType::midi,{});
-        ui.changed("MIDI column added");
+        ui.commitModelEditForTest("MIDI column added");
         ui.engine.processBlock(outputs,1,20,100);
         check(ui.engine.getCellPlayback(audioCell).playing,
               "Adding a column interrupted active audio");
