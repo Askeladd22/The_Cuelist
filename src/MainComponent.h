@@ -702,6 +702,8 @@ private:
     juce::String historyBaselineJson;
     bool historyReady=false,restoringHistory=false;
     bool historySuspended=false,historySuppressedChanged=false;
+    juce::String lastHistoryLabel;
+    juce::int64 lastHistoryTime=0;
     void markHistoryBaseline();
     void checkpointHistory(const juce::String&);
     bool restoreHistorySnapshot(const HistorySnapshot&,const juce::String&);
