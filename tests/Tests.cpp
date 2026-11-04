@@ -118,6 +118,55 @@ int main() {
         check(ratio(palette::background,palette::panic)>=4.5f,
               "Dark PANIC label on coral");
     });
+    test("Global Undo/Redo restores cue colour and Auto Stop in order",[] {
+        MainComponent ui(false);
+        check(!ui.undoEdit(),"An empty Show has history.");
+        ui.setRowColour(0,2);
+        ui.setCellAutoStop(0,0,false);
+        check(ui.show.rows[0].colour==2 &&
+              !ui.show.rows[0].cells[0].stopOnNext,"Editing did not commit");
+        check(ui.undoEdit() && ui.show.rows[0].cells[0].stopOnNext &&
+              ui.show.rows[0].colour==2,"Cell Auto Stop Undo lost other edits");
+        check(ui.undoEdit() && ui.show.rows[0].colour==0,
+              "Cue colour Undo failed");
+        check(ui.redoEdit() && ui.show.rows[0].colour==2,
+              "Cue colour Redo failed");
+        check(ui.redoEdit() && !ui.show.rows[0].cells[0].stopOnNext,
+              "Cell Auto Stop Redo failed");
+    });
+    test("Global Undo/Redo restores structural edits and cell identities",[] {
+        MainComponent ui(false);
+        const int id=ui.show.rows[0].id;
+        check(ui.duplicateRow(0),"Duplicating cue failed");
+        check(ui.show.rows.size()==2,"Missing duplicate cue");
+        check(ui.undoEdit() && ui.show.rows.size()==1 &&
+              ui.show.rows[0].id==id,"Undo did not restore original cue structure");
+        check(ui.redoEdit() && ui.show.rows.size()==2 &&
+              validateShow(ui.show).wasOk(),"Redo did not restore valid duplicated cue");
+    });
+    test("Undo on VIEW does not stop audio belonging to LIVE Cuelist",[] {
+        MainComponent ui(false);
+        auto clip=std::make_shared<AudioClip>();
+        clip->sampleRate=100;clip->samples.setSize(1,500);
+        for(int i=0;i<500;++i)clip->samples.setSample(0,i,.2f);
+        const int original=ui.show.rows[0].cells[0].id;
+        ui.clips[original]=clip;
+        ui.engine.connected.store(true);
+        ui.engine.publish(ui.makeLiveRenderState());
+        ui.triggerRow(0);
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.engine.getCellPlayback(original).playing,"LIVE audio did not start");
+        ui.createCuelist();
+        check(ui.liveCuelistIndex()!=ui.show.activeCuelist,
+              "Test did not isolate VIEW from LIVE");
+        ui.setRowColour(0,2);
+        check(ui.undoEdit() && ui.show.rows[0].colour==0,
+              "VIEW-only edit was not undone");
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.engine.getCellPlayback(original).playing &&
+              ui.liveCuelistIndex()!=ui.show.activeCuelist,
+              "Undo on VIEW unexpectedly silenced LIVE playback");
+    });
     pianoRollTests();
     registerMidiTests();
     oscTests();
