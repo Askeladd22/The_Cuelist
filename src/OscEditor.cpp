@@ -725,16 +725,16 @@ bool OscClipEditor::keyPressed(const juce::KeyPress& k) {
     if (k.getKeyCode()==juce::KeyPress::deleteKey || k.getKeyCode()==juce::KeyPress::backspaceKey) {
         deleteSelection(); return true;
     }
-    if (k.getModifiers().isCommandDown() && (k.getTextCharacter()=='d'||k.getTextCharacter()=='D')) {
+    if (k.getModifiers().isCommandDown() && (k.getKeyCode()=='d'||k.getKeyCode()=='D')) {
         duplicateSelection(); return true;
     }
-    if (k.getModifiers().isCommandDown() && (k.getTextCharacter()=='z'||k.getTextCharacter()=='Z')) {
+    if (k.getModifiers().isCommandDown() && (k.getKeyCode()=='z'||k.getKeyCode()=='Z')) {
         if (k.getModifiers().isShiftDown()) { if (onRedo) onRedo(); }
         else if (onUndo) onUndo();
         return true;
     }
     if (k.getModifiers().isCommandDown() &&
-        (k.getTextCharacter()=='y'||k.getTextCharacter()=='Y')) {
+        (k.getKeyCode()=='y'||k.getKeyCode()=='Y')) {
         if (onRedo) onRedo();
         return true;
     }
