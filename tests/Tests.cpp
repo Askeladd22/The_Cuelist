@@ -144,6 +144,21 @@ int main() {
         check(ui.redoEdit() && ui.show.rows.size()==2 &&
               validateShow(ui.show).wasOk(),"Redo did not restore valid duplicated cue");
     });
+    test("Create and reorder Cuelists use the same global Undo history",[] {
+        MainComponent ui(false);
+        ui.createCuelist();
+        check(ui.show.cuelists.size()==2,
+              "Creating a Cuelist did not commit a structural edit");
+        check(ui.undoEdit() && ui.show.cuelists.size()==1 &&
+              validateShow(ui.show).wasOk(),
+              "Creating a Cuelist could not be undone");
+        check(ui.redoEdit() && ui.show.cuelists.size()==2,
+              "Creating a Cuelist could not be redone");
+        const auto name=ui.show.cuelists[0].name;
+        check(ui.moveCuelist(0,1),"Could not reorder Cuelists");
+        check(ui.undoEdit() && ui.show.cuelists[0].name==name,
+              "Cuelist reorder Undo lost stable tab identity");
+    });
     test("Undo on VIEW does not stop audio belonging to LIVE Cuelist",[] {
         MainComponent ui(false);
         auto clip=std::make_shared<AudioClip>();
