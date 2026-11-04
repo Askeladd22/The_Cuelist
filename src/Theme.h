@@ -2,6 +2,8 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "BinaryData.h"
 #include <cmath>
+#include <cstdint>
+#include <algorithm>
 namespace cuelist {
 namespace palette {
 // One mutable token table, two immutable source presets. The Legacy numbers
@@ -435,7 +437,10 @@ inline void label(juce::Graphics& g,const juce::String& s,juce::Rectangle<int> r
 }
 class Theme final : public juce::LookAndFeel_V4 {
 public:
-    Theme() {
+    Theme() {applyColourTokens();}
+    // LookAndFeel colour IDs are stored, unlike the dynamic palette tokens
+    // used by paint(). Reapply on every theme switch, including popups.
+    void applyColourTokens() {
         setColour(juce::TextButton::buttonColourId,palette::raised);
         setColour(juce::TextButton::textColourOffId,palette::text);
         setColour(juce::ComboBox::backgroundColourId,palette::input);
