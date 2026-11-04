@@ -252,7 +252,7 @@ MainComponent::MainComponent(bool startAudio) {
             });
     };
     preferencesButton.setName("projectPreferences");
-    preferencesButton.setTooltip("Settings: MIDI devices, OSC ports, audio devices and clock.");
+    preferencesButton.setTooltip("Settings: appearance, MIDI/OSC, audio and clock.");
     // Application setting, never serialized into or applied destructively to a Show.
     juce::PropertiesFile::Options prefOptions;
     prefOptions.applicationName="The Cuelist";
@@ -305,6 +305,13 @@ MainComponent::MainComponent(bool startAudio) {
         juce::PopupMenu menu;
         menu.setLookAndFeel(&theme);
         menu.addItem(1,"Pre-flight"); menu.addItem(2,"Diagnostics");
+        juce::PopupMenu appearanceMenu;
+        appearanceMenu.setLookAndFeel(&theme);
+        appearanceMenu.addItem(800,"Legacy — Graphite / Copper",true,
+                               appearanceTheme()==palette::Appearance::legacy);
+        appearanceMenu.addItem(801,"Industrial Orange",true,
+                               appearanceTheme()==palette::Appearance::industrialOrange);
+        menu.addSubMenu("Appearance",appearanceMenu);
         juce::PopupMenu faderMenu;
         faderMenu.setLookAndFeel(&theme);
         faderMenu.addItem(3,faderRangeMenuTitle(6),true,faderCeilingDb==6);
@@ -357,6 +364,9 @@ MainComponent::MainComponent(bool startAudio) {
             if (!safe) return;
             if(choice==1) safe->showPreflight();
             else if(choice==2) safe->showDiagnostics();
+            else if(choice==800 || choice==801)
+                safe->setAppearanceTheme(choice==800 ?
+                    palette::Appearance::legacy : palette::Appearance::industrialOrange);
             else if(choice==3 || choice==4) safe->setAudioFaderCeilingDb(choice==3 ? 6 : 0);
             else if(choice==5) safe->renameActiveCuelist();
             else if(choice==60 || choice==61) {
@@ -1193,6 +1203,12 @@ void MainComponent::showOperatorMenu(int index) {
             // Collapse all remains directly on the cue header; a second
             // identical menu command only adds operator noise.
             m.addSeparator();
+            juce::PopupMenu appearanceMenu;
+            appearanceMenu.addItem(base+20,"Legacy — Graphite / Copper",true,
+                appearanceTheme()==palette::Appearance::legacy);
+            appearanceMenu.addItem(base+21,"Industrial Orange",true,
+                appearanceTheme()==palette::Appearance::industrialOrange);
+            m.addSubMenu("Appearance",appearanceMenu);
             juce::PopupMenu faderMenu;
             faderMenu.addItem(base+10,faderRangeMenuTitle(6),true,faderRange==6);
             faderMenu.addItem(base+11,faderRangeMenuTitle(0),true,faderRange==0);
@@ -1313,7 +1329,11 @@ void MainComponent::dispatchOperatorMenu(int group,int command) {
         else if (command==4) openControlPanel(false);
         break;
     case 5:
-        if (command==1) inspectorSideTab.triggerClick();
+        if(command==20 || command==21) {
+            setAppearanceTheme(command==20 ?
+                palette::Appearance::legacy : palette::Appearance::industrialOrange);
+        }
+        else if (command==1) inspectorSideTab.triggerClick();
         else if (command==2) setTimelineVisible(!timelineVisible);
         else if (command>=14 && command<=16) {
             bool* target=command==14 ? &showClock :
