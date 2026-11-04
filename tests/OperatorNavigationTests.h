@@ -33,6 +33,28 @@ void operatorNavigationTests() {
                   "Guide or overflow identity changed");
         }
     });
+    test("Header Undo/Redo icons appear next to Guide without telemetry overlap",[] {
+        MainComponent ui(false);
+        ui.setSize(1647,895);
+        auto* guide=controlsV3::named(ui,"operatorMenuGuide");
+        auto* undo=controlsV3::named(ui,"showUndo");
+        auto* redo=controlsV3::named(ui,"showRedo");
+        const auto clock=HeaderTelemetryLayout::atWidth(1647).clock;
+        check(guide && undo && redo &&
+              guide->isVisible() && undo->isVisible() && redo->isVisible(),
+              "Wide header must display Undo and Redo after Guide");
+        check(undo->getX()>guide->getRight() &&
+              redo->getX()>undo->getRight() &&
+              redo->getRight()<clock.getX() &&
+              undo->getHeight()==OperatorNavigationLayout::menuHeight &&
+              redo->getWidth()==28,
+              "Undo/Redo buttons must fit between Guide and telemetry");
+        check(!undo->isEnabled() && !redo->isEnabled(),
+              "Empty Show history must disable Undo/Redo");
+        ui.setSize(1180,820);
+        check(!undo->isVisible() && !redo->isVisible(),
+              "Narrow headers must rely on Edit/More rather than overlap telemetry");
+    });
     test("Native N2 sidebar removes File/Settings/Mapping duplicates",[] {
         MainComponent ui(false);
         for (const auto bounds:std::initializer_list<juce::Point<int>>{

@@ -455,8 +455,10 @@ MainComponent::MainComponent(bool startAudio) {
     };
     undoButton.setName("showUndo");
     redoButton.setName("showRedo");
-    undoButton.setTooltip("Undo the last MIDI/OSC clip edit (Ctrl+Z).");
-    redoButton.setTooltip("Redo the last MIDI/OSC clip edit (Ctrl+Shift+Z).");
+    undoButton.setTooltip("Undo the previous Show or clip edit (Ctrl+Z).");
+    redoButton.setTooltip("Redo the previous Show or clip edit (Ctrl+Y / Ctrl+Shift+Z).");
+    undoButton.setWantsKeyboardFocus(false);
+    redoButton.setWantsKeyboardFocus(false);
     undoButton.onClick=[this] {undoEdit();};
     redoButton.onClick=[this] {redoEdit();};
     undoButton.setEnabled(false);
@@ -1295,11 +1297,27 @@ void MainComponent::resized() {
             button->setVisible(visible);
             if (visible) button->setBounds(nav.bounds[(size_t)i]);
         }
-    // Keep existing Undo/Redo and Guide callbacks/shortcuts. Their
-    // former direct header controls now live in real popup menus.
+    // The seven native menu categories are unchanged. On wide headers, two
+    // compact curved-arrow controls live immediately after Guide; on narrow
+    // widths they remain accessible from Edit/More and via keyboard.
     helpButton.setVisible(false);
-    undoButton.setVisible(false);
-    redoButton.setVisible(false);
+    const bool guideVisible=nav.visibleMenuCount>
+                            OperatorNavigationLayout::menuCount-1;
+    const int historyLeft=guideVisible ?
+        nav.bounds[OperatorNavigationLayout::menuCount-1].getRight()+6 : 0;
+    constexpr int historyButtonSize=28, historyGap=4;
+    const int historyRight=HeaderTelemetryLayout::atWidth(getWidth()).clock.getX()-8;
+    const bool showHistory=guideVisible &&
+        historyLeft+2*historyButtonSize+historyGap<=historyRight;
+    undoButton.setVisible(showHistory);
+    redoButton.setVisible(showHistory);
+    if(showHistory) {
+        undoButton.setBounds(historyLeft,OperatorNavigationLayout::menuY,
+                             historyButtonSize,OperatorNavigationLayout::menuHeight);
+        redoButton.setBounds(historyLeft+historyButtonSize+historyGap,
+                             OperatorNavigationLayout::menuY,
+                             historyButtonSize,OperatorNavigationLayout::menuHeight);
+    }
     // Retain both original one-click actions and their Learn callbacks.
     const auto ioActivity=HeaderTelemetryLayout::atWidth(getWidth());
     globalMidiLearn.setBounds(ioActivity.midiLearn);
