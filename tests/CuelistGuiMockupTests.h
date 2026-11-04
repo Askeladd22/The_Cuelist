@@ -13,8 +13,8 @@ void cuelistGuiMockupTests() {
         const int audioCell=ui.show.rows[0].cells[0].id;
         ui.clips[audioCell]=clip;
         ui.engine.connected.store(true);
-        ui.engine.publish(ui.makeLiveRenderState());
-        check(ui.engine.send(liveFirst,true),"Unable to queue initial live GO");
+        ui.triggerRow(0); // arms liveNextCue=1, like the real operator GO
+        check(ui.liveNextCueIndex()==1,"Initial live transport was not armed");
         ui.engine.processBlock(nullptr,0,1,100);
         check(ui.engine.getCellPlayback(audioCell).playing,
               "Baseline live audio did not start");
@@ -29,7 +29,7 @@ void cuelistGuiMockupTests() {
         ui.engine.processBlock(nullptr,0,1,100);
         check(ui.engine.acknowledgedCueId.load()==liveSecond,
               "Global GO targeted the VIEW tab instead of the LIVE tab");
-        check(ui.liveNextCueIndex()==1,
+        check(ui.liveNextCueIndex()==2,
               "Independent live cursor did not advance");
         ui.activateCuelist(0);
         check(ui.liveCuelistIndex()==ui.show.activeCuelist &&
