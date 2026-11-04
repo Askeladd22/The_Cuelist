@@ -70,6 +70,14 @@ inline void pianoRollTests() {
                 for(size_t j=i+1;j<rects.size();++j)
                     check(!rects[i].intersects(rects[j]),
                           "N7.2 compact MIDI toolbar controls overlap");
+            check(t.detach.getWidth()==28 && t.collapse.getWidth()==28 &&
+                  t.close.getWidth()==28 &&
+                  t.collapse.getHeight()==26 && t.detach.getHeight()==26 &&
+                  t.close.getHeight()==26 &&
+                  t.collapse.getRight()+4==t.detach.getX() &&
+                  t.detach.getRight()+4==t.close.getX() &&
+                  t.close.getRight()==width-12,
+                  "MIDI Collapse, Detach, Close lost their uniform right-aligned icon group");
             if(t.compact) {
                 check(!t.title.intersects(t.undo) &&
                       !t.detach.intersects(t.collapse) &&
@@ -83,7 +91,11 @@ inline void pianoRollTests() {
             }
         }
         auto* detach=dynamic_cast<juce::TextButton*>(find("clipEditorDetach"));
-        check(detach!=nullptr,"Existing detachable MIDI editor missing");
+        check(detach!=nullptr && detach->getWidth()==28,
+              "MIDI editor Detach icon must use the same small hitbox");
+        const auto detachedImage=detach->createComponentSnapshot(detach->getLocalBounds());
+        check(detachedImage.isValid() && detachedImage.getWidth()==28,
+              "MIDI Detach icon failed to render");
         editor.setFloating(true);
         check(detach->getButtonText()=="Reattach",
               "MIDI toolbar lost floating/reattach semantic state");
@@ -104,9 +116,8 @@ inline void pianoRollTests() {
         for(int width:{1180,1280,1440,1640}) {
             ui.setSize(width,900);
             const auto t=MidiEditorToolbarLayout::atWidth(editor->getWidth());
-            if(!t.compact) continue;
             const auto pos=editor->getPosition();
-            check(collapse->getBounds()==t.collapse.translated(pos.x,pos.y).withWidth(28) &&
+            check(collapse->getBounds()==t.collapse.translated(pos.x,pos.y) &&
                   close->getBounds()==t.close.translated(pos.x,pos.y),
                   "MIDI dock controls do not follow the actual editor layout");
             for(const auto& action:{t.undo,t.redo,t.detach}) {
