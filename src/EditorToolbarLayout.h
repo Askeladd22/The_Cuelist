@@ -43,9 +43,9 @@ struct MidiEditorToolbarLayout {
         }
         // Consistent 28×26 hitboxes, 4 px gaps, 12 px right margin.
         // Closes to the right of Detach, and Collapse remains next to it.
-        t.collapse={w-108,4,28,26};
-        t.detach={w-76,4,28,26};
-        t.close={w-44,4,28,26};
+        t.collapse={w-104,4,28,26};
+        t.detach={w-72,4,28,26};
+        t.close={w-40,4,28,26};
         return t;
     }
 };
