@@ -13,6 +13,19 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.13] - 2026-11-04
+
+**Tipo:** correzione del blocco CMake introdotto con la 0.9.12.
+
+### Corretto
+- La regex in `CMakeLists.txt` verificava ancora `0.9.11` anche dopo che `project(... VERSION ...)` e `VERSION.txt` erano stati portati a `0.9.12`: la configurazione Windows falliva prima della compilazione.
+- Il controllo ora genera la propria regex direttamente da `PROJECT_VERSION`, eliminando il numero duplicato e ammettendo gli eventuali suffissi prerelease; in caso di incoerenza mostra entrambi i valori.
+- Aggiunto un controllo nel gate Python che intercetta un diverso valore fra `VERSION.txt` e il `project VERSION` di CMake. Nessun cambio al funzionamento di audio, MIDI, OSC o UI.
+
+### Verifiche e limitazioni
+- Verificato il comportamento del controllo di versione in CMake minimo: accettazione di release e prerelease coerenti, rifiuto di versioni differenti o malformate.
+- Build MSVC, test JUCE e collaudo operativo ancora da confermare tramite Windows CI e PC locale; nessuna build portable.
+
 ## [0.9.12] - 2026-11-04
 
 **Tipo:** redesign cromatico nativo Forest/Teal, senza modifiche ai comportamenti operativi.
