@@ -19,6 +19,7 @@ public:
     juce::Component& getCanvas();
     void loadClip(const MidiClip& replacement);
     void setFloating(bool floating);
+    void refreshAppearance(); // Reapply this editor's private LookAndFeel immediately
     std::function<void()> onDetach, onUndo, onRedo, onClose;
 private:
     class Canvas;
