@@ -74,7 +74,7 @@ void MainComponent::editMidiClip() {
     auto& cell=show.rows[selectedRow].cells[selectedColumn];
     if (!cell.midi) {
         cell.midi=MidiClip{};
-        dirty=true; engine.publish(makeRenderState(show,clips));
+        dirty=true; engine.publish(makeLiveRenderState());
     }
     const int id=cell.id;
     if (clipEditor) {
@@ -163,7 +163,7 @@ void MainComponent::midiClipEdited(int cellId,const MidiClip& before,const MidiC
             if (cell.id!=cellId || show.columns[c].type!=ColumnType::midi) continue;
             if (!cell.midi || !sameMidiClip(*cell.midi,after)) {
                 cell.midi=after; cell.file.clear(); dirty=true;
-                engine.publish(makeRenderState(show,clips));
+                engine.publish(makeLiveRenderState());
                 status="MIDI clip updated. Save the show to keep your changes.";
                 timeline.repaint(); grid.repaint(); repaint();
             }
@@ -178,7 +178,7 @@ void MainComponent::restoreMidiClip(int cellId,const MidiClip& snapshot) {
     for (auto& row:show.rows) for (size_t c=0;c<row.cells.size();++c) {
         if (row.cells[c].id!=cellId || show.columns[c].type!=ColumnType::midi) continue;
         row.cells[c].midi=snapshot;
-        dirty=true; engine.publish(makeRenderState(show,clips));
+        dirty=true; engine.publish(makeLiveRenderState());
         if (clipEditor && clipEditorCellId==cellId) clipEditor->loadClip(snapshot);
         status="MIDI edit reverted."; grid.repaint(); timeline.repaint(); repaint();
         return;
