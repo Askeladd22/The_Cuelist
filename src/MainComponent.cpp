@@ -392,7 +392,8 @@ MainComponent::MainComponent(bool startAudio) {
             ProjectRecovery::discard(ProjectRecovery::defaultDirectory());
             preserveDeferredRecovery=false;
         }
-        engine.publish(makeLiveRenderState()); refresh(); status="New show. Import files into Audio cells."; }); };
+        engine.publish(makeLiveRenderState()); markHistoryBaseline();
+        refresh(); status="New show. Import files into Audio cells."; }); };
     openButton.onClick=[this] { withDiscardConfirmation([this] { openProject(); }); };
     preflightButton.setName("showPreflight");
     diagnosticsButton.setName("showDiagnostics");
@@ -1483,6 +1484,7 @@ void MainComponent::resized() {
     positionInlineNameEditor();
 }
 void MainComponent::refresh() {
+    checkpointHistory("Edit Show");
     selectedRow=juce::jlimit(0,(int)show.rows.size()-1,selectedRow);
     selectedColumn=juce::jlimit(0,(int)show.columns.size()-1,selectedColumn);
     visibleClipCount=0;
@@ -1531,6 +1533,7 @@ std::unique_ptr<RenderState> MainComponent::makeLiveRenderState() const {
 }
 void MainComponent::changed(const juce::String& text,bool stopPlayback) {
     if (projectLoader) projectLoader->cancel(); // never overwrite newer edits
+    checkpointHistory(text);
     const bool stopLive=stopPlayback && liveCuelist==show.activeCuelist;
     if (stopLive) { engine.panic(); resetActiveMapping(); }
     engine.publish(makeLiveRenderState(),!stopLive);
