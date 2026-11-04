@@ -527,6 +527,9 @@ void AudioEngine::setMidiOutputEnabled(const juce::String& id,bool enabled) {
     midiRouter.setOutputEnabled(id,enabled);
 }
 juce::Result AudioEngine::setMidiOutput(const juce::String& identifier,bool reconnect) { return midiRouter.open(identifier,reconnect); }
+int AudioEngine::midiOutputRoute(const juce::String& identifier) const {
+    return midiRouter.route(identifier);
+}
 void AudioEngine::refreshMidiOutputs() { midiRouter.refresh(); }
 AudioEngine::~AudioEngine() {
     devices.removeAudioCallback(this); devices.closeAudioDevice();
