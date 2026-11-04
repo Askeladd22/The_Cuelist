@@ -95,6 +95,7 @@ std::shared_ptr<MidiStream> MidiOutputRouter::stream(int cellId,int output,int c
     // accidentally to the old device. The worker releases its held notes
     // on that stream without a global MIDI or audio emergency stop.
     if (value->route!=output && value->route>=0) {
+        value->retired.store(true,std::memory_order_release);
         value->epoch.fetch_add(1,std::memory_order_release);
         static int retiredId=-1;
         streams[retiredId--]=value; // worker may still hold queued stream pointers
