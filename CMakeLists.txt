@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(TheCuelist VERSION 0.9.11 LANGUAGES C CXX)
+project(TheCuelist VERSION 0.9.12 LANGUAGES C CXX)
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION.txt" THE_CUELIST_DISPLAY_VERSION LIMIT_COUNT 1)
 if(NOT THE_CUELIST_DISPLAY_VERSION MATCHES "^0\\.9\\.11(-[a-zA-Z0-9.]+)?$")
   message(FATAL_ERROR "VERSION.txt must match the release's CMake version.")
