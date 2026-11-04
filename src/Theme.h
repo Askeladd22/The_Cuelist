@@ -72,6 +72,33 @@ inline void drawIconButtonSurface(juce::Graphics& g,juce::Rectangle<float> bound
     g.drawRoundedRectangle(rect,radius,state.keyboardFocus ? 1.65f :
                                          state.active ? .95f : .8f);
 }
+// Shared vector Undo/Redo icons: both editors use the same hit target and
+// local edit-history callbacks, without depending on font glyph coverage.
+class HistoryIconButton final : public juce::TextButton {
+public:
+    explicit HistoryIconButton(bool forward) :
+        juce::TextButton(forward ? "Redo" : "Undo"),redoDirection(forward) {}
+    void paintButton(juce::Graphics& g,bool hovered,bool pressed) override {
+        const IconButtonState state{isEnabled(),hovered,pressed,false,
+                                    hasKeyboardFocus(false)};
+        drawIconButtonSurface(g,getLocalBounds().toFloat(),palette::teal,state);
+        const auto bounds=getLocalBounds().toFloat();
+        const float cx=bounds.getCentreX(), cy=bounds.getCentreY();
+        juce::Path curve;
+        curve.startNewSubPath(cx-6.f,cy+4.f);
+        curve.cubicTo(cx-7.f,cy-4.f,cx+1.f,cy-7.f,cx+5.f,cy-1.f);
+        curve.startNewSubPath(cx+1.f,cy-3.5f);
+        curve.lineTo(cx+5.f,cy-1.f);
+        curve.lineTo(cx+6.5f,cy-5.f);
+        if (!redoDirection)
+            curve.applyTransform(juce::AffineTransform::scale(-1.f,1.f,cx,cy));
+        g.setColour(iconButtonInk(palette::text,state));
+        g.strokePath(curve,juce::PathStrokeType(1.65f,
+            juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+    }
+private:
+    bool redoDirection=false;
+};
 // Embedded OFL typefaces are registered once and kept alive for the app's
 // lifetime. No user-installed fonts, startup network or Windows font state.
 struct AppTypefaces {
