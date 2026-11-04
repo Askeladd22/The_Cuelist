@@ -267,6 +267,12 @@ PianoRollEditor::PianoRollEditor(MidiClip value,OnEdit callback)
     viewport.setViewPosition(0,std::max(0,rulerHeight+(127-pitch)*noteHeight-viewport.getHeight()/2));
 }
 PianoRollEditor::~PianoRollEditor() { viewport.setViewedComponent(nullptr,false); setLookAndFeel(nullptr); }
+void PianoRollEditor::refreshAppearance() {
+    // Each editor owns its own Theme, independent of MainComponent's LAF.
+    theme.applyColourTokens();
+    sendLookAndFeelChange();
+    repaint();
+}
 juce::Component& PianoRollEditor::getCanvas() { return *canvas; }
 double PianoRollEditor::gridStep() const { return snapEnabled() ? std::pow(.5,std::max(0,snap.getSelectedId()-1)) : .25; }
 bool PianoRollEditor::snapEnabled() const { return snap.getSelectedId()!=5; }
