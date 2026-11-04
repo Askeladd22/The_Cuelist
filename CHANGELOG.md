@@ -13,6 +13,22 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.17] - 2026-11-04
+
+**Tipo:** gestione indipendente delle Cuelist VIEW e LIVE.
+
+### Modificato
+- La tab visualizzata (`show.activeCuelist`) è indipendente dalla Cuelist con trasporto live (`liveCuelist`); il cambio di VIEW non invia PANIC, non ripubblica un'altra sequenza e non annulla il mapping live.
+- Il GO globale continua ad agire sul cursore LIVE anche navigando un'altra Cuelist; il GO esplicito di una cue nella VIEW trasferisce intenzionalmente la riproduzione, fermando il precedente trasporto.
+- L'engine e il controller mapping usano uno snapshot della Cuelist LIVE per le pubblicazioni e per la risoluzione dei preset, mantenendo le identità stabili dei media.
+- Tab con un indicatore verde LIVE e tooltip VIEW/LIVE; `ON DECK` mostra il cursore live. Reorder e cancellazione di una Cuelist non-live conservano trasporto e indici; l'eliminazione della LIVE esegue PANIC.
+- Apertura e creazione di Show ripristinano il contesto LIVE; tornando alla tab LIVE non si azzera il cue già armato.
+
+### Test
+- Aggiunta prova di regressione: playback Audio mentre si visualizza una seconda Cuelist e GO che continua ad avanzare la LIVE.
+- Il formato `.cuelist` resta JSON v10 e conserva `activeCuelist` come selezione VIEW; l'identità LIVE corrente è runtime-only.
+- Build/CTest Windows, verifica di audio/MIDI/OSC fisici, changeover e mapping da collaudare prima dell'impiego critico. Nessuna build portable.
+
 ## [0.9.16] - 2026-11-04
 
 **Tipo:** redesign cromatico Industrial Orange, esclusivamente visivo.
