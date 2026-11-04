@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.22] - 2026-11-04
+
+**Tipo:** correzione test di regressione del layout Undo/Redo, senza modifica del software operativo.
+
+### Corretto
+- Il test `Native Undo/Redo remain accessible in header or Edit/More without overlap` rispetta il requisito introdotto nella 0.9.21: le icone Undo/Redo si vedono dopo Guide quando c'è spazio, altrimenti i comandi restano nei menu Edit/More e tramite scorciatoie.
+- Verifica responsive a 1180, 1440, 1647 e 1920 px con assenza di sovrapposizioni a Guide, telemetria e Cuelist tabs.
+- Lo snapshot della telemetria audio usa le coordinate responsive correnti, non il vecchio rettangolo fisso `width-365`.
+- Identificata la causa dell'unico test fallito nel collaudo Windows 0.9.21: il test precedente pretendeva che i pulsanti fossero sempre nascosti, in contraddizione con la specifica UI vigente. Il codice applicativo non cambia.
+
+### Verifiche
+- Compilazione applicazione 0.9.21 riuscita sul PC Windows dell'operatore e 419.906 asserzioni eseguite con un unico test di layout obsoleto fallito.
+- Da verificare: nuova build Windows e CTest su GitHub Actions per 0.9.22.
+- Nessuna build portable, nessuna modifica a motori, routing, progetto `.cuelist` v10, rendering o palette.
+
 ## [0.9.21] - 2026-11-04
 
 **Tipo:** completamento mirato primo ciclo di rifinitura OSC e navigazione globale.
