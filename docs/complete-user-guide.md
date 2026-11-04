@@ -6,6 +6,8 @@ This English guide covers the software currently implemented in this repository.
 
 > **Important:** The Cuelist is beta software, not certified for show-critical use. Always rehearse with the actual audio interface, controllers and OSC receivers, run Preflight, check backups and maintain a tested emergency procedure. A green CI build is not proof of hardware reliability or end-to-end timing accuracy.
 
+**Colour convention (Industrial Orange):** burned orange outlines and playhead mark the current selection and time cursor. Green indicates GO or playing; warm warning amber means NEXT or paused. Audio, MIDI, OSC and Control columns retain their separate type keys (slate, tan, violet, steel blue). Selection colour never replaces a clip's type key, and the application's seven custom cue colours are preserved.
+
 ## 1. Concepts and project structure
 
 A **Show** contains shared output columns, device and mixer configuration, Control Mapping settings, and one to twelve **Cuelists**. Every Cuelist has its own ordered cue rows, clip contents and technical notes. Changing the viewed Cuelist does not stop the LIVE transport. A green dot on its tab identifies the LIVE sequence; GO continues there while other tabs are viewed. Explicit GO on a cue in another Cuelist intentionally takes over the live transport.
