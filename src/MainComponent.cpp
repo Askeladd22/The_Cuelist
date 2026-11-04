@@ -1376,18 +1376,15 @@ void MainComponent::resized() {
                 x+(clipCollapsed ? 14 : compact ? 290 : 541),y,28,26);
             clipCloseButton.setBounds(
                 x+(clipCollapsed ? 109 : compact ? 383 : 634),y,82,26);
-        } else if (clipEditor && !clipWindow && !clipCollapsed &&
-                   MidiEditorToolbarLayout::atWidth(
-                       geometry.dockEditor.getWidth()).compact) {
-            // The MIDI clip editor is not an OSC toolbar: its five top-row
-            // actions (Undo/Redo/Detach/Collapse/Close) must share a single
-            // non-overlapping coordinate system, even when docked at 710px.
-            // Parent buttons use the editor-local geometry translated once.
+        } else if (clipEditor && !clipWindow) {
+            // All MIDI dock widths use the SAME editor-local geometry.
+            // Detach is owned by PianoRoll; Collapse and Close are owned
+            // by MainComponent, translated exactly once into root space.
             const auto layout=MidiEditorToolbarLayout::atWidth(
                 geometry.dockEditor.getWidth());
             const auto origin=geometry.dockEditor.getPosition();
             clipCollapseButton.setBounds(
-                layout.collapse.translated(origin.x,origin.y).withWidth(28));
+                layout.collapse.translated(origin.x,origin.y));
             clipCloseButton.setBounds(
                 layout.close.translated(origin.x,origin.y));
         } else {
