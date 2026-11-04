@@ -252,13 +252,19 @@ MainComponent::MainComponent(bool startAudio) {
             });
     };
     preferencesButton.setName("projectPreferences");
-    preferencesButton.setTooltip("Settings: MIDI devices, OSC ports, audio devices and clock.");
+    preferencesButton.setTooltip("Settings: appearance, MIDI/OSC, audio and clock.");
     // Application setting, never serialized into or applied destructively to a Show.
     juce::PropertiesFile::Options prefOptions;
     prefOptions.applicationName="The Cuelist";
     prefOptions.filenameSuffix="settings";
     prefOptions.folderName="The Cuelist";
     appPreferences=std::make_unique<juce::PropertiesFile>(prefOptions);
+    // Load the app-level appearance before initializing editor controls;
+    // nothing is stored inside a .cuelist Show.
+    palette::activate(appPreferences->getValue("appearanceTheme","industrialOrange")
+        =="legacy" ? palette::Appearance::legacy :
+                      palette::Appearance::industrialOrange);
+    theme.applyColourTokens();
     faderCeilingDb=appPreferences->getIntValue("audioFaderCeilingDb",6)==0 ? 0 : 6;
     showClock=appPreferences->getBoolValue("viewShowClock",true);
     showCpuMeter=appPreferences->getBoolValue("viewShowCpu",true);
@@ -299,6 +305,13 @@ MainComponent::MainComponent(bool startAudio) {
         juce::PopupMenu menu;
         menu.setLookAndFeel(&theme);
         menu.addItem(1,"Pre-flight"); menu.addItem(2,"Diagnostics");
+        juce::PopupMenu appearanceMenu;
+        appearanceMenu.setLookAndFeel(&theme);
+        appearanceMenu.addItem(800,"Legacy — Graphite / Copper",true,
+                               appearanceTheme()==palette::Appearance::legacy);
+        appearanceMenu.addItem(801,"Industrial Orange",true,
+                               appearanceTheme()==palette::Appearance::industrialOrange);
+        menu.addSubMenu("Appearance",appearanceMenu);
         juce::PopupMenu faderMenu;
         faderMenu.setLookAndFeel(&theme);
         faderMenu.addItem(3,faderRangeMenuTitle(6),true,faderCeilingDb==6);
@@ -351,6 +364,9 @@ MainComponent::MainComponent(bool startAudio) {
             if (!safe) return;
             if(choice==1) safe->showPreflight();
             else if(choice==2) safe->showDiagnostics();
+            else if(choice==800 || choice==801)
+                safe->setAppearanceTheme(choice==800 ?
+                    palette::Appearance::legacy : palette::Appearance::industrialOrange);
             else if(choice==3 || choice==4) safe->setAudioFaderCeilingDb(choice==3 ? 6 : 0);
             else if(choice==5) safe->renameActiveCuelist();
             else if(choice==60 || choice==61) {
@@ -557,6 +573,93 @@ MainComponent::~MainComponent() {
     delete deviceDialog.getComponent();
     delete controlDialog.getComponent();
     viewport.setViewedComponent(nullptr,false); setLookAndFeel(nullptr);
+}
+
+void MainComponent::setAppearanceTheme(palette::Appearance id) {
+    // Snapshot the old role colours before replacing a single centralized
+    // token table. Explicit component-level colour overrides made by native
+    // editors are remapped too, otherwise the LookAndFeel alone would leave
+    // old TextEditors and ComboBoxes behind until next restart.
+    const auto captures=[] {
+        return std::vector<juce::Colour>{
+            palette::background,palette::input,palette::panel,palette::toolbar,
+            palette::raised,palette::line,palette::hover,
+            palette::accent,palette::accentHover,palette::accentPressed,
+            palette::text,palette::muted,palette::dimmed,palette::disabled,
+            palette::teal,palette::red,palette::go,palette::panic,
+            palette::warning,palette::selection,palette::selectedTab,
+            palette::type(0),palette::type(1),palette::type(2),palette::type(3),
+            palette::technicalInfo,palette::playing,palette::standby
+        };
+    };
+    const auto oldColours=captures();
+    palette::activate(id); // UI/message thread only; does not touch an engine
+    theme.applyColourTokens();
+    const auto newColours=captures();
+
+    const auto rebind=[&](juce::Component& component,int colourId) {
+        if (!component.isColourSpecified(colourId))return;
+        const auto stored=component.findColour(colourId,false);
+        for(size_t i=0;i<oldColours.size();++i)
+            if(stored==oldColours[i] && stored!=newColours[i]) {
+                component.setColour(colourId,newColours[i]);
+                return;
+            }
+    };
+    std::function<void(juce::Component&)> refreshChildren;
+    refreshChildren=[&](juce::Component& component) {
+        if(dynamic_cast<juce::TextButton*>(&component)) {
+            for(int id:{juce::TextButton::buttonColourId,
+                        juce::TextButton::buttonOnColourId,
+                        juce::TextButton::textColourOffId,
+                        juce::TextButton::textColourOnId})rebind(component,id);
+        } else if(dynamic_cast<juce::TextEditor*>(&component)) {
+            for(int id:{juce::TextEditor::backgroundColourId,
+                        juce::TextEditor::textColourId,
+                        juce::TextEditor::outlineColourId,
+                        juce::TextEditor::focusedOutlineColourId,
+                        juce::TextEditor::highlightColourId})rebind(component,id);
+        } else if(dynamic_cast<juce::ComboBox*>(&component)) {
+            for(int id:{juce::ComboBox::backgroundColourId,
+                        juce::ComboBox::textColourId,
+                        juce::ComboBox::outlineColourId,
+                        juce::ComboBox::arrowColourId})rebind(component,id);
+        } else if(dynamic_cast<juce::Label*>(&component)) {
+            for(int id:{juce::Label::textColourId,
+                        juce::Label::backgroundColourId})rebind(component,id);
+        } else if(dynamic_cast<juce::Slider*>(&component)) {
+            for(int id:{juce::Slider::thumbColourId,
+                        juce::Slider::trackColourId,
+                        juce::Slider::backgroundColourId,
+                        juce::Slider::textBoxTextColourId,
+                        juce::Slider::textBoxOutlineColourId})rebind(component,id);
+        } else if(dynamic_cast<juce::ToggleButton*>(&component)) {
+            for(int id:{juce::ToggleButton::textColourId,
+                        juce::ToggleButton::tickColourId,
+                        juce::ToggleButton::tickDisabledColourId})rebind(component,id);
+        } else if(dynamic_cast<juce::ScrollBar*>(&component)) {
+            for(int id:{juce::ScrollBar::backgroundColourId,
+                        juce::ScrollBar::thumbColourId})rebind(component,id);
+        }
+        for(int i=0;i<component.getNumChildComponents();++i)
+            if(auto* child=component.getChildComponent(i))
+                refreshChildren(*child);
+        component.repaint();
+    };
+    refreshChildren(*this);
+    // The explicit active-tab JUCE button colours must reflect selectedTab
+    // (Legacy has a copper-dark tab; Industrial uses neutral graphite).
+    refreshCuelistTabs();
+    sendLookAndFeelChange();
+    if(clipWindow)clipWindow->repaint();
+    if(oscWindow)oscWindow->repaint();
+    if(appPreferences) {
+        appPreferences->setValue("appearanceTheme",
+            id==palette::Appearance::legacy ? "legacy" : "industrialOrange");
+        appPreferences->saveIfNeeded();
+    }
+    status="Appearance: "+juce::String(palette::displayName(id))+".";
+    repaint();
 }
 
 void MainComponent::setAudioFaderCeilingDb(int db) {
@@ -1100,6 +1203,12 @@ void MainComponent::showOperatorMenu(int index) {
             // Collapse all remains directly on the cue header; a second
             // identical menu command only adds operator noise.
             m.addSeparator();
+            juce::PopupMenu appearanceMenu;
+            appearanceMenu.addItem(base+20,"Legacy — Graphite / Copper",true,
+                appearanceTheme()==palette::Appearance::legacy);
+            appearanceMenu.addItem(base+21,"Industrial Orange",true,
+                appearanceTheme()==palette::Appearance::industrialOrange);
+            m.addSubMenu("Appearance",appearanceMenu);
             juce::PopupMenu faderMenu;
             faderMenu.addItem(base+10,faderRangeMenuTitle(6),true,faderRange==6);
             faderMenu.addItem(base+11,faderRangeMenuTitle(0),true,faderRange==0);
@@ -1220,7 +1329,11 @@ void MainComponent::dispatchOperatorMenu(int group,int command) {
         else if (command==4) openControlPanel(false);
         break;
     case 5:
-        if (command==1) inspectorSideTab.triggerClick();
+        if(command==20 || command==21) {
+            setAppearanceTheme(command==20 ?
+                palette::Appearance::legacy : palette::Appearance::industrialOrange);
+        }
+        else if (command==1) inspectorSideTab.triggerClick();
         else if (command==2) setTimelineVisible(!timelineVisible);
         else if (command>=14 && command<=16) {
             bool* target=command==14 ? &showClock :

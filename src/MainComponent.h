@@ -292,9 +292,12 @@ public:
     void mouseDoubleClick(const juce::MouseEvent&) override;
     void mouseDrag(const juce::MouseEvent&) override;
     void mouseUp(const juce::MouseEvent&) override;
+    void mouseMove(const juce::MouseEvent&) override;
+    void mouseExit(const juce::MouseEvent&) override;
     void mouseWheelMove(const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
 private:
     MainComponent& owner;
+    int hoveredClipColumn=-1; // visual only; never affects clip selection
     int trackScroll=0, dragColumn=-1, dragRowId=-1, viewportRowId=-1;
     bool seeking=false,resizingClip=false;
     double dragStartDuration=0;
@@ -386,6 +389,10 @@ public:
     void setMasterAudio(float gain);
     int audioFaderCeilingDb() const noexcept { return faderCeilingDb; }
     void setAudioFaderCeilingDb(int db);
+    void setAppearanceTheme(palette::Appearance id);
+    palette::Appearance appearanceTheme() const noexcept {
+        return palette::activeAppearance;
+    }
     void setMasterPan(float pan);
     void setMasterMute(bool muted);
     void setMasterOutput(int channel);

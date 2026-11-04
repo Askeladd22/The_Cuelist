@@ -4,9 +4,9 @@
 
 The Cuelist is a desktop application for preparing and executing cue-based live productions, theatre performances, concerts and installations. It brings audio playback, MIDI sequences, OSC events and MIDI-controller mappings into one operator-focused workspace. It is not a digital audio workstation and does not include native video or timecode playback.
 
-**Application version:** [`0.9.26`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
+**Application version:** [`0.9.27`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
 
-> **0.9.26 corrects MSVC test compilation and live transport regression harness timing; it is not a live-show certification.** The beta numbering has ended, but rehearsals with real devices, licensing verification and Windows DPI/ultrawide visual review remain necessary before commercial distribution or production reliance. CI alone does not prove hardware reliability or end-to-end timing.
+> **0.9.27 introduces live-switchable Legacy/Industrial Orange themes and legible cue/clip colour fills; it is not a live-show certification.** The beta numbering has ended, but rehearsals with real devices, licensing verification and Windows DPI/ultrawide visual review remain necessary before commercial distribution or production reliance. CI alone does not prove hardware reliability or end-to-end timing.
 
 ## Versione e storico aggiornamenti
 
@@ -24,6 +24,15 @@ versioni 0.7/0.8/0.9 e delle 86 PR precedentemente integrate (con
 link alle PR), distinguendo la cronologia di sviluppo dalle release
 pubbliche. La versione del progetto salvato `.cuelist` (**schema v10**)
 è indipendente dal numero del software.
+
+## 0.9.27 — Temi Legacy e Industrial Orange
+
+- **View → Appearance** (o Settings → Appearance) permette di selezionare **Legacy — Graphite / Copper** o **Industrial Orange**, immediatamente e senza riavvio. La scelta è memorizzata nelle preferenze locali dell'applicazione, non nei file `.cuelist`.
+- Il tema Legacy recupera i valori reali da `src/Theme.h` della **0.9.15** (commit pre-Industrial `e6f1c384`): sfondi grafite, accento rame, testo caldo, indicatori GO/PANIC e colori delle colonne originali. Non è un'approssimazione grafica.
+- Industrial Orange mantiene la struttura `#101619 / #182227 / #202C32 / #29373D / #303B40 / #35434A`, l'arancio `#C66B42` e adotta i valori funzionali **GO `#55B875`**, **PANIC `#E05A46`**, **WARNING `#E5A52E`**, **INFO `#55AFC5`**. Audio torna all'identità tipo `#8FA8B2`, indipendente dall'Info.
+- **Timeline:** il riempimento di ogni clip è derivato dal colore di tipo, con bordo di selezione arancio indipendente e colore del testo adattivo; lo stile Legacy conserva la superficie storica neutra.
+- **Cue:** i sette colori personalizzati hanno un riempimento molto più visibile in Industrial Orange; una doppia marcatura chiara/arancio indica la selezione di una cue colorata, senza perdere la tinta assegnata. Il renderer sceglie l'inchiostro chiaro o scuro per contrasto. Il valore salvato resta lo stesso.
+- Gli editor e i menu continuano ad usare un unico set di token. Non cambiano routing, playback, geometrie o schema JSON v10.
 
 ## 0.9.26 — Fix compilazione test Windows
 

@@ -56,9 +56,10 @@ void test(const char* name, const std::function<void()>& body) {
 #include "ArchitectureV8Tests.h"
 int main() {
     juce::ScopedJuceInitialiser_GUI initialiseJuce;
-    // Exact graphite/copper tokens plus the restrained green/red/blue status
-    // contrast revision. Logical checks do not replace Windows/DPI review.
-    test("Industrial Orange design tokens match the muted high-contrast palette", [] {
+    // The default palette is the new exact Industrial Orange specification.
+    // Legacy values are verified separately against the pre-Industrial commit.
+    palette::activate(palette::Appearance::industrialOrange);
+    test("Industrial Orange tokens match the specified new semantic colours", [] {
         const std::array<juce::Colour,20> actual{
             palette::swatch::bgMain,palette::swatch::bgPanel,
             palette::swatch::bgElevated,palette::swatch::bgHover,
@@ -74,9 +75,9 @@ int main() {
         const std::array<unsigned int,20> expected{
             0xff101619,0xff182227,0xff202c32,0xff29373d,
             0xff303b40,0xff35434a,0xffc66b42,0xffd47a4f,
-            0xffa95534,0xff86a6bd,0xffb79a72,0xffa18bb9,
-            0xff7186a6,0xff9bb892,0xffc97870,0xffd1a45b,
-            0xff86a6bd,0xffe5e7e3,0xffa5b0ae,0xff718087
+            0xffa95534,0xff8fa8b2,0xffb79a72,0xffa18bb9,
+            0xff7186a6,0xff55b875,0xffe05a46,0xffe5a52e,
+            0xff55afc5,0xffe5e7e3,0xffa5b0ae,0xff718087
         };
         for(size_t i=0;i<actual.size();++i)
             check(actual[i].getARGB()==expected[i],"Industrial Orange token mismatch");
@@ -97,6 +98,30 @@ int main() {
         for(size_t i=0;i<savedCueColours.size();++i)
             check(savedCueColours[i].getARGB()==expectedCueColours[i],
                   "User-assignable cue colour changed in the theme update");
+    });
+    test("Legacy reproduces actual pre-Industrial Graphite Copper colours",[] {
+        palette::activate(palette::Appearance::legacy);
+        check(palette::background.getARGB()==0xff121416 &&
+              palette::input.getARGB()==0xff1b1e20 &&
+              palette::panel.getARGB()==0xff24272a &&
+              palette::toolbar.getARGB()==0xff2b2f32 &&
+              palette::raised.getARGB()==0xff34393c &&
+              palette::line.getARGB()==0xff474b4f,
+              "Legacy did not restore its exact charcoal layer hierarchy");
+        check(palette::text.getARGB()==0xfff2ede5 &&
+              palette::muted.getARGB()==0xffc2b8aa &&
+              palette::teal.getARGB()==0xffe4a77e &&
+              palette::go.getARGB()==0xff8cbd9f &&
+              palette::red.getARGB()==0xffe48c7f &&
+              palette::panic.getARGB()==0xffab5146 &&
+              palette::selectedTab.getARGB()==0xff5c3b2d,
+              "Legacy accent/transport/typography differ from v0.9.15");
+        check(palette::type(0).getARGB()==0xffe4a77e &&
+              palette::type(1).getARGB()==0xffdebd88 &&
+              palette::type(2).getARGB()==0xffb7a1bf &&
+              palette::type(3).getARGB()==0xff8ea7b8,
+              "Legacy column identities changed from v0.9.15");
+        palette::activate(palette::Appearance::industrialOrange);
     });
     test("Industrial Orange readable primary actions and labels", [] {
         const auto linear=[](float channel) {
