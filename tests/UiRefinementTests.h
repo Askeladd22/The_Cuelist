@@ -415,40 +415,28 @@ void uiRefinementTests() {
         delete dialog;
     });
 
-    test("Graphite Copper theme preserves readable surfaces and protocol accents",[] {
+    test("Industrial Orange uses approved UI surfaces and semantic accents",[] {
         const auto brightness=[](juce::Colour colour) {
-            return 0.2126f*(float)colour.getRed()+
-                   0.7152f*(float)colour.getGreen()+
-                   0.0722f*(float)colour.getBlue();
+            return .2126f*(float)colour.getRed()+
+                   .7152f*(float)colour.getGreen()+
+                   .0722f*(float)colour.getBlue();
         };
-        check(brightness(palette::background)<brightness(palette::input) &&
-              brightness(palette::input)<brightness(palette::panel) &&
+        check(brightness(palette::background)<brightness(palette::panel) &&
               brightness(palette::panel)<brightness(palette::toolbar) &&
-              brightness(palette::toolbar)<brightness(palette::raised) &&
+              brightness(palette::toolbar)<brightness(palette::hover) &&
+              brightness(palette::hover)<brightness(palette::raised) &&
               brightness(palette::raised)<brightness(palette::line),
-              "Palette no longer separates canvas, fields, panels and toolbar");
-        const auto nearNeutral=[](juce::Colour ink) {
-            return std::abs((int)ink.getRed()-(int)ink.getGreen())<=6 &&
-                   std::abs((int)ink.getGreen()-(int)ink.getBlue())<=6;
-        };
-        check(nearNeutral(palette::background) && nearNeutral(palette::input) &&
-              nearNeutral(palette::panel) && nearNeutral(palette::toolbar) &&
-              nearNeutral(palette::raised) && nearNeutral(palette::line),
-              "Graphite surfaces drifted back to green or blue tint");
-        check(brightness(palette::text)-brightness(palette::panel)>160.0f &&
-              brightness(palette::muted)-brightness(palette::raised)>100.0f,
-              "Text and secondary labels are too dim against console surfaces");
-        check(palette::copper.getRed()>palette::copper.getGreen() &&
-              palette::copper.getGreen()>palette::copper.getBlue() &&
-              palette::teal==palette::copper &&
-              palette::red.getRed()>palette::red.getGreen() &&
-              palette::amber.getRed()>palette::amber.getBlue() &&
+              "Industrial Orange surface hierarchy is inconsistent");
+        check(palette::accent==palette::swatch::accentPrimary &&
+              palette::type(0)!=palette::accent &&
+              palette::type(1)!=palette::type(2) &&
+              palette::type(3)!=palette::type(0) &&
               palette::go!=palette::panic &&
               palette::selectedTab!=palette::panel,
-              "GO, Panic, active tabs or live-state accents lost their distinction");
+              "Identity, column types and functional colours must be independent");
         const auto linear=[](int channel) {
             const double x=(double)channel/255.0;
-            return x<=0.04045 ? x/12.92 : std::pow((x+0.055)/1.055,2.4);
+            return x<=.04045 ? x/12.92 : std::pow((x+.055)/1.055,2.4);
         };
         const auto luminance=[&](juce::Colour ink) {
             return .2126*linear(ink.getRed())+
@@ -461,13 +449,11 @@ void uiRefinementTests() {
         };
         check(contrast(palette::text,palette::panel)>=7.0 &&
               contrast(palette::muted,palette::raised)>=4.5 &&
-              contrast(palette::copper,palette::raised)>=4.5 &&
-              contrast(palette::amber,palette::raised)>=4.5 &&
-              contrast(palette::purple,palette::raised)>=4.5 &&
+              contrast(palette::teal,palette::raised)>=4.5 &&
               contrast(palette::red,palette::raised)>=4.5 &&
-              contrast(palette::text,palette::selectedTab)>=4.5 &&
-              contrast(palette::text,palette::panic)>=4.5,
-              "Graphite/Copper small text no longer meets contrast thresholds");
+              contrast(palette::background,palette::panic)>=4.5 &&
+              contrast(palette::background,palette::go)>=4.5,
+              "Industrial Orange primary labels or controls lost accessibility");
     });
     test("Popup menus use Graphite Copper with readable hover and separator",[] {
         Theme theme;
@@ -821,9 +807,9 @@ void uiRefinementTests() {
                 const auto rail=strip->createComponentSnapshot({20,1,1,1});
                 check(rail.isValid(),"Signal type rail failed to render");
                 const auto colour=rail.getPixelAt(0,0);
-                if(c==0) check(colour.getRed()>colour.getGreen() &&
-                                colour.getGreen()>colour.getBlue(),
-                              "Audio lane lost its copper type code");
+                if(c==0) check(colour.getBlue()>colour.getRed() &&
+                                colour.getGreen()>colour.getRed(),
+                              "Audio lane lost its slate-blue type code");
                 if(c==1) check(colour.getRed()>colour.getGreen(),
                               "MIDI lane lost its amber type code");
                 if(c==2) check(colour.getBlue()>colour.getGreen(),
