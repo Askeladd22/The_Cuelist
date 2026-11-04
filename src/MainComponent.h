@@ -557,7 +557,7 @@ private:
     juce::TextButton cuelistMoveLeft{"<"},cuelistMoveRight{">"};
     int cuelistDragSource=-1,cuelistDragTarget=-1;
     void updateCuelistDropTarget(int rootX);
-    juce::TextButton undoButton{"Undo"},redoButton{"Redo"};
+    HistoryIconButton undoButton{false},redoButton{true};
     juce::TextButton globalMidiLearn{"M Learn"},globalOscLearn{"O Learn"};
     // Recent files reside in the existing application preferences, never
     // in the persisted Show. Opening uses the original async loader.
