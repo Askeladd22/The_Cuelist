@@ -40,7 +40,7 @@ void MainComponent::editOscClip() {
     auto& cell=show.rows[selectedRow].cells[selectedColumn];
     if (!cell.osc) {
         cell.osc=OscClip{};
-        dirty=true; engine.publish(makeRenderState(show,clips));
+        dirty=true; engine.publish(makeLiveRenderState());
     }
     const int id=cell.id;
     if (oscEditor) {
@@ -73,7 +73,7 @@ void MainComponent::oscClipEdited(int cellId,const OscClip& before,const OscClip
         auto& cell=row.cells[c];
         if (cell.id!=cellId || show.columns[c].type!=ColumnType::osc) continue;
         cell.osc=updated; cell.file.clear();
-        dirty=true; engine.publish(makeRenderState(show,clips));
+        dirty=true; engine.publish(makeLiveRenderState());
         status="OSC updated. Save the show to keep your changes.";
         grid.repaint(); timeline.repaint(); repaint();
         if (complete) {
@@ -87,7 +87,7 @@ void MainComponent::restoreOscClip(int cellId,const OscClip& snapshot) {
     for (auto& row:show.rows) for (size_t c=0;c<row.cells.size();++c) {
         if (row.cells[c].id!=cellId || show.columns[c].type!=ColumnType::osc) continue;
         row.cells[c].osc=snapshot; dirty=true;
-        engine.publish(makeRenderState(show,clips));
+        engine.publish(makeLiveRenderState());
         if (oscEditor && oscEditorCellId==cellId) oscEditor->loadClip(snapshot);
         status="OSC edit reverted.";
         grid.repaint(); timeline.repaint(); repaint();
