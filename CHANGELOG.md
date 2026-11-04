@@ -20,7 +20,7 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 ### Modificato
 - Sostituita la palette Forest/Teal in `src/Theme.h` con sei livelli di grafite neutra: background `#121416`, input `#1B1E20`, panel `#24272A`, toolbar `#2B2F32`, raised `#34393C`, divider `#474B4F`.
 - L'accento interattivo principale ora è rame chiaro `#E4A77E` (focus, selezione, sottolineature, icone, menu e colonne Audio); tab attiva `#5C3B2D` e testo `#F2EDE5` / `#C2B8AA`. Il token sorgente `palette::teal` rimane un alias del rame per compatibilità con i componenti esistenti.
-- Colori operativi conservati come categorie distinte e meno saturate: GO/disponibilità verde `#8CBD9F`, MIDI/standby ambra `#DEBD88`, OSC lilla `#B7A1BF`, errore `#DB8175`, PANIC `#AB5146`.
+- Colori operativi conservati come categorie distinte e meno saturate: GO/disponibilità verde `#8CBD9F`, MIDI/standby ambra `#DEBD88`, OSC lilla `#B7A1BF`, errore `#E48C7F`, PANIC `#AB5146`.
 - Aggiornati i colori opzionali delle cue 5–7 a blu ardesia, salvia desaturata e ottone; gli indici colore dei progetti salvati sono invariati.
 - Allineati i testi descrittivi nel README e nella guida alla palette corrente.
 
