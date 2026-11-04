@@ -13,6 +13,25 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.14] - 2026-11-04
+
+**Tipo:** primo blocco indipendente del ciclo di rifinitura (routing MIDI e Quality of Life UI).
+
+### Modificato
+- Il GO di una cue o di una cella non viene più bloccato dall'assenza, disabilitazione o disconnessione dell'uscita MIDI; audio, OSC e cronologia di trasporto procedono normalmente. Il router esistente mantiene la sua policy di scarto dei pacchetti senza route e il ripristino sullo stesso identificatore del dispositivo.
+- Nella strip Utility/Mixer delle colonne MIDI il selettore mostra sotto di sé l'avviso rosso `No MIDI Output` quando la destinazione non è valida; l'inventario aggiorna lo stato a cadenza di un secondo.
+- Le Cuelist trascinate mostrano un sottile indicatore di inserimento tra le tab anziché una tinta di sfondo; identità e algoritmo di riordino invariati.
+- Nel Piano Roll MIDI il bordo destro delle note espone un cursore orizzontale di ridimensionamento, con grip adattivo e corpo ancora trascinabile.
+- Gli editor MIDI e OSC condividono pulsanti vettoriali Undo/Redo: OSC ora ha anche i due pulsanti visibili, collegati alle callback Undo/Redo già presenti; nessuna seconda cronologia.
+- Il dock MIDI/OSC dispone di un pulsante di collasso compatto a freccia, coerente con il grip dell'Inspector, e di una sottile linea di separazione nella parte superiore.
+- Nel menu View aggiunti `Show Clock`, `Show CPU Meter` e `Show RAM Meter` come voci indipendenti; `Collapse/Expand Timeline` restituisce lo spazio alla cue grid senza modificare il dock o il collasso Inspector. Preferenze solo locali, non salvate nello Show. `Fader Range` invariato.
+
+### Test e limiti
+- Aggiunto test sul rendering audio mentre è presente una colonna MIDI senza output; i test precedenti del router verificano gli identificatori esatti senza fallback.
+- Aggiunti test della geometria Timeline collassata/ripristinata e aggiornati i contratti di hitbox dei dock e della toolbar OSC.
+- Build Windows, CTest e test manuali su dispositivi fisici rimangono da verificare in CI e sul PC dell'operatore; nessuna build portable.
+- Il documento di specifiche ammette interventi incrementali. Restano per tranche successive, dopo audit di stato/modello: Cuelist selezionata vs Cuelist in playback, riorganizzazione dati/finestre OSC Ramp e interazione multi-select OSC, Undo/Redo globale. Non sono stati implementati né dichiarati completati in questa tranche.
+
 ## [0.9.13] - 2026-11-04
 
 **Tipo:** correzione del blocco CMake introdotto con la 0.9.12.
