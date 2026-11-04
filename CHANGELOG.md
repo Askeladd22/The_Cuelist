@@ -13,6 +13,22 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.20] - 2026-11-04
+
+**Tipo:** Industrial Orange — revisione semantica esclusivamente cromatica.
+
+### Modificato
+- Rafforzata la separazione tra il colore identitario `#C66B42` e i colori di funzione: selezione e playhead arancio, GO/PLAYING in `#8EAE91`, NEXT/PAUSED e avvisi in `#D1A45B`, informazioni tecniche in `#8FA8B2`.
+- Cue Grid: rail della selezione e bordi delle celle selezionate in arancio; indicatori LIVE e pulsanti GO/Play in verde. Le fasce di tipo contenuto Audio/MIDI/OSC/Control restano indipendenti, le superfici neutre.
+- Timeline: indicatore temporale e cornice del clip selezionato in arancio; la striscia tipologica di ciascun clip mantiene il suo colore originale.
+- OSC Editor: curve/indicatori di tipo restano viola, mentre track, evento, punto e bordo del segmento selezionati hanno l'accento arancio; indicatore temporale arancio e warning ambra.
+- Mixer e diagnostica: meter audio con progressione verde/ambra/rosso, presenza audio in verde, attività MIDI/OSC nei rispettivi colori, CPU/RAM in tinta tecnica neutra.
+- Nessun cambiamento a forme, dimensioni, spazi, layout, gesture, motori, audio, MIDI/OSC, schema JSON v10 o colori personalizzati delle cue.
+
+### Test
+- Nuovo controllo automatico sull'indipendenza fra colori di selezione, protocollo, riproduzione e informazioni tecniche, nonché sul contrasto dei bordi di selezione e dello stato LIVE.
+- Build Windows/CTest e controllo visivo dei rendering DPI rimangono da verificare; nessuna build portable.
+
 ## [0.9.19] - 2026-11-04
 
 **Tipo:** Undo/Redo unificato per l'editing nativo dello Show.
