@@ -118,7 +118,8 @@ void MidiOutputRouter::beginBlock(double rate,double sharedOriginMs) noexcept {
     sampleMillis=rate>0 ? 1000.0/rate : 0;
 }
 void MidiOutputRouter::emit(int route,int status,int a,int b,int offset) noexcept {
-    if (route<0 || emergency.load(std::memory_order_relaxed)) return;
+    if (route<0 || emergency.load(std::memory_order_relaxed) ||
+        (selected && selected->retired.load(std::memory_order_acquire))) return;
     const auto w=write.load(std::memory_order_relaxed);
     const auto next=(w+1)%capacity;
     if (next==read.load(std::memory_order_acquire)) {
