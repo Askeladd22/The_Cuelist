@@ -159,6 +159,21 @@ int main() {
         check(ui.undoEdit() && ui.show.cuelists[0].name==name,
               "Cuelist reorder Undo lost stable tab identity");
     });
+    test("One continuous Master fader gesture is one Undo transaction",[] {
+        MainComponent ui(false);
+        const float initial=ui.show.masterGain;
+        ui.setMasterAudio(.9f);
+        ui.setMasterAudio(.85f);
+        ui.setMasterAudio(.8f);
+        check(std::abs(ui.show.masterGain-.8f)<.0001f,
+              "Master fader moves did not apply");
+        check(ui.undoEdit() &&
+              std::abs(ui.show.masterGain-initial)<.0001f,
+              "Continuous slider edits were not coalesced into one Undo");
+        check(ui.redoEdit() &&
+              std::abs(ui.show.masterGain-.8f)<.0001f,
+              "Master fader coalesced Redo did not restore final value");
+    });
     test("Undo on VIEW does not stop audio belonging to LIVE Cuelist",[] {
         MainComponent ui(false);
         auto clip=std::make_shared<AudioClip>();
