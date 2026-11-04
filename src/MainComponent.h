@@ -690,7 +690,7 @@ private:
     std::shared_ptr<const AudioClip> copiedAudio;
     ColumnType copiedType=ColumnType::audio;
     DockCollapseButton clipCollapseButton;
-    juce::TextButton clipCloseButton{"Close"};
+    EditorCloseIconButton clipCloseButton;
     // Single application-level history. Snapshots capture only Show metadata
     // and shared PCM handles; audio sample buffers are never duplicated.
     juce::UndoManager editHistory{16384,5};
