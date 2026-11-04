@@ -337,7 +337,7 @@ Each cue contains a tempo map in quarter-note beats, with its first event at bea
 
 These entries set 120 BPM at beat 0 and 90 BPM from beat 8. MIDI/OSC beat timing follows the tempo map; changing BPM does **not** change the natural playback rate of imported WAV/MP3 audio. Older projects may retain legacy time-signature fields.
 
-The Timeline represents the selected cue's clip timing, provides zoom, grid visibility, snap and a horizontal scrollbar. Dragging/range edits are available for supported MIDI/OSC clips. Displaying grid lines and enabling snap are separate choices. The **Snap** button uses a compact, centred vector magnet: copper magnet for ON, graphite-grey magnet crossed by a red slash for OFF. The Unicode magnet emoji is not included in the bundled Noto Sans Symbols 2, so it is intentionally not rendered through an operating-system emoji font. The pinned row BPM and Auto Stop controls remain visible even when scrolling columns.
+The Timeline represents the selected cue's clip timing, provides zoom, grid visibility, snap and a horizontal scrollbar. Dragging/range edits are available for supported MIDI/OSC clips. Displaying grid lines and enabling snap are separate choices. The **Snap** button uses a compact, centred vector magnet: burnt-orange magnet for ON, graphite-grey magnet crossed by a red slash for OFF. The Unicode magnet emoji is not included in the bundled Noto Sans Symbols 2, so it is intentionally not rendered through an operating-system emoji font. The pinned row BPM and Auto Stop controls remain visible even when scrolling columns.
 
 ## 12. Files, backups and recovery
 
