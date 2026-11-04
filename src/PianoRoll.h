@@ -33,7 +33,8 @@ private:
     juce::ComboBox snap, channel;
     juce::Slider velocity, length;
     juce::TextButton remove{"Delete"}, zoomOut{"-"}, zoomIn{"+"},
-                     detach{"Detach"}, undo{"Undo"}, redo{"Redo"};
+                     detach{"Detach"};
+    HistoryIconButton undo{false},redo{true};
     juce::String hint;
     int selected=-1;
     std::set<int> selectedNotes;
