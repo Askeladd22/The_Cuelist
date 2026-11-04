@@ -47,6 +47,7 @@ void MainComponent::toggleColumnCollapsed(int column) {
 void MainComponent::activateCuelist(int index) {
     if (index<0 || index>=(int)show.cuelists.size() ||
         index==show.activeCuelist || !applyInspector()) return;
+    checkpointHistory("Edit viewed Cuelist");
     // Browsing only changes the editor view. Never panic, republish a
     // different Cuelist's voices or reset the current live mapping here.
     // Editors are closed because their selected cell belongs to the old view.
@@ -64,6 +65,7 @@ void MainComponent::activateCuelist(int index) {
     status="Viewing "+show.cuelists[(size_t)index].name+
            ". LIVE transport remains "+show.cuelists[(size_t)liveCuelist].name+".";
     viewport.setViewPosition(0,0);
+    markHistoryBaseline(); // A tab-view change is not a model-edit transaction.
     refresh();
 }
 
@@ -97,6 +99,7 @@ bool MainComponent::moveCuelist(int from,int to) {
     show.rows=show.cuelists[(size_t)active].rows;
     dirty=true;
     status="Cuelist moved: "+movedName+". Save to persist order.";
+    checkpointHistory("Move Cuelist");
     refreshCuelistTabs();
     cueHeaders.repaint();
     grid.repaint();
@@ -126,6 +129,9 @@ void MainComponent::createCuelist() {
     }
     Cuelist created;created.name=name;created.rows.push_back(std::move(first));
     show.cuelists.push_back(std::move(created));
+    // Record the structural addition before the view-only activation
+    // realigns the history baseline to the new tab.
+    checkpointHistory("Create Cuelist");
     activateCuelist(index);
 }
 
@@ -192,8 +198,8 @@ void MainComponent::requestDeleteCuelist(int index) {
     const auto name=show.cuelists[(size_t)index].name;
     auto* dialog=new juce::AlertWindow(
         "Delete "+name+"?",
-        "Delete this Cuelist and all its cues from the show? This cannot be "
-        "undone. Source audio files on disk will not be removed.",
+        "Delete this Cuelist and all its cues from the show? You can use "
+        "Undo until the history is cleared. Source audio files are retained.",
         juce::MessageBoxIconType::WarningIcon,this);
     dialog->addButton("Delete Cuelist",1);
     dialog->addButton("Cancel",0,juce::KeyPress(juce::KeyPress::escapeKey));
@@ -216,6 +222,7 @@ bool MainComponent::setCuelistName(int index,const juce::String& proposed) {
     show.cuelists[(size_t)index].name=name;
     dirty=true;
     status="Cuelist renamed to "+name+". Save to persist.";
+    checkpointHistory("Rename Cuelist");
     refreshCuelistTabs();
     cueHeaders.repaint();
     grid.repaint();
@@ -397,6 +404,7 @@ void MainComponent::setAutoStop(int row,bool enabled) {
     if (row<0 || row>=(int)show.rows.size()) return;
     show.rows[row].stopOnNext=enabled; dirty=true; engine.publish(makeLiveRenderState());
     status=enabled ? "The row will stop on another cue's GO." : "The row will continue after another cue's GO.";
+    checkpointHistory("Toggle row Auto Stop");
     grid.repaint(); cueMetrics.repaint(); repaint();
 }
 
@@ -409,6 +417,7 @@ void MainComponent::setCellAutoStop(int row,int column,bool enabled) {
     engine.publish(makeLiveRenderState());
     if (row==selectedRow && column==selectedColumn) cellAutoStop.setToggleState(enabled,juce::dontSendNotification);
     status=enabled ? "Cell included in cue Auto Stop." : "Cell excluded from Auto Stop: continues after the next GO.";
+    checkpointHistory("Toggle cell Auto Stop");
     grid.repaint(); repaint();
 }
 
