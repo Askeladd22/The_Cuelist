@@ -455,7 +455,37 @@ void uiRefinementTests() {
               contrast(palette::background,palette::go)>=4.5,
               "Industrial Orange primary labels or controls lost accessibility");
     });
-    test("Popup menus use Graphite Copper with readable hover and separator",[] {
+    test("Industrial Orange keeps selections, playback and column types separate",[] {
+        check(palette::selection==palette::swatch::accentPrimary &&
+              palette::playing==palette::swatch::statusGo &&
+              palette::standby==palette::swatch::statusWarning &&
+              palette::technicalInfo==palette::swatch::statusInfo,
+              "Selection, playback, warning or info drifted from semantic token");
+        for(int i=0;i<4;++i)
+            check(palette::selection!=palette::type(i) &&
+                  palette::playing!=palette::type(i),
+                  "Column type must not be mistaken for selection or playback");
+        const auto luminance=[](juce::Colour c) {
+            const auto channel=[](float x) {
+                return x<=.04045f ? x/12.92f :
+                       std::pow((x+.055f)/1.055f,2.4f);
+            };
+            return .2126f*channel(c.getFloatRed())+
+                   .7152f*channel(c.getFloatGreen())+
+                   .0722f*channel(c.getFloatBlue());
+        };
+        const auto contrast=[&](juce::Colour a,juce::Colour b) {
+            auto x=luminance(a),y=luminance(b);
+            return (std::max(x,y)+.05f)/(std::min(x,y)+.05f);
+        };
+        check(contrast(palette::selection,palette::raised)>=3.f &&
+              contrast(palette::playing,palette::panel)>=4.5f,
+              "Selected border or live playback state lost contrast on graphite");
+        check(palette::swatch::textPrimary!=juce::Colours::white &&
+              palette::swatch::textDisabled!=palette::swatch::textSecondary,
+              "Text hierarchy drifted toward white or lost disabled state");
+    });
+    test("Popup menus use Industrial Orange with readable hover and separator",[] {
         Theme theme;
         // Check the actual LookAndFeel colours rather than exact sampled
         // pixels: JUCE's Windows rasteriser can blend ARGB images differently
@@ -465,7 +495,7 @@ void uiRefinementTests() {
               theme.findColour(juce::PopupMenu::headerTextColourId)==palette::teal &&
               theme.findColour(juce::PopupMenu::highlightedBackgroundColourId)==palette::raised &&
               theme.findColour(juce::PopupMenu::highlightedTextColourId)==palette::text,
-              "Popup theme colours have diverged from Graphite Copper");
+              "Popup theme colours have diverged from Industrial Orange");
         juce::Image pixels(juce::Image::ARGB,220,120,true);
         {
             juce::Graphics g(pixels);
