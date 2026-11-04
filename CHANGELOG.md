@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.21] - 2026-11-04
+
+**Tipo:** completamento mirato primo ciclo di rifinitura OSC e navigazione globale.
+
+### Modificato
+- Nell'OSC Editor, il trascinamento col pulsante destro seleziona eventi e segmenti tramite la cornice già esistente; un singolo clic destro continua ad aprire il menu contestuale. La soglia di trascinamento impedisce aperture involontarie.
+- Il doppio clic nell'area interna di una Ramp OSC inserisce un nuovo punto tipizzato, quantizzato quando Snap è attivo e validato prima della modifica. I punti già esistenti restano selezionabili e trascinabili; Shift+clic rimane disponibile per compatibilità.
+- Eliminato il dialogo ridondante `OSC ramp values`: gli estremi si regolano direttamente tramite i punti della curva, mentre address, template argomenti numerici e range rimangono nelle impostazioni di traccia. `argumentIndex` viene mantenuto: identifica l'argomento giusto nei messaggi multiargomento e preserva i file esistenti.
+- Due icone vettoriali Undo e Redo sono ora visibili subito a destra del menu Guide negli header che le possono contenere senza sovrapposizioni; su finestre strette restano accessibili tramite Edit/More e scorciatoie. Usano lo storico JUCE globale già implementato, senza duplicarlo.
+- Nessuna modifica a schema `.cuelist` v10, audio, MIDI/OSC network, VIEW/LIVE, colori utente, palette Industrial Orange o layout della Cue Grid.
+
+### Test
+- Aggiunti test per selezione OSC multi-elemento con tasto destro, inserimento di un punto con doppio clic, protezione dalla duplicazione, e hitbox delle icone globali rispetto al menu Guide e alla telemetria.
+- Compilazione Windows e CTest richiesti prima dell'integrazione; nessuna build portable.
+
 ## [0.9.20] - 2026-11-04
 
 **Tipo:** Industrial Orange — revisione semantica esclusivamente cromatica.
