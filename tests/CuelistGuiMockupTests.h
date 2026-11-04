@@ -15,12 +15,18 @@ void cuelistGuiMockupTests() {
         ui.triggerRow(0);
         float buffer[20]{};
         float* outputs[]{buffer};
+        // Mimic MainComponent::timerCallback: reclaim retired snapshots before
+        // the audio thread is asked to adopt another live render publication.
+        ui.engine.collectRetired();
         ui.engine.processBlock(outputs,1,20,100);
         const double initial=ui.engine.getCellPlayback(audioCell).positionSeconds;
         const int armedId=ui.show.rows[(size_t)ui.liveNextCueIndex()].id;
         check(initial>0 && ui.engine.getCellPlayback(audioCell).playing,
               "Baseline audio cue did not start");
         ui.addCueForTest();
+        // Mimic MainComponent::timerCallback: reclaim retired snapshots before
+        // the audio thread is asked to adopt another live render publication.
+        ui.engine.collectRetired();
         ui.engine.processBlock(outputs,1,20,100);
         check(ui.engine.getCellPlayback(audioCell).playing &&
               ui.engine.getCellPlayback(audioCell).positionSeconds>initial,
@@ -28,16 +34,25 @@ void cuelistGuiMockupTests() {
         check(ui.show.rows[(size_t)ui.liveNextCueIndex()].id==armedId,
               "Adding a cue changed the stable armed GO identity");
         check(ui.moveCueRow(1,0),"Cue drag reorder did not succeed");
+        // Mimic MainComponent::timerCallback: reclaim retired snapshots before
+        // the audio thread is asked to adopt another live render publication.
+        ui.engine.collectRetired();
         ui.engine.processBlock(outputs,1,20,100);
         check(ui.engine.getCellPlayback(audioCell).playing &&
               ui.show.rows[(size_t)ui.liveNextCueIndex()].id==armedId,
               "Cue reorder stopped audio or changed the next armed cue");
         addColumn(ui.show,ColumnType::midi,{});
         ui.commitModelEditForTest("MIDI column added");
+        // Mimic MainComponent::timerCallback: reclaim retired snapshots before
+        // the audio thread is asked to adopt another live render publication.
+        ui.engine.collectRetired();
         ui.engine.processBlock(outputs,1,20,100);
         check(ui.engine.getCellPlayback(audioCell).playing,
               "Adding a column interrupted active audio");
         ui.reorderColumn(0,1);
+        // Mimic MainComponent::timerCallback: reclaim retired snapshots before
+        // the audio thread is asked to adopt another live render publication.
+        ui.engine.collectRetired();
         ui.engine.processBlock(outputs,1,20,100);
         check(ui.engine.getCellPlayback(audioCell).playing &&
               ui.engine.getCellPlayback(audioCell).positionSeconds>initial+.6,
@@ -57,11 +72,13 @@ void cuelistGuiMockupTests() {
         ui.triggerRow(0);
         float buffer[30]{};
         float* out[]{buffer};
+        ui.engine.collectRetired();
         ui.engine.processBlock(out,1,30,100);
         const double before=ui.engine.getCellPlayback(id).positionSeconds;
         const int runningId=ui.engine.acknowledgedCueId.load();
         const int midiIndex=(int)ui.show.columns.size()-1;
         ui.setMidiOutput(midiIndex,"intentionally-missing-device-0924");
+        ui.engine.collectRetired();
         ui.engine.processBlock(out,1,30,100);
         check(ui.show.columns[(size_t)midiIndex].midiOutputId==
                 "intentionally-missing-device-0924" &&
@@ -70,6 +87,7 @@ void cuelistGuiMockupTests() {
               ui.engine.acknowledgedCueId.load()==runningId,
               "Unplugged MIDI selection stopped or restarted the live audio cue");
         ui.setMidiOutput(midiIndex,{});
+        ui.engine.collectRetired();
         ui.engine.processBlock(out,1,30,100);
         check(ui.engine.getCellPlayback(id).playing &&
               ui.engine.getCellPlayback(id).positionSeconds>before+.3 &&

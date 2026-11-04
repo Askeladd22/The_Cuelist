@@ -5,7 +5,8 @@ void workspaceLayoutTests() {
     test("Timeline header Collapse and View remain synchronized and reopenable",[] {
         MainComponent ui(false);
         auto* timeline=cueViewFixtures::find<Timeline>(ui);
-        auto* arrow=controlsV3::named(ui,"timelineCollapse");
+        auto* arrow=dynamic_cast<juce::TextButton*>(
+            controlsV3::named(ui,"timelineCollapse"));
         check(timeline && arrow,"Native Timeline Collapse button missing");
         for(const auto size:std::initializer_list<juce::Point<int>>{
             {1180,820},{1440,900},{1647,895},{1920,1080}}) {
@@ -19,7 +20,7 @@ void workspaceLayoutTests() {
                   arrow->getTooltip().contains("Collapse"),
                   "Timeline Collapse control is missing from the native header");
             const auto baseline=timeline->getBounds();
-            dynamic_cast<juce::Button*>(arrow)->triggerClick();
+            arrow->triggerClick();
             check(!ui.isTimelineVisible() && !timeline->isVisible() &&
                   arrow->isVisible() &&
                   arrow->getY()>=72 && arrow->getBottom()<size.y &&
