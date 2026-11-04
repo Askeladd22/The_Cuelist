@@ -281,18 +281,30 @@ void Timeline::paint(juce::Graphics& g) {
         const float x=(float)(timelineStart+area*(cell.startSeconds-viewStart)/length), width=std::max(4.0f,(float)(area*seconds/length));
         g.saveState(); g.reduceClipRegion(timelineStart,tracksTop,area,std::max(0,bottom-tracksTop));
         const auto clipBounds=juce::Rectangle<float>(x,(float)y,width,31.f);
-        // Clips are instrument data. A neutral body, 3px type key and a
-        // selected outline keep MIDI notes, OSC automation and waveforms
-        // legible without colouring the entire clip as an AI-style badge.
-        g.setColour(palette::input);
+        // The fill follows each clip's existing type colour, rather than
+        // replacing it with the orange selection colour. Legacy retains its
+        // historical neutral body. Hover is a paint-only state.
+        const bool chosen=c==owner.selectedColumn;
+        const bool hovered=c==hoveredClipColumn;
+        const auto surface=palette::activeAppearance==palette::Appearance::legacy ?
+            palette::input : palette::input.interpolatedWith(
+                colour,chosen ? .46f : hovered ? .43f : .37f);
+        const auto contentInk=palette::activeAppearance==palette::Appearance::legacy ?
+            palette::text : palette::readableInk(surface);
+        g.setColour(surface);
         g.fillRect(clipBounds);
-        g.setColour(c==owner.selectedColumn ?
-                    palette::selection.withAlpha(.92f) :
-                    colour.withAlpha(.53f));
-        g.drawRect(clipBounds,c==owner.selectedColumn ? 1.25f : .75f);
-        g.setColour(colour.withAlpha(.84f));
+        g.setColour(colour.interpolatedWith(palette::text,.14f)
+                            .withAlpha(chosen ? .97f : hovered ? .88f : .78f));
+        g.drawRect(clipBounds,hovered ? 1.1f : .85f);
+        if(chosen) {
+            // An external accent ring marks selection, leaving the clip's
+            // semantic hue intact even for an orange custom cue.
+            g.setColour(palette::selection.withAlpha(.96f));
+            g.drawRect(clipBounds.expanded(1.f),1.4f);
+        }
+        g.setColour(colour.withAlpha(.91f));
         g.fillRect(x,(float)y,3.f,31.f);
-        g.setColour(colour.withAlpha(.8f));
+        g.setColour(contentInk.withAlpha(.84f));
         if (cell.osc) {
             for (const auto& event:cell.osc->events) {
                 const double moment=cell.osc->useBeats ? secondsAtBeat(row.tempo,event.time) : event.time;
@@ -328,7 +340,7 @@ void Timeline::paint(juce::Graphics& g) {
             g.setColour(palette::text.withAlpha(.67f));
             g.fillRect(x+width-7,(float)y+5,3.f,21.f);
         }
-        label(g,(cell.name.isEmpty() ? (cell.midi ? "MIDI" : cell.osc ? "OSC" : "AUDIO") : cell.name)+"  +"+juce::String(cell.startSeconds,2)+"s",{(int)x+8,y+5,std::max(1,(int)width-16),20},12,palette::text);
+        label(g,(cell.name.isEmpty() ? (cell.midi ? "MIDI" : cell.osc ? "OSC" : "AUDIO") : cell.name)+"  +"+juce::String(cell.startSeconds,2)+"s",{(int)x+8,y+5,std::max(1,(int)width-16),20},12,contentInk);
         g.restoreState();
     }
     g.restoreState();
@@ -437,6 +449,36 @@ void Timeline::mouseDrag(const juce::MouseEvent& e) {
     repaint();
 }
 void Timeline::mouseUp(const juce::MouseEvent&) { dragColumn=-1; seeking=false; resizingClip=false; syncViewport(); setMouseCursor(juce::MouseCursor::NormalCursor); repaint(); }
+void Timeline::mouseMove(const juce::MouseEvent& e) {
+    // Paint-only hover. Do not call select(), change focused row or edit data.
+    int candidate=-1;
+    if(owner.selectedRow>=0 &&
+       owner.selectedRow<(int)owner.show.rows.size() &&
+       e.y>=tracksTop && e.y<getHeight()-48 &&
+       e.x>=timelineStart && e.x<getWidth()-20) {
+        const int track=(e.y-tracksTop+trackScroll)/trackHeight;
+        if((e.y-tracksTop+trackScroll)%trackHeight<31 &&
+           track>=0 && track<(int)owner.show.columns.size() &&
+           owner.show.columns[(size_t)track].type!=ColumnType::control &&
+           owner.hasClip(owner.selectedRow,track)) {
+            const auto& cell=owner.show.rows[(size_t)owner.selectedRow]
+                                        .cells[(size_t)track];
+            const int area=std::max(1,getWidth()-timelineStart-20);
+            const double t=viewStart+
+                (e.x-timelineStart)*visibleLength()/area;
+            if(t>=cell.startSeconds &&
+               t<=cell.startSeconds+owner.clipDuration(owner.selectedRow,track))
+                candidate=track;
+        }
+    }
+    if(candidate!=hoveredClipColumn) {
+        hoveredClipColumn=candidate;
+        repaint();
+    }
+}
+void Timeline::mouseExit(const juce::MouseEvent&) {
+    if(hoveredClipColumn>=0) {hoveredClipColumn=-1;repaint();}
+}
 void Timeline::mouseWheelMove(const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel) {
     syncViewport();
     if (e.mods.isCtrlDown()) {
