@@ -3,6 +3,7 @@
 #include "ShowModel.h"
 #include "Theme.h"
 #include <functional>
+#include <set>
 
 namespace cuelist {
 // One shared dockable/floating OSC editor: event lane and automation curves
@@ -41,6 +42,9 @@ private:
     juce::TextButton zoomOut{"-"},zoomIn{"+"},zoomFit{"Fit"};
     HistoryIconButton undo{false},redo{true};
     int selectedEvent=-1,selectedTrack=-1,selectedAutomation=-1,selectedPoint=-1;
+    std::set<int> selectedEvents,selectedAutomations;
+    bool marqueeSelecting=false;
+    juce::Point<float> marqueeStart,marqueeEnd;
     int dragEvent=-1,dragAutomation=-1,dragPoint=-1;
     enum class RampDrag { none, move, resize, point };
     RampDrag rampDrag=RampDrag::none;
