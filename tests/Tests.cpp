@@ -56,9 +56,9 @@ void test(const char* name, const std::function<void()>& body) {
 #include "ArchitectureV8Tests.h"
 int main() {
     juce::ScopedJuceInitialiser_GUI initialiseJuce;
-    // Exact graphite/copper tokens plus readable foregrounds on the native
-    // dark surfaces. These are logical checks, not a Windows/DPI visual test.
-    test("Industrial Orange design tokens match the approved specification", [] {
+    // Exact graphite/copper tokens plus the restrained green/red/blue status
+    // contrast revision. Logical checks do not replace Windows/DPI review.
+    test("Industrial Orange design tokens match the muted high-contrast palette", [] {
         const std::array<juce::Colour,20> actual{
             palette::swatch::bgMain,palette::swatch::bgPanel,
             palette::swatch::bgElevated,palette::swatch::bgHover,
@@ -74,9 +74,9 @@ int main() {
         const std::array<unsigned int,20> expected{
             0xff101619,0xff182227,0xff202c32,0xff29373d,
             0xff303b40,0xff35434a,0xffc66b42,0xffd47a4f,
-            0xffa95534,0xff8fa8b2,0xffb79a72,0xffa18bb9,
-            0xff7186a6,0xff8eae91,0xffc66e69,0xffd1a45b,
-            0xff8fa8b2,0xffe5e7e3,0xffa5b0ae,0xff718087
+            0xffa95534,0xff86a6bd,0xffb79a72,0xffa18bb9,
+            0xff7186a6,0xff9bb892,0xffc97870,0xffd1a45b,
+            0xff86a6bd,0xffe5e7e3,0xffa5b0ae,0xff718087
         };
         for(size_t i=0;i<actual.size();++i)
             check(actual[i].getARGB()==expected[i],"Industrial Orange token mismatch");
@@ -126,6 +126,11 @@ int main() {
               "Dark GO label on green");
         check(ratio(palette::background,palette::panic)>=4.5f,
               "Dark PANIC label on coral");
+        check(ratio(palette::playing,palette::raised)>=4.5f,
+              "GO/PLAYING sage must be legible on elevated graphite");
+        check(ratio(palette::technicalInfo,palette::panel)>=4.5f &&
+              ratio(palette::type(0),palette::panel)>=4.5f,
+              "Steel-blue technical and Audio identity must remain readable");
     });
     test("Global Undo/Redo restores cue colour and Auto Stop in order",[] {
         MainComponent ui(false);
