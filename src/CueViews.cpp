@@ -260,7 +260,12 @@ void CueGrid::paint(juce::Graphics& g) {
         // independent selection, NEXT and actual playback signals.
         const auto base=(r&1)==0 ? palette::panel :
             palette::panel.interpolatedWith(palette::raised,.10f);
-        g.setColour(selected ? palette::raised.interpolatedWith(palette::panel,.20f) : base);
+        const auto plain=selected ?
+            palette::raised.interpolatedWith(palette::panel,.20f) : base;
+        const auto customSurface=row.colour>0 ?
+            palette::cueSurface(plain,custom,selected,
+                                hoverRow==r || hoverHeaderRow==r) : plain;
+        g.setColour(customSurface);
         g.fillRect(0,y,getWidth(),rowHeight);
         if (playing) {
             g.setColour(palette::playing.withAlpha(selected?.08f:.10f));
@@ -270,14 +275,25 @@ void CueGrid::paint(juce::Graphics& g) {
             g.setColour(palette::amber.withAlpha(selected?.08f:.10f));
             g.fillRect(0,y,getWidth(),rowHeight);
         }
-        if (row.colour>0) {
+        if (row.colour>0 && palette::activeAppearance==palette::Appearance::legacy) {
+            // Preserve the pre-Industrial subdued Legacy cue wash.
             g.setColour(custom.withAlpha(.13f));
             g.fillRect(0,y,getWidth(),rowHeight);
         }
         // Parallel status rails remain unambiguous for selected NEXT cues.
         if (selected) {
-            g.setColour(palette::selection.withAlpha(.94f));
+            // Selection is a separate outer mark, never the cue's fill.
+            // A coloured orange cue gets a pale + brand double rail;
+            // an uncoloured selected cue keeps only the brand rail.
+            g.setColour(row.colour>0 &&
+                       palette::activeAppearance==palette::Appearance::industrialOrange ?
+                       palette::text : palette::selection.withAlpha(.94f));
             g.fillRect(0,y,2,rowHeight);
+            if(row.colour>0 &&
+               palette::activeAppearance==palette::Appearance::industrialOrange) {
+                g.setColour(palette::selection);
+                g.fillRect(2,y,2,rowHeight);
+            }
         }
         if (next) {
             g.setColour(palette::amber);
@@ -287,7 +303,8 @@ void CueGrid::paint(juce::Graphics& g) {
             g.setColour(palette::playing);
             g.fillRect(selected?(next?5:2):(next?3:0),y,2,rowHeight);
         }
-        if (row.colour>0 && !next && !playing) {
+        if (row.colour>0 && !next && !playing &&
+            palette::activeAppearance==palette::Appearance::legacy) {
             g.setColour(custom.withAlpha(.88f));
             g.fillRect(selected?2:0,y,2,rowHeight);
         }
@@ -309,7 +326,10 @@ void CueGrid::paint(juce::Graphics& g) {
         // The title occupies its own first tier, with the three compact
         // transport targets below it. Both tiers remain inside the 62px row.
         label(g,row.name.isEmpty()?"Untitled cue":row.name,
-              rowNameBounds(y),15,palette::text,true);
+              rowNameBounds(y),15,
+              row.colour>0 && palette::activeAppearance==
+                  palette::Appearance::industrialOrange ?
+                  palette::readableInk(customSurface) : palette::text,true);
         const auto state=playing?"PLAYING":paused?"PAUSED":
                          next?"NEXT CUE":row.muted?"MUTED":"STANDBY";
         const auto stateInk=playing ? palette::playing :
@@ -1084,7 +1104,12 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
         // 3px Industrial Orange pinned-edge rail is painted above rows.
         const auto base=(r&1)==0 ? palette::panel :
             palette::panel.interpolatedWith(palette::raised,.10f);
-        g.setColour(selected ? palette::raised.interpolatedWith(palette::panel,.20f) : base);
+        const auto cueTone=CueGrid::cueColour(row.colour);
+        const auto plain=selected ?
+            palette::raised.interpolatedWith(palette::panel,.20f) : base;
+        const auto cueSurface=row.colour>0 ?
+            palette::cueSurface(plain,cueTone,selected,hoverRow==r) : plain;
+        g.setColour(cueSurface);
         g.fillRect(3,y,getWidth()-3,CueGrid::rowHeight);
         if (playing) {
             g.setColour(palette::playing.withAlpha(selected?.08f:.10f));
@@ -1094,8 +1119,7 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
             g.setColour(palette::amber.withAlpha(selected?.08f:.10f));
             g.fillRect(3,y,getWidth()-3,CueGrid::rowHeight);
         }
-        const auto cueTone=CueGrid::cueColour(row.colour);
-        if (row.colour>0) {
+        if (row.colour>0 && palette::activeAppearance==palette::Appearance::legacy) {
             g.setColour(cueTone.withAlpha(.13f));
             g.fillRect(3,y,getWidth()-3,CueGrid::rowHeight);
         }
@@ -1122,7 +1146,10 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
         // caption: all cue states remain available in the cue-name lane.
         if (editingRowId!=row.id)
             label(g,juce::String(row.tempo.front().bpm,1),
-                  {13,y+16,76,29},17,palette::text,true,
+                  {13,y+16,76,29},17,
+                  row.colour>0 && palette::activeAppearance==
+                      palette::Appearance::industrialOrange ?
+                      palette::readableInk(cueSurface) : palette::text,true,
                   juce::Justification::centred);
 
         const auto toggle=autoStopToggleBounds(y);
