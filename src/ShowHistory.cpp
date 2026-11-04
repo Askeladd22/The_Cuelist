@@ -41,6 +41,7 @@ void MainComponent::markHistoryBaseline() {
 
 void MainComponent::checkpointHistory(const juce::String& description) {
     if(restoringHistory)return;
+    if(historySuspended) {historySuppressedChanged=true;return;}
     if(!historyReady) {markHistoryBaseline();return;}
     const auto encoded=encodeShow(show);
     if(encoded==historyBaselineJson && clips==historyBaseline.media)return;
