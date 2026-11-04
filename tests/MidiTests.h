@@ -14,6 +14,25 @@ inline Show show() {
 inline void bind(RenderState& state,Sink& sink) { for (auto& v:state.voices) { v.midiSink=&sink; v.midiRoute=7; } }
 }
 inline void registerMidiTests() {
+    test("MIDI unassigned route does not block audio cue timeline",[] {
+        auto s=makeShow();
+        addColumn(s,ColumnType::midi,"MIDI 1");
+        s.columns[1].midiOutputId.clear(); // Explicit unassigned route
+        s.rows[0].cells[1].midi=MidiClip{4,{{0,1,60,100,1}}};
+        auto clip=std::make_shared<AudioClip>();
+        clip->sampleRate=100;
+        clip->samples.setSize(1,100);
+        for(int i=0;i<100;++i) clip->samples.setSample(0,i,.25f);
+        ClipMap media; media[s.rows[0].cells[0].id]=clip;
+        auto render=makeRenderState(s,media);
+        check(render->voices.size()==2,"Expected audio and MIDI voices");
+        check(render->voices[1].midiOutputId.isEmpty(),"MIDI output unexpectedly configured");
+        render->trigger(s.rows[0].id,true);
+        juce::AudioBuffer<float> out(2,10);
+        render->render(out.getArrayOfWritePointers(),2,10,100);
+        check(out.getSample(0,0)>.01f,"Missing MIDI output suppressed audio");
+        check(render->voices[0].playing,"Audio stopped due to missing MIDI output");
+    });
     test("MIDI missing device recovery stays silent without rerouting",[] {
         MidiOutputRouter router;
         const juce::String missing="cuelist-nonexistent-"+juce::Uuid().toString();
