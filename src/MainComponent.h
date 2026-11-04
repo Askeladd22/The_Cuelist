@@ -628,6 +628,14 @@ private:
         MainComponent& owner;
         int original=208;
     } dockResize{*this};
+    // Passive splitter at the top of the dock; resize hit targets stay intact.
+    struct EditorDivider final : juce::Component {
+        EditorDivider() { setInterceptsMouseClicks(false,false); setName("editorTopDivider"); }
+        void paint(juce::Graphics& g) override {
+            g.setColour(palette::line.withAlpha(.8f));
+            g.fillRect(getLocalBounds());
+        }
+    } editorDivider;
     juce::ComboBox rowBehaviour;
     juce::ToggleButton rowMute{"Mute entire cue"},rowLoop{"Loop all clips"};
     bool rowSettings=false;
