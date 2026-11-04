@@ -128,6 +128,8 @@ public:
     bool seekRow(int rowId, double seconds) noexcept;
     void panic() noexcept;
     juce::Result setMidiOutput(const juce::String& identifier, bool reconnect=false);
+    // UI-thread inventory only; never queries a physical device on audio callback.
+    int midiOutputRoute(const juce::String& identifier) const;
     void setMidiOutputEnabled(const juce::String& identifier,bool enabled);
     bool sendMappedMidiCc(const juce::String& id,int channel,int number,int value);
     void refreshMidiOutputs();
