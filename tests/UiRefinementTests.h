@@ -515,7 +515,7 @@ void uiRefinementTests() {
         check(width>=140 && height>=30,
               "Popup row dimensions are too small for clear stage use");
     });
-    test("Native Edit menu preserves Undo and Redo without obscuring tabs",[] {
+    test("Native Undo/Redo remain accessible in header or Edit/More without overlap",[] {
         MainComponent ui(false);
         auto* undo=dynamic_cast<juce::TextButton*>(
             controlsV3::named(ui,"showUndo"));
@@ -525,21 +525,42 @@ void uiRefinementTests() {
             controlsV3::named(ui,"operatorMenuEdit"));
         auto* more=dynamic_cast<juce::TextButton*>(
             controlsV3::named(ui,"operatorMenuMore"));
-        check(undo && redo && edit && more,
-              "Native Edit, overflow or original Undo/Redo callbacks missing");
+        auto* guide=dynamic_cast<juce::TextButton*>(
+            controlsV3::named(ui,"operatorMenuGuide"));
+        check(undo && redo && edit && more && guide,
+              "Native menus or global Undo/Redo callbacks missing");
         check(!undo->isEnabled() && !redo->isEnabled(),
               "Empty history must still disable Undo/Redo");
         for (const auto dimensions:std::initializer_list<juce::Point<int>>{
                  {1180,820},{1440,900},{1647,895},{1920,1080}}) {
             ui.setSize(dimensions.x,dimensions.y);
             ui.resized();
-            check(!undo->isVisible() && !redo->isVisible() &&
-                  (edit->isVisible() || more->isVisible()),
-                  "Undo/Redo are not reachable through native Edit/More");
-            const auto image=ui.createComponentSnapshot(
-                {dimensions.x-365,8,354,56});
-            check(image.isValid() && image.getHeight()==56,
-                  "Live MIDI/OSC/audio monitor stopped rendering");
+            const auto nav=OperatorNavigationLayout::atWidth(dimensions.x);
+            const auto telemetry=HeaderTelemetryLayout::atWidth(dimensions.x);
+            const bool guideVisible=
+                nav.visibleMenuCount==OperatorNavigationLayout::menuCount;
+            const bool roomForHistory=guideVisible &&
+                nav.bounds[OperatorNavigationLayout::menuCount-1].getRight()
+                    +6+28+4+28 <= telemetry.clock.getX()-8;
+            check(undo->isVisible()==roomForHistory &&
+                  redo->isVisible()==roomForHistory,
+                  "Undo/Redo visibility does not follow available header space");
+            if (roomForHistory) {
+                check(guide->isVisible() &&
+                      undo->getX()>guide->getRight() &&
+                      redo->getX()>undo->getRight() &&
+                      redo->getRight()<=telemetry.clock.getX()-8 &&
+                      undo->getBottom()<=43 && redo->getBottom()<=43,
+                      "Header history controls obscure Guide, telemetry or Cuelist tabs");
+            } else {
+                check(edit->isVisible() || more->isVisible(),
+                      "Compact header must retain Undo/Redo in Edit/More");
+            }
+            const auto image=ui.createComponentSnapshot(telemetry.audio);
+            check(image.isValid() &&
+                  image.getWidth()==telemetry.audio.getWidth() &&
+                  image.getHeight()==telemetry.audio.getHeight(),
+                  "Live audio telemetry is not rendered at its responsive bounds");
         }
     });
 
