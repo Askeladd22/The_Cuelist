@@ -464,6 +464,7 @@ void uiRefinementTests() {
               contrast(palette::copper,palette::raised)>=4.5 &&
               contrast(palette::amber,palette::raised)>=4.5 &&
               contrast(palette::purple,palette::raised)>=4.5 &&
+              contrast(palette::red,palette::raised)>=4.5 &&
               contrast(palette::text,palette::selectedTab)>=4.5 &&
               contrast(palette::text,palette::panic)>=4.5,
               "Graphite/Copper small text no longer meets contrast thresholds");
