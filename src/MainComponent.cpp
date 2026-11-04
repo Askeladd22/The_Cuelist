@@ -686,8 +686,8 @@ void MainComponent::paint(juce::Graphics& g) {
                                               percentage/100.0f)),3.f);
         }
     };
-    if (showCpuMeter) meter(telemetry.cpuMeter,systemCpuPercent,palette::teal);
-    if (showRamMeter) meter(telemetry.ramMeter,systemRamPercent,palette::amber);
+    if (showCpuMeter) meter(telemetry.cpuMeter,systemCpuPercent,palette::technicalInfo);
+    if (showRamMeter) meter(telemetry.ramMeter,systemRamPercent,palette::technicalInfo);
 
     label(g,"I/O ACTIVITY",telemetry.activityHeading,11,palette::muted,true);
     const double now=juce::Time::getMillisecondCounterHiRes();
@@ -697,7 +697,8 @@ void MainComponent::paint(juce::Graphics& g) {
         now<midiRxUntil,now<midiTxUntil,now<oscRxUntil,now<oscTxUntil}};
     for (int i=0;i<4;++i) {
         g.setColour(activityStates[(size_t)i] ?
-                    palette::teal : palette::line.brighter(.22f));
+                    (i<2 ? palette::type(1) : palette::type(2)) :
+                    palette::line.brighter(.22f));
         g.fillEllipse(telemetry.activityDots[(size_t)i].toFloat());
         label(g,activityNames[(size_t)i],
               telemetry.activityLabels[(size_t)i],12,
@@ -706,10 +707,10 @@ void MainComponent::paint(juce::Graphics& g) {
     // Independent Audio engine availability, no inferred state.
     const bool audioConnected=engine.connected.load();
     label(g,"AUDIO",telemetry.audioHeading,12,palette::muted,true);
-    g.setColour(audioConnected?palette::teal:palette::red);
+    g.setColour(audioConnected?palette::playing:palette::red);
     g.fillEllipse((float)telemetry.audioStatus.getX()-17.f,39.f,11.f,11.f);
     label(g,audioConnected?"AVAILABLE":"UNAVAILABLE",
-          telemetry.audioStatus,14,audioConnected?palette::teal:palette::red,true);
+          telemetry.audioStatus,14,audioConnected?palette::playing:palette::red,true);
     // N2: one editable Show identity instead of two redundant Show/Project
     // cards. File, Settings and Control Mapping are in genuine JUCE menus.
     label(g,"WORKSPACE",{20,91,140,17},11,palette::muted,true);
