@@ -597,12 +597,25 @@ void MainComponent::setAppearanceTheme(palette::Appearance id) {
     theme.applyColourTokens();
     const auto newColours=captures();
 
-    const auto rebind=[&](juce::Component& component,int colourId) {
+    const auto rebind=[&](juce::Component& component,int colourId,
+                          int preferredRole=-1) {
         if (!component.isColourSpecified(colourId))return;
         const auto stored=component.findColour(colourId,false);
+        // Some old semantic roles share exact RGB values (e.g. Industrial
+        // input/panel and Legacy copper/Audio). Without a role preference,
+        // switching themes can turn an Audio label into orange accent text,
+        // or a neutral TextEditor background into a panel background.
+        if(preferredRole>=0 &&
+           preferredRole<(int)oldColours.size() &&
+           stored==oldColours[(size_t)preferredRole]) {
+            if(stored!=newColours[(size_t)preferredRole])
+                component.setColour(colourId,newColours[(size_t)preferredRole]);
+            return;
+        }
         for(size_t i=0;i<oldColours.size();++i)
-            if(stored==oldColours[i] && stored!=newColours[i]) {
-                component.setColour(colourId,newColours[i]);
+            if(stored==oldColours[i]) {
+                if(stored!=newColours[i])
+                    component.setColour(colourId,newColours[i]);
                 return;
             }
     };
@@ -610,36 +623,42 @@ void MainComponent::setAppearanceTheme(palette::Appearance id) {
     refreshChildren=[&](juce::Component& component) {
         if(dynamic_cast<juce::TextButton*>(&component)) {
             for(int id:{juce::TextButton::buttonColourId,
-                        juce::TextButton::buttonOnColourId,
-                        juce::TextButton::textColourOffId,
-                        juce::TextButton::textColourOnId})rebind(component,id);
+                        juce::TextButton::buttonOnColourId})
+                rebind(component,id,2); // prefer panel to coincident input
+            for(int id:{juce::TextButton::textColourOffId,
+                        juce::TextButton::textColourOnId})
+                rebind(component,id,14); // prefer foreground accent over Audio
         } else if(dynamic_cast<juce::TextEditor*>(&component)) {
-            for(int id:{juce::TextEditor::backgroundColourId,
-                        juce::TextEditor::textColourId,
+            rebind(component,juce::TextEditor::backgroundColourId,1);
+            for(int id:{juce::TextEditor::textColourId,
                         juce::TextEditor::outlineColourId,
                         juce::TextEditor::focusedOutlineColourId,
-                        juce::TextEditor::highlightColourId})rebind(component,id);
+                        juce::TextEditor::highlightColourId})
+                rebind(component,id,14);
         } else if(dynamic_cast<juce::ComboBox*>(&component)) {
-            for(int id:{juce::ComboBox::backgroundColourId,
-                        juce::ComboBox::textColourId,
+            rebind(component,juce::ComboBox::backgroundColourId,1);
+            for(int id:{juce::ComboBox::textColourId,
                         juce::ComboBox::outlineColourId,
-                        juce::ComboBox::arrowColourId})rebind(component,id);
+                        juce::ComboBox::arrowColourId})
+                rebind(component,id,14);
         } else if(dynamic_cast<juce::Label*>(&component)) {
-            for(int id:{juce::Label::textColourId,
-                        juce::Label::backgroundColourId})rebind(component,id);
+            rebind(component,juce::Label::textColourId,14);
+            rebind(component,juce::Label::backgroundColourId,2);
         } else if(dynamic_cast<juce::Slider*>(&component)) {
             for(int id:{juce::Slider::thumbColourId,
                         juce::Slider::trackColourId,
-                        juce::Slider::backgroundColourId,
-                        juce::Slider::textBoxTextColourId,
-                        juce::Slider::textBoxOutlineColourId})rebind(component,id);
+                        juce::Slider::textBoxOutlineColourId})
+                rebind(component,id,14);
+            rebind(component,juce::Slider::backgroundColourId,5);
+            rebind(component,juce::Slider::textBoxTextColourId,10);
         } else if(dynamic_cast<juce::ToggleButton*>(&component)) {
-            for(int id:{juce::ToggleButton::textColourId,
-                        juce::ToggleButton::tickColourId,
-                        juce::ToggleButton::tickDisabledColourId})rebind(component,id);
+            rebind(component,juce::ToggleButton::textColourId,10);
+            for(int id:{juce::ToggleButton::tickColourId,
+                        juce::ToggleButton::tickDisabledColourId})
+                rebind(component,id,14);
         } else if(dynamic_cast<juce::ScrollBar*>(&component)) {
-            for(int id:{juce::ScrollBar::backgroundColourId,
-                        juce::ScrollBar::thumbColourId})rebind(component,id);
+            rebind(component,juce::ScrollBar::backgroundColourId,4);
+            rebind(component,juce::ScrollBar::thumbColourId,11);
         }
         for(int i=0;i<component.getNumChildComponents();++i)
             if(auto* child=component.getChildComponent(i))
@@ -651,8 +670,21 @@ void MainComponent::setAppearanceTheme(palette::Appearance id) {
     // (Legacy has a copper-dark tab; Industrial uses neutral graphite).
     refreshCuelistTabs();
     sendLookAndFeelChange();
-    if(clipWindow)clipWindow->repaint();
-    if(oscWindow)oscWindow->repaint();
+    // PianoRollEditor and OscClipEditor own independent Theme instances.
+    // They do not inherit the MainComponent LookAndFeel when docked or
+    // reparented into floating DocumentWindows.
+    if(clipEditor)clipEditor->refreshAppearance();
+    if(oscEditor)oscEditor->refreshAppearance();
+    if(clipWindow) {
+        clipWindow->setBackgroundColour(palette::panel);
+        clipWindow->sendLookAndFeelChange();
+        clipWindow->repaint();
+    }
+    if(oscWindow) {
+        oscWindow->setBackgroundColour(palette::panel);
+        oscWindow->sendLookAndFeelChange();
+        oscWindow->repaint();
+    }
     if(appPreferences) {
         appPreferences->setValue("appearanceTheme",
             id==palette::Appearance::legacy ? "legacy" : "industrialOrange");
