@@ -28,6 +28,9 @@ inline const juce::Colour graphiteBlack{0xff121416},
                           success{0xff8cbd9f},
                           error{0xffdb8175},
                           danger{0xffab5146};
+ // Keep historical swatch identifiers as aliases only. A component compiled
+ // against an older token name still receives the new neutral colour.
+ inline const juce::Colour petrol=slateBlue, sage=slateSage, leaf=brass;
 }
 // Ordered lightness prevents losing the grid's hierarchy on small displays.
 inline const juce::Colour background=swatch::graphiteBlack,
