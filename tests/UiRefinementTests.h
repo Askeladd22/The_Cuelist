@@ -415,7 +415,7 @@ void uiRefinementTests() {
         delete dialog;
     });
 
-    test("Midnight Slate palette preserves layered dark surfaces and safety accents",[] {
+    test("Graphite Copper theme preserves readable surfaces and protocol accents",[] {
         const auto brightness=[](juce::Colour colour) {
             return 0.2126f*(float)colour.getRed()+
                    0.7152f*(float)colour.getGreen()+
@@ -430,15 +430,37 @@ void uiRefinementTests() {
         check(brightness(palette::text)-brightness(palette::panel)>160.0f &&
               brightness(palette::muted)-brightness(palette::raised)>100.0f,
               "Text and secondary labels are too dim against console surfaces");
-        check(palette::teal.getGreen()>palette::teal.getRed() &&
-              palette::teal.getGreen()>palette::teal.getBlue() &&
+        check(palette::copper.getRed()>palette::copper.getGreen() &&
+              palette::copper.getGreen()>palette::copper.getBlue() &&
+              palette::teal==palette::copper &&
               palette::red.getRed()>palette::red.getGreen() &&
               palette::amber.getRed()>palette::amber.getBlue() &&
               palette::go!=palette::panic &&
               palette::selectedTab!=palette::panel,
               "GO, Panic, active tabs or live-state accents lost their distinction");
+        const auto linear=[](int channel) {
+            const double x=(double)channel/255.0;
+            return x<=0.04045 ? x/12.92 : std::pow((x+0.055)/1.055,2.4);
+        };
+        const auto luminance=[&](juce::Colour ink) {
+            return .2126*linear(ink.getRed())+
+                   .7152*linear(ink.getGreen())+
+                   .0722*linear(ink.getBlue());
+        };
+        const auto contrast=[&](juce::Colour ink,juce::Colour surface) {
+            const double a=luminance(ink),b=luminance(surface);
+            return (std::max(a,b)+.05)/(std::min(a,b)+.05);
+        };
+        check(contrast(palette::text,palette::panel)>=7.0 &&
+              contrast(palette::muted,palette::raised)>=4.5 &&
+              contrast(palette::copper,palette::raised)>=4.5 &&
+              contrast(palette::amber,palette::raised)>=4.5 &&
+              contrast(palette::purple,palette::raised)>=4.5 &&
+              contrast(palette::text,palette::selectedTab)>=4.5 &&
+              contrast(palette::text,palette::panic)>=4.5,
+              "Graphite/Copper small text no longer meets contrast thresholds");
     });
-    test("Popup menus use Midnight Slate with readable hover and separator",[] {
+    test("Popup menus use Graphite Copper with readable hover and separator",[] {
         Theme theme;
         // Check the actual LookAndFeel colours rather than exact sampled
         // pixels: JUCE's Windows rasteriser can blend ARGB images differently
@@ -448,7 +470,7 @@ void uiRefinementTests() {
               theme.findColour(juce::PopupMenu::headerTextColourId)==palette::teal &&
               theme.findColour(juce::PopupMenu::highlightedBackgroundColourId)==palette::raised &&
               theme.findColour(juce::PopupMenu::highlightedTextColourId)==palette::text,
-              "Popup theme colours have diverged from Midnight Slate");
+              "Popup theme colours have diverged from Graphite Copper");
         juce::Image pixels(juce::Image::ARGB,220,120,true);
         {
             juce::Graphics g(pixels);
@@ -790,8 +812,9 @@ void uiRefinementTests() {
                 const auto rail=strip->createComponentSnapshot({20,1,1,1});
                 check(rail.isValid(),"Signal type rail failed to render");
                 const auto colour=rail.getPixelAt(0,0);
-                if(c==0) check(colour.getGreen()>colour.getRed(),
-                              "Audio lane lost its type code");
+                if(c==0) check(colour.getRed()>colour.getGreen() &&
+                                colour.getGreen()>colour.getBlue(),
+                              "Audio lane lost its copper type code");
                 if(c==1) check(colour.getRed()>colour.getGreen(),
                               "MIDI lane lost its amber type code");
                 if(c==2) check(colour.getBlue()>colour.getGreen(),
