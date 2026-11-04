@@ -8,7 +8,7 @@ This English guide covers the software currently implemented in this repository.
 
 ## 1. Concepts and project structure
 
-A **Show** contains shared output columns, device and mixer configuration, Control Mapping settings, and one to twelve **Cuelists**. Every Cuelist has its own ordered cue rows, clip contents and technical notes. Switching Cuelists deliberately stops playback so that a cue from the previous sequence cannot continue unintentionally.
+A **Show** contains shared output columns, device and mixer configuration, Control Mapping settings, and one to twelve **Cuelists**. Every Cuelist has its own ordered cue rows, clip contents and technical notes. Changing the viewed Cuelist does not stop the LIVE transport. A green dot on its tab identifies the LIVE sequence; GO continues there while other tabs are viewed. Explicit GO on a cue in another Cuelist intentionally takes over the live transport.
 
 Each cue is a row; each column represents a kind of material:
 - **Audio:** mono/stereo WAV or MP3 files with per-cell, cue and strip gain and playback settings.
@@ -164,7 +164,7 @@ The pinned BPM / Auto Stop lanes retain their original editing/toggle hitboxes b
 
 - Click **+** next to the Cuelist tabs to create a new list. A newly created list starts with an independent blank cue.
 - The application uses the first available `Cuelist N` name, including numbers freed by deletion, rather than skipping numbers.
-- Click a tab to select a list. The current transport is stopped before switching, and the Cue List, Timeline and Inspector reflect the new list.
+- Click a tab to view/edit another list without interrupting the LIVE transport. The Cue List, Timeline and Inspector follow the VIEW tab; the green dot marks the LIVE tab. Global GO stays on LIVE. Explicitly starting a row in VIEW takes over the transport and stops the previous live sequence.
 - Tabs continue side by side while there is space; **drag a tab onto another tab to reorder entire Cuelists** (the destination is highlighted). Moving a tab does not start or stop cues, change the active Cuelist, or alter its data. Click the **< / >** arrows beside the active Cuelist title to move it one place at a time, or press **Ctrl+Shift+Left / Ctrl+Shift+Right** when a text editor is not focused. The arrows disable at the first/last position. The overflow menu also provides access to hidden Cuelists' rename, delete and **Move left / Move right** actions when the bar is too narrow. Save the project to retain the new tab order.
 - Use the **×** beside a visible tab to delete a Cuelist. A confirmation dialog explains that its cues are removed from the show. Source audio files are not deleted from disk.
 - The last remaining Cuelist cannot be deleted.
@@ -349,7 +349,7 @@ Overwriting may retain a `.cuelist.bak` backup and older media generations. Chec
 
 ### 12.2 Project load safety
 
-Opening a project parses and validates the model and prepares its media on a background worker. The active show is not replaced until the new project passes validation, media decoding and PCM budget checks. Newer load requests supersede stale ones. Switching Cuelists inside an already open project stops playback before changing the active cue list.
+Opening a project parses and validates the model and prepares its media on a background worker. The active show is not replaced until the new project passes validation, media decoding and PCM budget checks. Newer load requests supersede stale ones. Viewing another Cuelist inside an already-open project does not stop the LIVE transport; explicit cue GO in another tab intentionally changes the live source.
 
 ### 12.3 Crash recovery
 
