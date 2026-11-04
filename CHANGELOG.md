@@ -13,6 +13,22 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.12] - 2026-11-04
+
+**Tipo:** redesign cromatico nativo Forest/Teal, senza modifiche ai comportamenti operativi.
+
+### Modificato
+- Adottati i dodici colori della palette di riferimento approvata, campionati esattamente nell'ordine originale: `#070802`, `#112710`, `#182F25`, `#243F2E`, `#32642F`, `#2A6B71`, `#57A29D`, `#6AE7E3`, `#31B964`, `#EEF5C1`, `#B84729`, `#F8F8F8`.
+- Aggiornati i token globali in `src/Theme.h` usati da Cue Grid, Inspector, mixer, header, Timeline, editor e popup: sfondi verde molto scuro, testi quasi bianchi e accenti acquamarina/avorio/verde/terracotta.
+- Riassegnate anche le tre tinte personalizzate non centralizzate della Cue Grid; mantenute tutte le sette opzioni di colore e le rispettive interazioni.
+- Colori di avvertimento e testo secondario derivati esclusivamente dai campioni approvati con miscelazione controllata per conservare il contrasto su toolbar e superfici rialzate.
+- Comandi GO e Panic distinguibili tramite verde brillante e terracotta. La variabile storica `palette::purple` resta per compatibilità con i componenti OSC ma ora punta al verde brillante; non si introduce alcun viola fuori palette.
+
+### Verifiche e limitazioni
+- Aggiunti test JUCE dei dodici valori ARGB e del contrasto minimo 4,5:1 per testo primario, secondario e avvisi sulle superfici di base.
+- Non eseguiti in questa sessione build MSVC, CTest o collaudo grafico su Windows. Verificare in CI e poi su monitor reali, inclusi 125%, 150%, 32:9, riga selezionata, stati di allarme, celle audio/MIDI/OSC/Control, Control Mappings, editor e PopupMenu.
+- Nessuna modifica al modello show, al formato JSON v10, alla temporizzazione o ai motori Audio/MIDI/OSC; nessun pacchetto portable prodotto.
+
 ## [0.9.11] - 2026-11-02
 
 **Tipo:** rifinitura del layout I/O Activity.

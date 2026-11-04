@@ -154,9 +154,9 @@ juce::Colour CueGrid::cueColour(int id) {
         case 2:return palette::amber;
         case 3:return palette::red;
         case 4:return palette::purple;
-        case 5:return juce::Colour(0xff69aeea);
-        case 6:return juce::Colour(0xff73d89b);
-        case 7:return juce::Colour(0xffffa669);
+        case 5:return palette::swatch::petrol;
+        case 6:return palette::swatch::sage;
+        case 7:return palette::swatch::leaf;
         default:return juce::Colour();
     }
 }

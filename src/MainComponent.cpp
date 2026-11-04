@@ -74,10 +74,13 @@ MainComponent::MainComponent(bool startAudio) {
         positionInlineNameEditor();
     };
     goButton.setColour(juce::TextButton::buttonColourId,palette::go);
-    goButton.setColour(juce::TextButton::textColourOffId,palette::text);
+    // White on the new vivid green falls below WCAG 4.5:1; use near-black
+    // on green action fills, retaining white on the terracotta PANIC fill.
+    goButton.setColour(juce::TextButton::textColourOffId,palette::background);
     panicButton.setColour(juce::TextButton::buttonColourId,palette::panic);
     panicButton.setColour(juce::TextButton::textColourOffId,palette::text);
     importButton.setColour(juce::TextButton::buttonColourId,palette::go);
+    importButton.setColour(juce::TextButton::textColourOffId,palette::background);
     behaviour.addItemList({"Retrigger","Pause / Restart","Pause / Resume","Continue"},1);
     rowGain.setSliderStyle(juce::Slider::LinearHorizontal);
     rowGain.setTextBoxStyle(juce::Slider::TextBoxRight,false,72,24);
