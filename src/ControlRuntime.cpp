@@ -595,6 +595,10 @@ void MainComponent::dispatchControl(const ControlEvent& input) {
         else stopAll();
         return;
     }
+    // Physical MIDI/OSC controller motion is transport automation, not an
+    // operator editing transaction. Never add hundreds of snapshots per
+    // second to the global Undo history.
+    juce::ScopedValueSetter<bool> suspended(historySuspended,true);
     if (binding.target==ControlTarget::masterGain) {
         const float bounded=mappedFaderGain(*action,audioFaderCeilingDb());
         if (shouldApplyMappedValue(show.masterGain,bounded))
@@ -649,6 +653,10 @@ void MainComponent::dispatchControl(const ControlEvent& input) {
                 binding.oscAddress,action->scaled))
                 status="OSC control: invalid destination or queue full.";
         }
+    }
+    if(historySuppressedChanged) {
+        historySuppressedChanged=false;
+        markHistoryBaseline(); // Exclude live controller motion from Undo.
     }
 }
 
