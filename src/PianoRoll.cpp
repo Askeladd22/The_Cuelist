@@ -71,6 +71,25 @@ public:
         for (int i=(int)owner.clip.notes.size()-1;i>=0;--i) if (noteBox(owner.clip.notes[(size_t)i]).contains(p)) return i;
         return -1;
     }
+    static float resizeGripWidth(juce::Rectangle<float> box) {
+        // At normal zoom the right-hand grip is 10 px. Short notes retain
+        // a movable body rather than making their entire area a resize grip.
+        return juce::jlimit(3.f,10.f,box.getWidth()*.38f);
+    }
+    bool overResizeGrip(juce::Point<float> position) const {
+        const int index=hit(position);
+        if (index<0) return false;
+        const auto box=noteBox(owner.clip.notes[(size_t)index]);
+        return position.x>=box.getRight()-resizeGripWidth(box);
+    }
+    void mouseMove(const juce::MouseEvent& e) override {
+        setMouseCursor(overResizeGrip(e.position) ?
+            juce::MouseCursor::LeftRightResizeCursor :
+            juce::MouseCursor::NormalCursor);
+    }
+    void mouseExit(const juce::MouseEvent&) override {
+        setMouseCursor(juce::MouseCursor::NormalCursor);
+    }
     void mouseDown(const juce::MouseEvent& e) override {
         grabKeyboardFocus(); dragging=false; selecting=false;
         if (e.mods.isRightButtonDown()) {
@@ -112,7 +131,9 @@ public:
         owner.selected=hitIndex;
         gestureStart=owner.clip;
         original=owner.clip.notes[(size_t)hitIndex];
-        resizing=e.x>=noteBox(original).getRight()-7;
+        resizing=overResizeGrip(e.position);
+        setMouseCursor(resizing ? juce::MouseCursor::LeftRightResizeCursor :
+                                  juce::MouseCursor::NormalCursor);
         originals.clear();
         for (int index:owner.selectedNotes) originals.push_back({index,owner.clip.notes[(size_t)index]});
         dragging=true;
