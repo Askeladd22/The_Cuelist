@@ -90,9 +90,15 @@ int MidiOutputRouter::route(const juce::String& id) const {
 std::shared_ptr<MidiStream> MidiOutputRouter::stream(int cellId,int output,int columnId) {
     const juce::ScopedLock lock(deviceLock);
     auto& value=streams[cellId]; if (!value) value=std::make_shared<MidiStream>();
-    // A fresh identity for route changes; retain old identity until router destruction.
+    // A fresh identity for route changes. Invalidate the previous stream's
+    // epoch before publishing the new route: queued packets cannot be sent
+    // accidentally to the old device. The worker releases its held notes
+    // on that stream without a global MIDI or audio emergency stop.
     if (value->route!=output && value->route>=0) {
-        static int retiredId=-1; streams[retiredId--]=value; value=std::make_shared<MidiStream>();
+        value->epoch.fetch_add(1,std::memory_order_release);
+        static int retiredId=-1;
+        streams[retiredId--]=value; // worker may still hold queued stream pointers
+        value=std::make_shared<MidiStream>();
     }
     value->route=output;
     auto& activity=sentByColumn[columnId];
