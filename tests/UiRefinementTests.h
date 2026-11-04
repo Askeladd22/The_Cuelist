@@ -427,6 +427,14 @@ void uiRefinementTests() {
               brightness(palette::toolbar)<brightness(palette::raised) &&
               brightness(palette::raised)<brightness(palette::line),
               "Palette no longer separates canvas, fields, panels and toolbar");
+        const auto nearNeutral=[](juce::Colour ink) {
+            return std::abs((int)ink.getRed()-(int)ink.getGreen())<=6 &&
+                   std::abs((int)ink.getGreen()-(int)ink.getBlue())<=6;
+        };
+        check(nearNeutral(palette::background) && nearNeutral(palette::input) &&
+              nearNeutral(palette::panel) && nearNeutral(palette::toolbar) &&
+              nearNeutral(palette::raised) && nearNeutral(palette::line),
+              "Graphite surfaces drifted back to green or blue tint");
         check(brightness(palette::text)-brightness(palette::panel)>160.0f &&
               brightness(palette::muted)-brightness(palette::raised)>100.0f,
               "Text and secondary labels are too dim against console surfaces");
