@@ -80,7 +80,7 @@ OscClipEditor::OscClipEditor(OscClip value,std::vector<TempoPoint> points,
     detach.onClick=[this] { if (onDetach) onDetach(); };
     undo.onClick=[this] { if (onUndo) onUndo(); };
     redo.onClick=[this] { if (onRedo) onRedo(); };
-    for (auto* button:{&add,&remove,&duplicate,&detach,&zoomOut,&zoomIn,
+    for (juce::TextButton* button:std::initializer_list<juce::TextButton*>{&add,&remove,&duplicate,&detach,&zoomOut,&zoomIn,
                        &zoomFit,&undo,&redo}) button->setWantsKeyboardFocus(false);
     ensureTracks();
     setSize(940,320);
