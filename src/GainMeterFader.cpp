@@ -15,7 +15,7 @@ void GainMeterFader::paint(juce::Graphics& g) {
             const float value=peaks[(size_t)ch].current;
             if(value>minDb+.01f) {
                 const float y=yForDb(value,top,bottom,ceilingDb);
-                g.setColour(value>=0 ? palette::red : value>=-9 ? palette::amber : palette::teal);
+                g.setColour(value>=0 ? palette::red : value>=-9 ? palette::standby : palette::playing);
                 g.fillRect(mid-7.0f+ch*8.0f,y,6.0f,bottom-y);
             }
         }
@@ -57,7 +57,7 @@ void GainMeterFader::paint(juce::Graphics& g) {
             const float y=yForDb(db,top,bottom,ceilingDb);
             const auto fill=juce::Rectangle<float>(xs[ch],y,10.0f,bottom-y);
             g.setColour(db>=0 ? palette::red.withAlpha(.80f)
-                : db>=-9 ? palette::amber.withAlpha(.85f) : palette::teal.withAlpha(.85f));
+                : db>=-9 ? palette::standby.withAlpha(.85f) : palette::playing.withAlpha(.85f));
             g.fillRect(fill);
         }
         if (peaks[(size_t)ch].held>minDb+0.01f) {
