@@ -4,6 +4,55 @@
 #include <cstring>
 
 void oscAutomationV9Tests() {
+    test("OSC right-drag marquee selects multiple messages instead of showing popup",[] {
+        OscClip clip;clip.length=4;
+        clip.events={{.5,"/a",{}},{1.0,"/b",{}}};
+        OscClipEditor editor(clip,{{0,120,4,4}},
+            [](const OscClip&,const OscClip&,bool){});
+        editor.setSize(940,340);
+        const auto stamp=juce::Time::getCurrentTime();
+        const juce::Point<float> start{160.f,103.f},finish{310.f,144.f};
+        const auto right=[&](juce::Point<float> at,bool dragged=false) {
+            return juce::MouseEvent(
+                juce::Desktop::getInstance().getMainMouseSource(),at,
+                juce::ModifierKeys(juce::ModifierKeys::rightButtonModifier),
+                1,0,0,0,0,&editor,&editor,stamp,start,stamp,1,dragged);
+        };
+        editor.mouseDown(right(start));
+        editor.mouseDrag(right(finish,true));
+        editor.mouseUp(right(finish,true));
+        check(editor.getClip().events.size()==2,
+              "Marquee must select, never remove or trigger OSC messages");
+        editor.keyPressed(juce::KeyPress(juce::KeyPress::deleteKey));
+        check(editor.getClip().events.empty(),
+              "Right-drag did not select both OSC messages for bulk Delete");
+    });
+    test("OSC double-click inserts a validated automation point without Ramp dialog",[] {
+        OscClip clip;clip.length=4;
+        OscTrack track;track.message.address="/brightness";
+        track.message.arguments={{OscValueType::decimal,0,0.f,{}}};
+        track.argumentIndex=0;track.rangeMin=0;track.rangeMax=1;
+        clip.tracks.push_back(track);
+        OscAutomation ramp;ramp.message=track.message;ramp.argumentIndex=0;
+        ramp.time=.5;ramp.duration=2.;
+        ramp.points={{0.,0.},{2.,1.}};
+        clip.automations.push_back(ramp);
+        int changes=0;
+        OscClipEditor editor(clip,{{0,120,4,4}},
+            [&](const OscClip&,const OscClip&,bool done){if(done)++changes;});
+        editor.setSize(940,340);
+        const juce::Point<float> point{393.f,207.f};
+        const auto click=cueViewFixtures::event(editor,point,point,2);
+        editor.mouseDoubleClick(click);
+        check(editor.getClip().automations[0].points.size()==3 &&
+              validateOscClip(editor.getClip()).wasOk(),
+              "Double-click did not insert a valid interior OSC control point");
+        near(editor.getClip().automations[0].points[1].time,1.0);
+        check(changes==1,"OSC double-click should create one Undo transaction");
+        editor.mouseDoubleClick(click);
+        check(editor.getClip().automations[0].points.size()==3,
+              "Double-click on an existing point duplicated the point");
+    });
     test("OSC track header edit synchronizes multi-argument target transactionally",[] {
         OscClip clip;clip.length=8;
         OscTrack t;t.message.address="/light";
