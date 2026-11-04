@@ -19,6 +19,25 @@ void prompt(juce::Component* parent,juce::LookAndFeel& theme,
 }
 }
 
+// An editor reordering operation must not re-arm GO by visual index. A row
+// already queued for live GO remains the same logical cue after insert/move.
+int MainComponent::captureLiveArmedCueId() const {
+    if (show.activeCuelist!=liveCuelist) return -2;
+    if (liveNextCue<0 || liveNextCue>=(int)show.rows.size()) return -1;
+    return show.rows[(size_t)liveNextCue].id;
+}
+void MainComponent::restoreLiveArmedCueId(int armedId) {
+    if (armedId==-2 || show.activeCuelist!=liveCuelist) return;
+    if (armedId==-1) liveNextCue=(int)show.rows.size();
+    else {
+        const auto it=std::find_if(show.rows.begin(),show.rows.end(),
+            [armedId](const Row& row){return row.id==armedId;});
+        if (it!=show.rows.end())
+            liveNextCue=(int)std::distance(show.rows.begin(),it);
+    }
+    nextCue=liveNextCue;
+}
+
 void MainComponent::setRowColour(int row,int colour) {
     if (row<0 || row>=(int)show.rows.size() || colour<0 || colour>7) return;
     if (show.rows[(size_t)row].colour==colour) return;
@@ -423,9 +442,11 @@ void MainComponent::setCellAutoStop(int row,int column,bool enabled) {
 
 void MainComponent::addCue() {
     if (!applyInspector()) return;
+    const int armed=captureLiveArmedCueId();
     addRow(show,{});
-    selectedRow=nextCue=(int)show.rows.size()-1;
-    changed("Cue added. Playback stopped.",true);
+    selectedRow=(int)show.rows.size()-1;
+    restoreLiveArmedCueId(armed);
+    changed("Cue added. LIVE playback preserved.");
 }
 
 void MainComponent::showColumnMenu(juce::Point<int> screenPoint) {
@@ -440,7 +461,7 @@ void MainComponent::showColumnMenu(juce::Point<int> screenPoint) {
         if (!safe || choice==0) return;
         addColumn(safe->show,(ColumnType)(choice-1),{});
         safe->selectedColumn=(int)safe->show.columns.size()-1;
-        safe->changed("Column added. Playback stopped.",true);
+        safe->changed("Column added. LIVE playback preserved.");
     });
 }
 
@@ -479,22 +500,25 @@ bool MainComponent::moveCueRow(int from,int to) {
         to>=(int)show.rows.size() || from==to) return false;
     if (isInlineRenaming() && !commitInlineRename()) return false;
     if (!applyInspector()) return false;
+    const int armed=captureLiveArmedCueId();
     auto moving=std::move(show.rows[(size_t)from]);
     show.rows.erase(show.rows.begin()+from);
     show.rows.insert(show.rows.begin()+to,std::move(moving));
-    selectedRow=nextCue=to;
-    // Same safety behavior as existing cue arrow controls: editing cue
-    // order stops active playback and resets layered control state.
-    changed("Cue moved within Cuelist. Playback stopped.",true);
+    selectedRow=to;
+    restoreLiveArmedCueId(armed);
+    changed("Cue moved within Cuelist. LIVE playback preserved.");
     return true;
 }
 void MainComponent::reorderRow(int index,int delta) {
     int target=index+delta;
     if (index<0 || index>=(int)show.rows.size() || target<0 || target>=(int)show.rows.size() || !applyInspector()) return;
+    const int armed=captureLiveArmedCueId();
     if (auto result=swapCueRows(show,index,target);result.failed()) {
         message(result.getErrorMessage()); return;
     }
-    selectedRow=nextCue=target; changed("Cue order updated.",true);
+    selectedRow=target;
+    restoreLiveArmedCueId(armed);
+    changed("Cue order updated. LIVE playback preserved.");
 }
 
 void MainComponent::reorderColumn(int index,int delta) {
@@ -507,7 +531,7 @@ void MainComponent::reorderColumn(int index,int delta) {
     // Equal-priority Control Column conflicts are resolved by visible order.
     // Rebuild the layered mapping immediately when the columns are reordered.
     refreshControlSettings();
-    changed("Column order updated.",true);
+    changed("Column order updated. LIVE playback preserved.");
 }
 
 bool MainComponent::copyRow(int index) {
@@ -530,6 +554,7 @@ bool MainComponent::insertCopiedRowAfter(int index,const Row& source,
     if (index<0 || index>=(int)show.rows.size() || !applyInspector()
         || source.cells.size()!=show.columns.size() || sourceAudio.size()!=source.cells.size())
         return false;
+    const int armed=captureLiveArmedCueId();
     Show candidate;
     const auto valid=prepareInsertedCueCopy(show,index,source,candidate);
     if (valid.failed()) { message(valid.getErrorMessage()); return false; }
@@ -542,8 +567,9 @@ bool MainComponent::insertCopiedRowAfter(int index,const Row& source,
     show=std::move(candidate);
     clips=std::move(media);
     refreshControlSettings();
-    selectedRow=nextCue=index+1;
-    changed("Cue inserted with new row and cell identities.",true);
+    selectedRow=index+1;
+    restoreLiveArmedCueId(armed);
+    changed("Cue inserted with new row and cell identities. LIVE preserved.");
     return true;
 }
 
