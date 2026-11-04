@@ -13,6 +13,23 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.19] - 2026-11-04
+
+**Tipo:** Undo/Redo unificato per l'editing nativo dello Show.
+
+### Modificato
+- Introdotta `ShowHistory.cpp`: snapshot transazionali di modello e cache media (solo puntatori condivisi, non campioni PCM) nello stesso `juce::UndoManager` già usato da MIDI e OSC; limiti di memoria configurati.
+- Le modifiche principali a cue, righe, celle, colonne, colori, Auto Stop, durata/offset, Master e impostazioni mixer vengono registrate come operazioni globali Undo/Redo in ordine cronologico.
+- L'Undo/Redo di editor MIDI e OSC mantiene una transazione per gesto, sincronizza lo storico e localizza le celle in qualsiasi Cuelist, inclusa una tab non visualizzata.
+- Il ripristino convalida lo Show, ritrova l'identità LIVE tramite ID stabili, confronta le sequenze e le sorgenti PCM e non interrompe il playback quando la modifica è circoscritta alla VIEW. Se il ripristino tocca realmente la LIVE, arresta cautelativamente il trasporto prima di pubblicare la nuova versione.
+- Le semplici operazioni di navigazione VIEW, GO, Stop e PANIC non vengono archiviate. Nuovi Show e apertura file azzerano la baseline della cronologia.
+- Gli aggiornamenti Master e mixer pubblicano ora `makeLiveRenderState()`, evitando che l'editing di una tab VIEW sostituisca accidentalmente la sequenza operativa.
+
+### Test
+- Test Undo/Redo su colori, Auto Stop, duplicazione/ripristino di righe e continuità della riproduzione audio LIVE durante un Undo sulla VIEW.
+- CMake include la nuova unità `ShowHistory.cpp` sia nel programma che in CTest. File di progetto `.cuelist` (schema v10), renderer audio e formati media non modificati.
+- Test CI Windows e collaudo di MIDI/OSC fisici, performance e memoria con Show grandi necessari prima di una distribuzione live. Nessuna build portable.
+
 ## [0.9.18] - 2026-11-04
 
 **Tipo:** OSC Editor — configurazione tracce e selezione multipla.
