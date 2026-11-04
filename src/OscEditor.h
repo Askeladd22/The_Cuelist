@@ -24,6 +24,7 @@ public:
     void loadClip(const OscClip&);
     void setTempo(const std::vector<TempoPoint>& currentTempo) { tempo=currentTempo; }
     void setFloating(bool);
+    void refreshAppearance(); // Same shared tokens, independent editor LookAndFeel
     const OscClip& getClip() const { return clip; }
     void editEvent(int index);
     void addEvent();

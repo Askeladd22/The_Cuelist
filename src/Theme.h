@@ -81,7 +81,7 @@ inline juce::Colour copper=swatch::accentPrimary,
     disabled=swatch::textDisabled,
     teal=swatch::accentPrimary.interpolatedWith(swatch::textPrimary,.45f),
     amber=swatch::typeMidi,purple=swatch::typeOsc,
-    red=swatch::statusPanic.interpolatedWith(swatch::textPrimary,.35f),
+    red=swatch::statusPanic.interpolatedWith(swatch::textPrimary,.45f),
     go=swatch::statusGo,panic=swatch::statusPanic,
     warning=swatch::statusWarning,selectedTab=swatch::bgSelected,
     selection=swatch::accentPrimary,playing=swatch::statusGo,
@@ -154,7 +154,7 @@ inline void activate(Appearance chosen) {
     amber=swatch::typeMidi;
     purple=swatch::typeOsc;
     red=chosen==Appearance::legacy ? juce::Colour(0xffe48c7f) :
-        swatch::statusPanic.interpolatedWith(text,.35f);
+        swatch::statusPanic.interpolatedWith(text,.45f);
     go=swatch::statusGo;
     panic=swatch::statusPanic;
     warning=swatch::statusWarning;

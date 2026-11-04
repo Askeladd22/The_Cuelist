@@ -3,7 +3,7 @@
 
 void timelineV3Tests() {
     using namespace cueViewFixtures;
-    test("N6.1 Timeline uses neutral toolbar and readable type-keyed media lanes",[] {
+    test("Timeline uses neutral toolbar and visible type-keyed media fills",[] {
         MainComponent ui(false);
         addColumn(ui.show,ColumnType::control,"Stage control");
         auto audio=std::make_shared<AudioClip>();
@@ -22,11 +22,22 @@ void timelineV3Tests() {
         // No decorative teal tab at the leading edge of the 45px toolbar.
         check(preview.getPixelAt(10,21)==preview.getPixelAt(14,21),
               "Timeline still has the old ornamental teal header stripe");
-        // First row: loaded Audio clip, 1s wide on a 10s ruler, begins x=140.
-        // 3px colour-key is distinct from the flat clip body.
+        // First row: loaded Audio clip, 1s on a 10s ruler (x=140).
+        // Industrial Orange has a type-tinted body; the dedicated 3px type
+        // key is still distinct. The selected column keeps its type fill.
+        const auto audioFill=palette::input.interpolatedWith(
+            palette::type((int)ColumnType::audio),.46f);
         check(preview.getPixelAt(141,110)!=preview.getPixelAt(152,110) &&
-              preview.getPixelAt(152,110)==palette::input,
-              "A loaded Audio clip has lost its neutral body or type rail");
+              preview.getPixelAt(152,110)==audioFill &&
+              audioFill!=palette::input,
+              "Loaded Audio clip lost its visible type-coloured body or type key");
+        // Legacy must preserve the previous genuinely neutral body.
+        ui.setAppearanceTheme(palette::Appearance::legacy);
+        const auto previous=timeline->createComponentSnapshot(
+            timeline->getLocalBounds());
+        check(previous.getPixelAt(152,110)==palette::input,
+              "Legacy Timeline no longer renders its historical neutral clip body");
+        ui.setAppearanceTheme(palette::Appearance::industrialOrange);
         // Next row: Control configuration should no longer be one big
         // translucent pastel card, but remain an identifiable Control lane.
         check(preview.getPixelAt(141,152)!=preview.getPixelAt(400,152) &&

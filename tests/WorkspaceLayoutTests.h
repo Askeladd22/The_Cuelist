@@ -20,7 +20,10 @@ void workspaceLayoutTests() {
                   arrow->getTooltip().contains("Collapse"),
                   "Timeline Collapse control is missing from the native header");
             const auto baseline=timeline->getBounds();
-            arrow->triggerClick();
+            // Button::triggerClick() is asynchronous in JUCE. Simulate the
+            // actual mouse down/up gesture to test the real onClick handler
+            // without racing the message queue.
+            cueViewFixtures::click(*arrow,14.f,13.f);
             check(!ui.isTimelineVisible() && !timeline->isVisible() &&
                   arrow->isVisible() &&
                   arrow->getY()>=72 && arrow->getBottom()<size.y &&
