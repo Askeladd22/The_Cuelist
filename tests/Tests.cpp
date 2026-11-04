@@ -56,32 +56,40 @@ void test(const char* name, const std::function<void()>& body) {
 #include "ArchitectureV8Tests.h"
 int main() {
     juce::ScopedJuceInitialiser_GUI initialiseJuce;
-    // Exact reference swatches plus readable foregrounds on every base UI
-    // surface. These are logical theme checks, not a substitute for Windows QA.
-    test("Forest/Teal palette matches the approved twelve image swatches", [] {
-        const std::array<juce::Colour,12> actual{
-            palette::swatch::black, palette::swatch::forest,
-            palette::swatch::deepPine, palette::swatch::pine,
-            palette::swatch::leaf, palette::swatch::petrol,
-            palette::swatch::sage, palette::swatch::aqua,
-            palette::swatch::verdant, palette::swatch::ivory,
-            palette::swatch::copper, palette::swatch::white
+    // Exact graphite/copper tokens plus readable foregrounds on the native
+    // dark surfaces. These are logical checks, not a Windows/DPI visual test.
+    test("Graphite/Copper palette preserves canonical colour tokens", [] {
+        const std::array<juce::Colour,19> actual{
+            palette::swatch::graphiteBlack, palette::swatch::graphiteInput,
+            palette::swatch::graphitePanel, palette::swatch::graphiteToolbar,
+            palette::swatch::graphiteRaised, palette::swatch::graphiteLine,
+            palette::swatch::warmWhite, palette::swatch::warmGrey,
+            palette::swatch::copper, palette::swatch::copperLight,
+            palette::swatch::copperDark, palette::swatch::brass,
+            palette::swatch::amber, palette::swatch::violet,
+            palette::swatch::slateBlue, palette::swatch::slateSage,
+            palette::swatch::success, palette::swatch::error,
+            palette::swatch::danger
         };
-        const std::array<unsigned int,12> expected{
-            0xff070802,0xff112710,0xff182f25,0xff243f2e,
-            0xff32642f,0xff2a6b71,0xff57a29d,0xff6ae7e3,
-            0xff31b964,0xffeef5c1,0xffb84729,0xfff8f8f8
+        const std::array<unsigned int,19> expected{
+            0xff121416,0xff1b1e20,0xff24272a,0xff2b2f32,
+            0xff34393c,0xff474b4f,0xfff2ede5,0xffc2b8aa,
+            0xffcf8b62,0xffe4a77e,0xff5c3b2d,0xffd9b577,
+            0xffdebd88,0xffb7a1bf,0xff8ea7b8,0xffa1b5a4,
+            0xff8cbd9f,0xffe48c7f,0xffab5146
         };
         for (size_t i=0;i<actual.size();++i)
-            check(actual[i].getARGB()==expected[i],"Palette swatch drift");
-        check(palette::background==palette::swatch::black,
-              "Cue canvas should retain the approved near-black");
-        check(palette::panic==palette::swatch::copper,
-              "Panic fill should use the approved terracotta");
-        check(palette::go==palette::swatch::verdant,
-              "GO fill should use the approved green");
+            check(actual[i].getARGB()==expected[i],"Graphite/Copper token drift");
+        check(palette::background==palette::swatch::graphiteBlack,
+              "Cue canvas is no longer neutral graphite");
+        check(palette::panic==palette::swatch::danger,
+              "PANIC lost its dedicated warning background");
+        check(palette::go==palette::swatch::success,
+              "GO lost its independent green operational code");
+        check(palette::copper==palette::teal,
+              "Legacy JUCE accent token no longer maps to copper");
     });
-    test("Forest/Teal small labels retain 4.5:1 contrast", [] {
+    test("Graphite/Copper small labels retain 4.5:1 contrast", [] {
         const auto linear=[](float channel) {
             return channel<=0.04045f ? channel/12.92 :
                    std::pow((channel+0.055)/1.055,2.4);
