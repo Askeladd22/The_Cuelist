@@ -125,7 +125,7 @@ public:
         else juce::TextButton::mouseDoubleClick(e);
     }
 private:
-    bool pressing=false,wasDragged=false,activeVisual=false;
+    bool pressing=false,wasDragged=false,activeVisual=false,liveVisual=false;
 };
 class CueGrid final : public juce::Component, public juce::FileDragAndDropTarget,
                       public juce::SettableTooltipClient {
