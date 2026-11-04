@@ -13,6 +13,22 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.25] - 2026-11-04
+
+**Tipo:** UI nativa, collasso pannelli/editor MIDI.
+
+### Modificato
+- Aggiunti pulsanti vettoriali `EditorDetachIconButton` e `EditorCloseIconButton`, con lo stile e la stessa hitbox da **28×26 px** dell'attuale `DockCollapseButton`. Nessuna dipendenza da font o glifi Unicode.
+- Nell'header del Piano Roll, `MidiEditorToolbarLayout` dispone Collapse/Detach/Close nello stesso gruppo sul lato destro, con 4 px di spazio tra i pulsanti, per le larghezze compact e desktop. Il MainComponent e il Piano Roll usano gli stessi rettangoli senza sovrapposizioni. Detach/Reattach e Close mantengono i callback preesistenti.
+- Aggiunto `timelineCollapseButton` con freccia su/giù nell'header della Timeline. È un figlio di `MainComponent`, per cui rimane accessibile come grip di riapertura anche quando la Timeline è nascosta.
+- Il menu View e il nuovo pulsante condividono `setTimelineVisible`; la preferenza `viewTimelineVisible` viene aggiornata in entrambi i percorsi e le geometrie del workspace restano gestite da `calculateWorkspaceLayout`.
+- Nessuna modifica a forme della Cue Grid, timing Audio/MIDI/OSC, VIEW/LIVE, serializzazione v10, palette o funzioni dell'editor.
+
+### Test
+- Test geometria uniforme e screenshot iconici MIDI in 710–1180 px, controlli del dock in 1180–1640 px.
+- Test Timeline Collapse/Expand a 1180, 1440, 1647 e 1920 px con riapertura e consistenza View, senza sovrapposizione a footer o strumenti della Timeline.
+- CI Windows/CTest e test visivo DPI ancora da verificare; nessuna build portable.
+
 ## [0.9.24] - 2026-11-04
 
 **Tipo:** correzione stabilità trasporto LIVE e routing MIDI.

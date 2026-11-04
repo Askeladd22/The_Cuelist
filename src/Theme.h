@@ -168,6 +168,51 @@ public:
 private:
     bool collapsed=false;
 };
+// Compact clip-editor window actions. Both buttons use the same 28×26
+// geometry as DockCollapseButton, with vector paths (no font glyph fallback).
+class EditorCloseIconButton final : public juce::TextButton {
+public:
+    EditorCloseIconButton():juce::TextButton("Close") {}
+    void paintButton(juce::Graphics& g,bool hovered,bool pressed) override {
+        const IconButtonState state{isEnabled(),hovered,pressed,false,
+                                   hasKeyboardFocus(false)};
+        drawIconButtonSurface(g,getLocalBounds().toFloat(),palette::teal,state,4.f);
+        const auto r=getLocalBounds().toFloat();
+        const float x=r.getCentreX(),y=r.getCentreY();
+        g.setColour(hovered || pressed ? palette::text : palette::muted);
+        g.drawLine(x-4.5f,y-4.5f,x+4.5f,y+4.5f,1.9f);
+        g.drawLine(x+4.5f,y-4.5f,x-4.5f,y+4.5f,1.9f);
+    }
+};
+class EditorDetachIconButton final : public juce::TextButton {
+public:
+    EditorDetachIconButton():juce::TextButton("Detach") {}
+    void setFloating(bool value) {
+        if(floating!=value){floating=value;repaint();}
+    }
+    void paintButton(juce::Graphics& g,bool hovered,bool pressed) override {
+        const IconButtonState state{isEnabled(),hovered,pressed,false,
+                                   hasKeyboardFocus(false)};
+        drawIconButtonSurface(g,getLocalBounds().toFloat(),palette::teal,state,4.f);
+        const auto r=getLocalBounds().toFloat();
+        const float x=r.getCentreX(),y=r.getCentreY();
+        g.setColour(hovered || pressed ? palette::text : palette::teal);
+        g.drawRoundedRectangle(x-7.f,y-5.5f,10.f,10.f,1.f,1.2f);
+        if(!floating) {
+            // Window-opening arrow points out to a separate window.
+            g.drawLine(x-1.f,y+1.f,x+6.f,y-6.f,1.5f);
+            g.drawLine(x+1.5f,y-6.f,x+6.f,y-6.f,1.5f);
+            g.drawLine(x+6.f,y-6.f,x+6.f,y-1.5f,1.5f);
+        } else {
+            // Return arrow points back into the dock.
+            g.drawLine(x+6.f,y-6.f,x-1.f,y+1.f,1.5f);
+            g.drawLine(x-1.f,y-3.5f,x-1.f,y+1.f,1.5f);
+            g.drawLine(x-1.f,y+1.f,x+3.5f,y+1.f,1.5f);
+        }
+    }
+private:
+    bool floating=false;
+};
 // Embedded OFL typefaces are registered once and kept alive for the app's
 // lifetime. No user-installed fonts, startup network or Windows font state.
 struct AppTypefaces {

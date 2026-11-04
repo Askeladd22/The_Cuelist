@@ -37,7 +37,7 @@ MainComponent::MainComponent(bool startAudio) {
     for (juce::Component* c : std::initializer_list<juce::Component*>{&openButton,&saveButton,&newButton,&addRowButton,&addColumnButton,
          &goButton,&panicButton,&deviceButton,&controlButton,&collapseAllButton,&inspectorSideTab,
          &cuelistOverflowButton,&addCuelistButton,&cuelistMoveLeft,&cuelistMoveRight,&undoButton,&redoButton,&globalMidiLearn,&globalOscLearn,&quickControlTargets,&quickLearnMapSelector,&cancelQuickLearn,&goLearnHotspot,&panicLearnHotspot,&helpButton,&dockResize,&timelineResize,&importButton,&midiEditButton,&oscEditButton,&playCellButton,&stopCellButton,&clearButton,&tempoButton,&applyButton,
-         &cellTab,&rowTab,&rowGain,&rowBehaviour,&rowMute,&rowLoop,&rowName,&cellName,&bpm,&cueNotes,&behaviour,&follow,&loop,&cellAutoStop,&gainDb,&viewport,&timeline,&utilities,
+         &cellTab,&rowTab,&rowGain,&rowBehaviour,&rowMute,&rowLoop,&rowName,&cellName,&bpm,&cueNotes,&behaviour,&follow,&loop,&cellAutoStop,&gainDb,&viewport,&timeline,&timelineCollapseButton,&utilities,
          &clipCollapseButton,&clipCloseButton,&editorDivider,&cueHeaders,&columnHeaders,&cueMetrics,&preflightButton,&diagnosticsButton,&preferencesButton,&projectNameLabel,&inlineNameEditor}) addAndMakeVisible(c);
     for (juce::TextButton* b : std::initializer_list<juce::TextButton*>{&openButton,&saveButton,&newButton,&addRowButton,&addColumnButton,&goButton,&panicButton,&deviceButton,&controlButton,&collapseAllButton,&inspectorSideTab,
                     &cuelistOverflowButton,&addCuelistButton,&cuelistMoveLeft,&cuelistMoveRight,&undoButton,&redoButton,&globalMidiLearn,&globalOscLearn,&helpButton,
@@ -191,6 +191,11 @@ MainComponent::MainComponent(bool startAudio) {
         resized(); repaint();
     };
     clipCloseButton.onClick=[this] { closeMidiClip(); closeOscClip(); };
+    clipCloseButton.setTooltip("Close the docked Clip Editor.");
+    timelineCollapseButton.setName("timelineCollapse");
+    timelineCollapseButton.setWantsKeyboardFocus(false);
+    timelineCollapseButton.setTooltip("Collapse Timeline; click again to expand.");
+    timelineCollapseButton.onClick=[this] {setTimelineVisible(!timelineVisible);};
     // Edit the displayed name directly, never through a rename dialog.
     inlineNameEditor.setName("inlineNameEditor");
     inlineNameEditor.setVisible(false);
@@ -1216,11 +1221,7 @@ void MainComponent::dispatchOperatorMenu(int group,int command) {
         break;
     case 5:
         if (command==1) inspectorSideTab.triggerClick();
-        else if (command==2) {
-            timelineVisible=!timelineVisible;
-            if (appPreferences) appPreferences->setValue("viewTimelineVisible",timelineVisible);
-            resized(); repaint();
-        }
+        else if (command==2) setTimelineVisible(!timelineVisible);
         else if (command>=14 && command<=16) {
             bool* target=command==14 ? &showClock :
                          command==15 ? &showCpuMeter : &showRamMeter;
@@ -1246,6 +1247,13 @@ void MainComponent::dispatchOperatorMenu(int group,int command) {
     }
 }
 
+void MainComponent::setTimelineVisible(bool visible) {
+    if(timelineVisible==visible)return;
+    timelineVisible=visible;
+    if(appPreferences)appPreferences->setValue("viewTimelineVisible",visible);
+    resized();
+    repaint();
+}
 void MainComponent::resized() {
     const int h=getHeight();
     const auto geometry=workspaceLayout();
@@ -1376,18 +1384,15 @@ void MainComponent::resized() {
                 x+(clipCollapsed ? 14 : compact ? 290 : 541),y,28,26);
             clipCloseButton.setBounds(
                 x+(clipCollapsed ? 109 : compact ? 383 : 634),y,82,26);
-        } else if (clipEditor && !clipWindow && !clipCollapsed &&
-                   MidiEditorToolbarLayout::atWidth(
-                       geometry.dockEditor.getWidth()).compact) {
-            // The MIDI clip editor is not an OSC toolbar: its five top-row
-            // actions (Undo/Redo/Detach/Collapse/Close) must share a single
-            // non-overlapping coordinate system, even when docked at 710px.
-            // Parent buttons use the editor-local geometry translated once.
+        } else if (clipEditor && !clipWindow) {
+            // All MIDI dock widths use the SAME editor-local geometry.
+            // Detach is owned by PianoRoll; Collapse and Close are owned
+            // by MainComponent, translated exactly once into root space.
             const auto layout=MidiEditorToolbarLayout::atWidth(
                 geometry.dockEditor.getWidth());
             const auto origin=geometry.dockEditor.getPosition();
             clipCollapseButton.setBounds(
-                layout.collapse.translated(origin.x,origin.y).withWidth(28));
+                layout.collapse.translated(origin.x,origin.y));
             clipCloseButton.setBounds(
                 layout.close.translated(origin.x,origin.y));
         } else {
@@ -1406,6 +1411,19 @@ void MainComponent::resized() {
     }
     timeline.setBounds(geometry.timeline);
     timeline.setVisible(timelineVisible);
+    // The arrow is rooted in MainComponent, NOT the Timeline child:
+    // once hidden, its expand target must remain reachable. When shown it
+    // sits after the TIMELINE title and before the GRID section.
+    timelineCollapseButton.setCollapsed(!timelineVisible);
+    timelineCollapseButton.setTooltip(timelineVisible ?
+        "Collapse Timeline (also available in View)." :
+        "Expand Timeline (also available in View).");
+    const int timelineGripX=geometry.timeline.getX()+(timelineVisible?112:10);
+    const int timelineGripY=timelineVisible ? geometry.timeline.getY()+10 :
+        std::max(72,std::min(getHeight()-52,geometry.timeline.getY()-31));
+    timelineCollapseButton.setBounds(timelineGripX,timelineGripY,28,26);
+    timelineCollapseButton.setVisible(true);
+    timelineCollapseButton.toFront(false);
     timelineResize.setBounds(geometry.timelineResize);
     timelineResize.setVisible(timelineVisible);
     if (timelineVisible) timelineResize.toFront(false);

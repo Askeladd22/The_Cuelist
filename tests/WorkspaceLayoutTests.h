@@ -2,6 +2,39 @@
 #include "WorkspaceLayout.h"
 
 void workspaceLayoutTests() {
+    test("Timeline header Collapse and View remain synchronized and reopenable",[] {
+        MainComponent ui(false);
+        auto* timeline=cueViewFixtures::find<Timeline>(ui);
+        auto* arrow=controlsV3::named(ui,"timelineCollapse");
+        check(timeline && arrow,"Native Timeline Collapse button missing");
+        for(const auto size:std::initializer_list<juce::Point<int>>{
+            {1180,820},{1440,900},{1647,895},{1920,1080}}) {
+            ui.setSize(size.x,size.y);
+            ui.setTimelineVisible(true);
+            check(ui.isTimelineVisible() && timeline->isVisible() &&
+                  arrow->isVisible() && arrow->getWidth()==28 &&
+                  arrow->getHeight()==26 &&
+                  arrow->getX()==timeline->getX()+112 &&
+                  arrow->getY()==timeline->getY()+10 &&
+                  arrow->getTooltip().contains("Collapse"),
+                  "Timeline Collapse control is missing from the native header");
+            const auto baseline=timeline->getBounds();
+            dynamic_cast<juce::Button*>(arrow)->triggerClick();
+            check(!ui.isTimelineVisible() && !timeline->isVisible() &&
+                  arrow->isVisible() &&
+                  arrow->getY()>=72 && arrow->getBottom()<size.y &&
+                  arrow->getTooltip().contains("Expand"),
+                  "Collapsing Timeline lost the always-accessible reopen button");
+            // Same setter is used by the View menu: a menu toggle must restore
+            // the exact open header state and arrow direction.
+            ui.setTimelineVisible(true);
+            check(ui.isTimelineVisible() && timeline->isVisible() &&
+                  timeline->getBounds()==baseline &&
+                  arrow->isVisible() &&
+                  arrow->getTooltip().contains("Collapse"),
+                  "View and header Timeline state diverged after re-expanding");
+        }
+    });
     test("View Timeline collapse reclaims vertical space independently",[] {
         for (const auto dimensions:std::initializer_list<juce::Point<int>>{
                  {1180,820},{1440,900},{1647,895},{1920,1080}}) {

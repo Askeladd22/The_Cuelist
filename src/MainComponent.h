@@ -464,6 +464,8 @@ public:
     void setRowColour(int row,int colour);
     void toggleColumnCollapsed(int column);
     void setAllColumnsCollapsed(bool collapsed);
+    void setTimelineVisible(bool visible); // same action for header and View menu
+    bool isTimelineVisible() const noexcept {return timelineVisible;}
     void activateCuelist(int index);
     void createCuelist();
     bool moveCuelist(int from,int to);
@@ -527,7 +529,8 @@ private:
     };
     CueGrid grid{*this}; PinnedCueHeaders cueHeaders{*this};
     PinnedColumnHeaders columnHeaders{*this}; CueMetricsOverlay cueMetrics{*this};
-    Timeline timeline{*this}; CueViewport viewport;
+    Timeline timeline{*this}; DockCollapseButton timelineCollapseButton;
+    CueViewport viewport;
     ColumnUtilities utilities{*this};
     juce::TextButton openButton{"Open"},saveButton{"Save"},newButton{"New"},addRowButton{"+"},addColumnButton{"+"};
     juce::TextButton preferencesButton{"Preferences"},helpButton{"Help"};
@@ -692,7 +695,7 @@ private:
     std::shared_ptr<const AudioClip> copiedAudio;
     ColumnType copiedType=ColumnType::audio;
     DockCollapseButton clipCollapseButton;
-    juce::TextButton clipCloseButton{"Close"};
+    EditorCloseIconButton clipCloseButton;
     // Single application-level history. Snapshots capture only Show metadata
     // and shared PCM handles; audio sample buffers are never duplicated.
     juce::UndoManager editHistory{16384,5};

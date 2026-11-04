@@ -17,15 +17,12 @@ struct MidiEditorToolbarLayout {
         MidiEditorToolbarLayout t;
         t.compact=w<1000;
         if(t.compact) {
-            // Five independent actions share the FIRST row: Undo, Redo,
-            // Detach, Collapse and Close. The latter two belong to the
-            // parent dock, so MainComponent must use the same coordinates.
+            // First row: title and history, then the three compact window
+            // controls at the RIGHT edge (Collapse / Detach / Close).
+            // MainComponent owns Collapse and Close; PianoRoll owns Detach.
             t.title={16,6,185,25};
             t.undo={210,4,66,26};
             t.redo={282,4,66,26};
-            t.detach={354,4,80,26};
-            t.collapse={444,4,86,26};
-            t.close={536,4,82,26};
             // Labels and controls are packed into the second row without
             // hiding Delete, MIDI note length, or either zoom direction.
             t.snapLabel={10,38,36,22}; t.snap={50,35,67,26};
@@ -36,8 +33,7 @@ struct MidiEditorToolbarLayout {
             t.zoomOut={w-82,35,30,26}; t.zoomIn={w-44,35,30,26};
         } else {
             t.title={16,6,290,25};
-            t.undo={w-185,4,74,26}; t.redo={w-269,4,74,26};
-            t.detach={w-96,4,86,26};
+            t.undo={w-269,4,74,26}; t.redo={w-185,4,74,26};
             t.snapLabel={16,38,40,22}; t.snap={54,35,80,26};
             t.channelLabel={142,38,48,22}; t.channel={190,35,67,26};
             t.velocityLabel={270,38,50,22}; t.velocity={325,35,166,26};
@@ -45,6 +41,11 @@ struct MidiEditorToolbarLayout {
             t.remove={std::max(650,w-333),35,89,26};
             t.zoomOut={w-90,35,32,26}; t.zoomIn={w-50,35,32,26};
         }
+        // Consistent 28×26 hitboxes, 4 px gaps, 12 px right margin.
+        // Closes to the right of Detach, and Collapse remains next to it.
+        t.collapse={w-108,4,28,26};
+        t.detach={w-76,4,28,26};
+        t.close={w-44,4,28,26};
         return t;
     }
 };
