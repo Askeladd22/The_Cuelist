@@ -4,40 +4,52 @@
 #include <cmath>
 namespace cuelist {
 namespace palette {
-// Forest / Teal — twelve swatches sampled from the approved reference image
-// (top row left to right, then bottom row left to right). Keep these source
-// colours intact; any accessibility adjustments are explicitly derived below.
+// Graphite / Copper: neutral charcoal surfaces and a single warm copper
+// interaction accent. Operational colours remain distinct for safety: green
+// GO/available, amber MIDI/standby, violet OSC, red warnings/PANIC.
+// These tokens are the single source of truth across all native JUCE panels.
 namespace swatch {
-inline const juce::Colour black{0xff070802},      forest{0xff112710},
-                          deepPine{0xff182f25},   pine{0xff243f2e},
-                          leaf{0xff32642f},       petrol{0xff2a6b71},
-                          sage{0xff57a29d},       aqua{0xff6ae7e3},
-                          verdant{0xff31b964},    ivory{0xffeef5c1},
-                          copper{0xffb84729},     white{0xfff8f8f8};
+inline const juce::Colour graphiteBlack{0xff121416},
+                          graphiteInput{0xff1b1e20},
+                          graphitePanel{0xff24272a},
+                          graphiteToolbar{0xff2b2f32},
+                          graphiteRaised{0xff34393c},
+                          graphiteLine{0xff474b4f},
+                          warmWhite{0xfff2ede5},
+                          warmGrey{0xffc2b8aa},
+                          copper{0xffcf8b62},
+                          copperLight{0xffe4a77e},
+                          copperDark{0xff5c3b2d},
+                          brass{0xffd9b577},
+                          amber{0xffdebd88},
+                          violet{0xffb7a1bf},
+                          slateBlue{0xff8ea7b8},
+                          slateSage{0xffa1b5a4},
+                          success{0xff8cbd9f},
+                          error{0xffdb8175},
+                          danger{0xffab5146};
 }
-// Shared native JUCE surfaces: preserve a dark visual hierarchy and avoid
-// flooding the operator's cue workspace with high-saturation accent colours.
-inline const juce::Colour background=swatch::black,   // cue canvas / app
-                          input=swatch::forest,        // editors and fields
-                          panel=swatch::deepPine,      // Inspector / mixer
-                          toolbar=swatch::pine,        // header and docking
-                          raised=swatch::pine,         // controls / cards
-                          line=swatch::leaf;           // separators and edges
-
-// Accessible ink is blended exclusively from approved swatches: sage alone
-// misses 4.5:1 on the lighter toolbar, and copper alone is too dark for small
-// warning labels. Keep the unmixed colours for large fills and active surfaces.
-inline const juce::Colour text=swatch::white,
-                          muted=swatch::sage.interpolatedWith(swatch::white,0.14f),
-                          teal=swatch::aqua,            // Audio / focus
-                          amber=swatch::ivory,          // MIDI / standby
-                          purple=swatch::verdant,       // OSC (legacy token name)
-                          red=swatch::copper.interpolatedWith(swatch::ivory,0.50f),
-                          go=swatch::verdant,           // GO / armed
-                          panic=swatch::copper,         // destructive fill
-                          selectedTab=swatch::petrol;
+// Ordered lightness prevents losing the grid's hierarchy on small displays.
+inline const juce::Colour background=swatch::graphiteBlack,
+                          input=swatch::graphiteInput,
+                          panel=swatch::graphitePanel,
+                          toolbar=swatch::graphiteToolbar,
+                          raised=swatch::graphiteRaised,
+                          line=swatch::graphiteLine;
+// CopperLight, warmWhite and warmGrey maintain readable small text on the
+// brightest (#34393C) control surface. Avoid using dark copper as small ink.
+inline const juce::Colour text=swatch::warmWhite,
+                          muted=swatch::warmGrey,
+                          copper=swatch::copperLight,
+                          teal=copper,             // legacy API: UI accent, now copper
+                          amber=swatch::amber,    // MIDI / next
+                          purple=swatch::violet,  // OSC
+                          red=swatch::error,      // warning / missing
+                          go=swatch::success,     // GO / available
+                          panic=swatch::danger,   // destructive button background
+                          selectedTab=swatch::copperDark;
 inline juce::Colour type(int i) {
-    return i==0 ? teal : i==1 ? amber : i==2 ? purple : swatch::sage;
+    return i==0 ? copper : i==1 ? amber : i==2 ? purple : swatch::slateBlue;
 }
 }
 // Small icon buttons share one restrained surface, but retain their own
