@@ -52,7 +52,7 @@ struct MidiEditorToolbarLayout {
 struct OscEditorToolbarLayout {
     bool compact=false;
     juce::Rectangle<int> add,remove,duplicate,grid,snap,resolution;
-    juce::Rectangle<int> zoomOut,zoomIn,zoomFit,unit,detach;
+    juce::Rectangle<int> zoomOut,zoomIn,zoomFit,unit,detach,undo,redo;
     static OscEditorToolbarLayout atWidth(int w) {
         OscEditorToolbarLayout t;
         t.compact=w<950;
@@ -67,6 +67,8 @@ struct OscEditorToolbarLayout {
         t.zoomOut={t.compact ? 13 : 435,t.compact ? 39 : 7,29,26};
         t.zoomIn={t.compact ? 46 : 468,t.compact ? 39 : 7,29,26};
         t.zoomFit={t.compact ? 79 : 501,t.compact ? 39 : 7,30,26};
+        t.undo={t.compact ? 116 : 540,t.compact ? 39 : 7,30,26};
+        t.redo={t.compact ? 151 : 575,t.compact ? 39 : 7,30,26};
         return t;
     }
 };
