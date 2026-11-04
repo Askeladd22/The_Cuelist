@@ -85,9 +85,18 @@ int main() {
               palette::type(2)==palette::swatch::typeOsc &&
               palette::type(3)==palette::swatch::typeControl,
               "Column colours must remain semantic and not use the global orange");
-        check(palette::swatch::cue1.getARGB()==0xffe4a77e &&
-              palette::swatch::cue7.getARGB()==0xffd9b577,
-              "Existing custom cue swatches changed during theme update");
+        const std::array<juce::Colour,7> savedCueColours{
+            palette::swatch::cue1,palette::swatch::cue2,palette::swatch::cue3,
+            palette::swatch::cue4,palette::swatch::cue5,palette::swatch::cue6,
+            palette::swatch::cue7
+        };
+        const std::array<unsigned int,7> expectedCueColours{
+            0xffe4a77e,0xffdebd88,0xffe48c7f,0xffb7a1bf,
+            0xff8ea7b8,0xffa1b5a4,0xffd9b577
+        };
+        for(size_t i=0;i<savedCueColours.size();++i)
+            check(savedCueColours[i].getARGB()==expectedCueColours[i],
+                  "User-assignable cue colour changed in the theme update");
     });
     test("Industrial Orange readable primary actions and labels", [] {
         const auto linear=[](float channel) {
