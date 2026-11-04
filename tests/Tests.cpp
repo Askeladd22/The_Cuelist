@@ -102,6 +102,10 @@ int main() {
             check(ratio(palette::muted,surface)>=4.5,"Secondary text contrast");
             check(ratio(palette::red,surface)>=4.5,"Warning label contrast");
         }
+        check(ratio(palette::background,palette::go)>=4.5,
+              "Dark GO button caption must be readable on green");
+        check(ratio(palette::text,palette::panic)>=4.5,
+              "Light PANIC button caption must be readable on copper");
     });
     pianoRollTests();
     registerMidiTests();
