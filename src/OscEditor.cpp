@@ -638,6 +638,39 @@ void OscClipEditor::mouseUp(const juce::MouseEvent& e) {
     dragEvent=dragAutomation=dragPoint=-1;
     rampDrag=RampDrag::none; changedDuringDrag=false; repaint();
 }
+bool OscClipEditor::insertAutomationPoint(int index,float x,float y) {
+    if(index<0 || index>=(int)clip.automations.size() ||
+       pointAt(index,x,y)>=0)return false;
+    const auto& original=clip.automations[(size_t)index];
+    if(original.points.size()>=128)return false;
+    const double relative=quantize(timeForX(x))-original.time;
+    // The first and last points are the immutable duration endpoints.
+    if(relative<=.0001 || relative>=original.duration-.0001 ||
+       std::any_of(original.points.begin(),original.points.end(),
+           [&](const OscControlPoint& point){
+               return std::abs(point.time-relative)<.0001;
+           }))return false;
+    double value=valueForY(index,y);
+    if(original.message.arguments[(size_t)original.argumentIndex].type==
+       OscValueType::integer)value=std::round(value);
+    const auto before=clip;
+    auto& points=clip.automations[(size_t)index].points;
+    points.push_back({relative,value});
+    std::sort(points.begin(),points.end(),[](const auto& x,const auto& z){
+        return x.time<z.time;
+    });
+    if(auto result=validateOscClip(clip);result.failed()) {
+        clip=before;editHint=result.getErrorMessage();repaint();return false;
+    }
+    chooseAutomation(index);
+    const auto& updated=clip.automations[(size_t)index].points;
+    selectedPoint=(int)std::distance(updated.begin(),
+        std::find_if(updated.begin(),updated.end(),
+            [&](const OscControlPoint& pt){return std::abs(pt.time-relative)<.0001;}));
+    editHint.clear();
+    notify(before);
+    return true;
+}
 void OscClipEditor::mouseDoubleClick(const juce::MouseEvent& e) {
     if (e.position.y>=eventLaneTop() && e.position.y<eventLaneTop()+eventHeight) {
         for (int i=(int)clip.events.size()-1;i>=0;--i)
@@ -653,8 +686,16 @@ void OscClipEditor::mouseDoubleClick(const juce::MouseEvent& e) {
     }
     if (e.position.x<axisLeft() || e.position.x>axisLeft()+axisWidth()) return;
     const int index=automationAt(e.position.x,e.position.y);
-    if (index>=0) editAutomation(index);
-    else createAutomationAt(quantize(timeForX(e.position.x)),track);
+    if(index>=0) {
+        const int point=pointAt(index,e.position.x,e.position.y);
+        if(point>=0) {
+            chooseAutomation(index);
+            selectedPoint=point; // existing points remain drag-editable
+            repaint();
+        } else {
+            insertAutomationPoint(index,e.position.x,e.position.y);
+        }
+    } else createAutomationAt(quantize(timeForX(e.position.x)),track);
 }
 void OscClipEditor::mouseWheelMove(const juce::MouseEvent& e,const juce::MouseWheelDetails& wheel) {
     if (e.mods.isCommandDown() || e.mods.isCtrlDown()) {
@@ -690,6 +731,11 @@ bool OscClipEditor::keyPressed(const juce::KeyPress& k) {
     if (k.getModifiers().isCommandDown() && (k.getTextCharacter()=='z'||k.getTextCharacter()=='Z')) {
         if (k.getModifiers().isShiftDown()) { if (onRedo) onRedo(); }
         else if (onUndo) onUndo();
+        return true;
+    }
+    if (k.getModifiers().isCommandDown() &&
+        (k.getTextCharacter()=='y'||k.getTextCharacter()=='Y')) {
+        if (onRedo) onRedo();
         return true;
     }
     return false;
@@ -732,7 +778,7 @@ void OscClipEditor::showContext(const juce::MouseEvent& e) {
     }
     juce::PopupMenu menu;
     menu.setLookAndFeel(&getLookAndFeel());
-    menu.addItem(1,"Edit",selectedEvent>=0 || selectedAutomation>=0);
+    menu.addItem(1,"Edit OSC message",selectedEvent>=0);
     menu.addItem(2,"Duplicate",selectedEvent>=0 || selectedAutomation>=0);
     menu.addItem(3,"Delete",selectedEvent>=0 || selectedAutomation>=0);
     menu.addItem(4,"OSC track settings",selectedTrack>=0);
@@ -741,7 +787,6 @@ void OscClipEditor::showContext(const juce::MouseEvent& e) {
         if (!safe) return;
         if (item==1) {
             if (safe->selectedEvent>=0) safe->editEvent(safe->selectedEvent);
-            else if (safe->selectedAutomation>=0) safe->editAutomation(safe->selectedAutomation);
         } else if (item==2) safe->duplicateSelection();
         else if (item==3) safe->deleteSelection();
         else if (item==4 && safe->selectedTrack>=0)
@@ -942,59 +987,6 @@ void OscClipEditor::editEvent(int index) {
             if (validateOscClip(modified).failed()) return;
             const auto before=safe->clip;
             safe->clip=std::move(modified);
-            safe->notify(before);
-        }),true);
-}
-void OscClipEditor::editAutomation(int index) {
-    if (index<0 || index>=(int)clip.automations.size()) return;
-    chooseAutomation(index);
-    const auto original=clip.automations[(size_t)index];
-    const int trackIndex=trackForAutomation(index);
-    if(trackIndex<0) return;
-    const auto& track=clip.tracks[(size_t)trackIndex];
-    const auto type=original.message.arguments[(size_t)original.argumentIndex].type;
-    auto* dialog=new juce::AlertWindow(
-        "OSC ramp values",
-        "Change only the start and end values of this segment. "
-        "Double-click the track header to edit address, arguments, "
-        "target type and parameter range.",
-        juce::MessageBoxIconType::NoIcon,this);
-    dialog->addTextEditor("start",juce::String(original.points.front().value,3),"Start value");
-    dialog->addTextEditor("end",juce::String(original.points.back().value,3),"End value");
-    dialog->addButton("Save",1);dialog->addButton("Cancel",0);
-    auto safe=juce::Component::SafePointer<OscClipEditor>(this);
-    const auto generation=revision;
-    dialog->enterModalState(true,juce::ModalCallbackFunction::create(
-        [safe,dialog,index,trackIndex,type,generation](int response) {
-            if(!safe || response!=1 || generation!=safe->revision ||
-               index>=(int)safe->clip.automations.size() ||
-               trackIndex>=(int)safe->clip.tracks.size()) return;
-            double start=0,end=0;
-            if(!parseFiniteNumber(dialog->getTextEditorContents("start"),start) ||
-               !parseFiniteNumber(dialog->getTextEditorContents("end"),end)) {
-                safe->editHint="Enter valid numeric start and end values.";
-                safe->repaint();return;
-            }
-            const auto& track=safe->clip.tracks[(size_t)trackIndex];
-            if(start<track.rangeMin || start>track.rangeMax ||
-               end<track.rangeMin || end>track.rangeMax ||
-               (type==OscValueType::integer &&
-                   (std::floor(start)!=start || std::floor(end)!=end))) {
-                safe->editHint="Ramp values must fit the track range and numeric type.";
-                safe->repaint();return;
-            }
-            auto modified=safe->clip;
-            auto& ramp=modified.automations[(size_t)index];
-            ramp.points.front().value=start;
-            ramp.points.back().value=end;
-            if(auto result=validateOscClip(modified);result.failed()) {
-                safe->editHint=result.getErrorMessage();
-                safe->repaint();return;
-            }
-            const auto before=safe->clip;
-            safe->clip=std::move(modified);
-            safe->selectedTrack=trackIndex;
-            safe->editHint.clear();
             safe->notify(before);
         }),true);
 }
