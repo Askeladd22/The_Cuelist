@@ -112,6 +112,51 @@ juce::Result validateOscClip(const OscClip& clip) {
         }
     return juce::Result::ok();
 }
+juce::Result updateOscTrackSettings(OscClip& clip,int trackIndex,
+                                   const OscTrack& requested) {
+    if (trackIndex<0 || trackIndex>=(int)clip.tracks.size())
+        return juce::Result::fail("OSC track index is out of range.");
+    if (requested.argumentIndex<0 ||
+        requested.argumentIndex>=(int)requested.message.arguments.size())
+        return juce::Result::fail("Choose an existing OSC argument to automate.");
+    const auto type=requested.message.arguments[(size_t)requested.argumentIndex].type;
+    if (type!=OscValueType::integer && type!=OscValueType::decimal)
+        return juce::Result::fail("OSC automation requires an integer or float argument.");
+    if (!std::isfinite(requested.rangeMin) ||
+        !std::isfinite(requested.rangeMax) ||
+        requested.rangeMin>=requested.rangeMax)
+        return juce::Result::fail("OSC parameter range is invalid.");
+
+    // Match by the identity the editor already uses for track association.
+    const auto& old=clip.tracks[(size_t)trackIndex];
+    auto belongs=[&](const OscAutomation& a) {
+        if (a.message.address!=old.message.address ||
+            a.argumentIndex!=old.argumentIndex ||
+            a.message.arguments.size()!=old.message.arguments.size()) return false;
+        for (size_t n=0;n<a.message.arguments.size();++n)
+            if (a.message.arguments[n].type!=old.message.arguments[n].type)
+                return false;
+        return true;
+    };
+    auto candidate=clip;
+    for (size_t n=0;n<clip.automations.size();++n) {
+        if (!belongs(clip.automations[n])) continue;
+        auto& ramp=candidate.automations[n];
+        for (const auto& point:ramp.points) {
+            if (point.value<requested.rangeMin || point.value>requested.rangeMax)
+                return juce::Result::fail("An existing ramp point lies outside the new range.");
+            if (type==OscValueType::integer && std::floor(point.value)!=point.value)
+                return juce::Result::fail("An existing fractional ramp cannot target an integer argument.");
+        }
+        ramp.message=requested.message;
+        ramp.argumentIndex=requested.argumentIndex;
+    }
+    candidate.tracks[(size_t)trackIndex]=requested;
+    if (auto result=validateOscClip(candidate);result.failed())
+        return result;
+    clip=std::move(candidate);
+    return juce::Result::ok();
+}
 std::vector<uint8_t> encodeOscMessage(const OscEvent& event) {
     std::vector<uint8_t> out; out.reserve(256);
     appendString(out,event.address);
