@@ -56,7 +56,7 @@ The top row contains named **Cuelist tabs**, the **+** action, **Undo/Redo**, a 
 
 The **Help** button in the top toolbar opens a menu with **Guide** and **About The Cuelist**. The Guide entry opens the content of the local `docs/complete-user-guide.md` **inside The Cuelist**, in a separate non-modal, resizable, scrollable window with headings and a built-in search. No external browser or Markdown editor is launched. The reader uses the bundled Markdown file, which is copied beside the compiled EXE and into portable packages, and reloads it each time the Guide is opened. About opens a compact, grouped native dialog with the version derived from `VERSION.txt`, the two credited co-authors **Davide Salvatore** and **Riccardo D'Ambrosio**, and concise copyright/licence information. It links to LICENSE and NOTICE.md without repeating the co-authors in multiple sections.
 
-- **Undo/Redo** use the existing MIDI/OSC clip-edit history; they are not general-purpose undo for show deletion, tab management or every mixer action.
+- **Undo/Redo** use one bounded edit history across supported Show changes (cue/column structure, cell and row properties, Master/mixer adjustments and MIDI/OSC gestures). Changing VIEW tabs and GO/Stop/PANIC transport commands are not history actions. Undo of a change to the LIVE sequence stops playback for safety; undo limited to a different VIEW retains LIVE.
 - **CPU/RAM** report system-level usage, not per-plugin or per-clip estimates. The two usage values and their horizontal meters have separate aligned positions; unsupported telemetry displays N/A.
 - **MIDI RX/TX** indicate local traffic; **OSC TX** indicates local transmission. OSC RX remains inactive because a native OSC input endpoint is not implemented.
 - **Audio Available** reports local device availability, not an assertion that speakers or downstream equipment are functioning.
@@ -169,7 +169,7 @@ The pinned BPM / Auto Stop lanes retain their original editing/toggle hitboxes b
 - Use the **×** beside a visible tab to delete a Cuelist. A confirmation dialog explains that its cues are removed from the show. Source audio files are not deleted from disk.
 - The last remaining Cuelist cannot be deleted.
 
-Deleting a Cuelist is a structural operation and is not an Undo/Redo action. Save a backup before reorganizing a live show.
+Deleting a Cuelist can be undone while its bounded edit history remains available; source audio files are never deleted. Save a backup before reorganizing a live show, especially when the LIVE transport is involved.
 
 ### 4.2 Renaming — synchronized in both directions
 
@@ -271,7 +271,7 @@ The importer supports standard MIDI type 0/1 files using PPQ, subject to size an
 
 MIDI ports are tracked by their device identifiers. A missing configured output is **not** silently replaced by another interface. Reconnecting the original exact-ID port invalidates outdated queued messages. Physical output latency remains dependent on hardware, driver and OS scheduling.
 
-Use **Undo/Redo** in the supported clip editor operations; the buttons are disabled when no relevant history exists.
+Use **Undo/Redo** for the supported Show, MIDI and OSC editing operations. All use the same chronological history; the buttons are disabled when no transaction is available. GO, Stop, PANIC and switching VIEW tabs are excluded.
 
 ## 9. OSC messages and automation
 
