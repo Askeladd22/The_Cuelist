@@ -485,6 +485,60 @@ void uiRefinementTests() {
               palette::swatch::textDisabled!=palette::swatch::textSecondary,
               "Text hierarchy drifted toward white or lost disabled state");
     });
+    test("Theme switching is immediate, persistent and never alters Show colour data",[] {
+        MainComponent ui(false);
+        // The selected cue colour is persisted in the Show, while the
+        // appearance lives in the unrelated JUCE PropertiesFile.
+        ui.show.rows[0].colour=1;
+        const auto originalShow=encodeShow(ui.show);
+        const auto savedColour=CueGrid::cueColour(1);
+        ui.setAppearanceTheme(palette::Appearance::legacy);
+        check(ui.appearanceTheme()==palette::Appearance::legacy &&
+              palette::input.getARGB()==0xff1b1e20 &&
+              palette::teal.getARGB()==0xffe4a77e &&
+              ui.getLookAndFeel().findColour(
+                  juce::PopupMenu::backgroundColourId)==palette::panel,
+              "Legacy change did not update live paint or popup LookAndFeel");
+        check(CueGrid::cueColour(1)==savedColour &&
+              encodeShow(ui.show)==originalShow,
+              "Switching to Legacy modified the saved cue colour or Show model");
+        // Test persistence by opening a second UI instance, as a restart
+        // would, after saveIfNeeded() flushed the settings.
+        {
+            MainComponent reopened(false);
+            check(reopened.appearanceTheme()==palette::Appearance::legacy,
+                  "Appearance preference did not survive opening a new UI");
+            reopened.setAppearanceTheme(palette::Appearance::industrialOrange);
+        }
+        ui.setAppearanceTheme(palette::Appearance::industrialOrange);
+        check(ui.appearanceTheme()==palette::Appearance::industrialOrange &&
+              palette::swatch::statusPanic.getARGB()==0xffe05a46 &&
+              palette::swatch::statusGo.getARGB()==0xff55b875 &&
+              palette::swatch::statusInfo.getARGB()==0xff55afc5 &&
+              encodeShow(ui.show)==originalShow &&
+              CueGrid::cueColour(1)==savedColour,
+              "Industrial Orange restore changed user data or functional tokens");
+    });
+    test("A custom-coloured cue remains distinct from an uncoloured selection",[] {
+        palette::activate(palette::Appearance::industrialOrange);
+        const auto uncoloured=palette::panel;
+        const auto orange=CueGrid::cueColour(1);
+        const auto blue=CueGrid::cueColour(5);
+        const auto orangeSurface=palette::cueSurface(uncoloured,orange,true,false);
+        const auto blueSurface=palette::cueSurface(uncoloured,blue,false,false);
+        check(orangeSurface!=uncoloured &&
+              blueSurface!=uncoloured && orangeSurface!=blueSurface &&
+              orangeSurface!=palette::selection &&
+              palette::readableInk(orangeSurface)!=juce::Colours::transparentBlack,
+              "Cue custom fill lost its identity or readable foreground");
+        check(CueGrid::cueColour(1).getARGB()==0xffe4a77e &&
+              CueGrid::cueColour(5).getARGB()==0xff8ea7b8,
+              "Visual transformation changed saved cue palette entries");
+        palette::activate(palette::Appearance::legacy);
+        check(palette::cueSurface(uncoloured,orange,true,false)==uncoloured,
+              "Legacy should retain its historical low-intensity cue wash");
+        palette::activate(palette::Appearance::industrialOrange);
+    });
     test("Popup menus use Industrial Orange with readable hover and separator",[] {
         Theme theme;
         // Check the actual LookAndFeel colours rather than exact sampled
