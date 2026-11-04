@@ -4,26 +4,40 @@
 #include <cmath>
 namespace cuelist {
 namespace palette {
-// Midnight Slate: balanced between the darker redesign reference and the
-// brighter original. Five restrained luminance steps preserve panel hierarchy
-// without making the empty cue workspace pure black or the mixer too blue.
-// These roles are shared by Cue List, Inspector, mixer, Timeline and dialogs.
-inline const juce::Colour background{0xff071725}, // main canvas
-                          input{0xff0b1d2c},      // editable fields
-                          panel{0xff102536},      // sidebar, mixer, Inspector
-                          toolbar{0xff162c40},    // global navigation
-                          raised{0xff1c354a},     // buttons, cards, cue headers
-                          line{0xff36536b};       // muted structural separators
+// Forest / Teal — twelve swatches sampled from the approved reference image
+// (top row left to right, then bottom row left to right). Keep these source
+// colours intact; any accessibility adjustments are explicitly derived below.
+namespace swatch {
+inline const juce::Colour black{0xff070802},      forest{0xff112710},
+                          deepPine{0xff182f25},   pine{0xff243f2e},
+                          leaf{0xff32642f},       petrol{0xff2a6b71},
+                          sage{0xff57a29d},       aqua{0xff6ae7e3},
+                          verdant{0xff31b964},    ivory{0xffeef5c1},
+                          copper{0xffb84729},     white{0xfff8f8f8};
+}
+// Shared native JUCE surfaces: preserve a dark visual hierarchy and avoid
+// flooding the operator's cue workspace with high-saturation accent colours.
+inline const juce::Colour background=swatch::black,   // cue canvas / app
+                          input=swatch::forest,        // editors and fields
+                          panel=swatch::deepPine,      // Inspector / mixer
+                          toolbar=swatch::pine,        // header and docking
+                          raised=swatch::pine,         // controls / cards
+                          line=swatch::leaf;           // separators and edges
 
-// Functional accents must remain readily distinguishable in a live show.
-inline const juce::Colour text{0xffedf5fa}, muted{0xffabc2d2},
-                          teal{0xff27ddc8}, amber{0xfff9c76e},
-                          purple{0xffb49cf0}, red{0xfffb7e8b},
-                          go{0xff0b786f}, panic{0xff913d4e},
-                          selectedTab{0xff0b686c};
+// Accessible ink is blended exclusively from approved swatches: sage alone
+// misses 4.5:1 on the lighter toolbar, and copper alone is too dark for small
+// warning labels. Keep the unmixed colours for large fills and active surfaces.
+inline const juce::Colour text=swatch::white,
+                          muted=swatch::sage.interpolatedWith(swatch::white,0.14f),
+                          teal=swatch::aqua,            // Audio / focus
+                          amber=swatch::ivory,          // MIDI / standby
+                          purple=swatch::verdant,       // OSC (legacy token name)
+                          red=swatch::copper.interpolatedWith(swatch::ivory,0.50f),
+                          go=swatch::verdant,           // GO / armed
+                          panic=swatch::copper,         // destructive fill
+                          selectedTab=swatch::petrol;
 inline juce::Colour type(int i) {
-    return i==0 ? teal : i==1 ? amber : i==2 ? purple :
-           juce::Colour(0xff82baf4);
+    return i==0 ? teal : i==1 ? amber : i==2 ? purple : swatch::sage;
 }
 }
 // Small icon buttons share one restrained surface, but retain their own
