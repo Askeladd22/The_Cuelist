@@ -14,7 +14,7 @@ public:
           description(std::move(label)) {
         const auto bytes=encodeShow(before.model).getNumBytesAsUTF8()+
                          encodeShow(after.model).getNumBytesAsUTF8();
-        units=std::max(1,bytes/1024);
+        units=std::max(1,(int)(bytes/1024));
     }
     bool perform() override {
         if(first) {first=false;return true;} // UI already committed the edit.
