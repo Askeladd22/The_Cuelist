@@ -22,8 +22,9 @@ void cueGridN3VisualTests() {
         const auto audioRule=pixels.getPixelAt(grid->columnX(0)+12,1);
         const auto midiRule=pixels.getPixelAt(grid->columnX(1)+12,1);
         const auto oscRule=pixels.getPixelAt(grid->columnX(2)+12,1);
-        check(cueRule.getGreen()>cueRule.getRed() &&
-              audioRule.getGreen()>audioRule.getRed() &&
+        check(cueRule.getRed()>cueRule.getGreen() &&
+              audioRule.getRed()>audioRule.getGreen() &&
+              audioRule.getGreen()>audioRule.getBlue() &&
               midiRule.getRed()>midiRule.getGreen() &&
               oscRule.getBlue()>oscRule.getGreen(),
               "Cue/header type accent colours have lost their distinctions");
@@ -294,8 +295,9 @@ void cueGridN3VisualTests() {
         ui.clips[ui.show.rows[1].cells[0].id]=pcm;
         ui.resized();
         const auto loadedMark=pixel(x+5,y+21);
-        check(loadedMark.getGreen()>loadedMark.getRed(),
-              "Loaded audio lost its type-colour cue");
+        check(loadedMark.getRed()>loadedMark.getGreen() &&
+              loadedMark.getGreen()>loadedMark.getBlue(),
+              "Loaded audio lost its copper type-colour cue");
     });
 
     test("N3.7 loaded clip hover highlights only real cell transports",[] {
