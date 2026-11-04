@@ -150,13 +150,13 @@ int CueGrid::columnAt(int x) const {
 }
 juce::Colour CueGrid::cueColour(int id) {
     switch (id) {
-        case 1:return palette::teal;
-        case 2:return palette::amber;
-        case 3:return palette::red;
-        case 4:return palette::purple;
-        case 5:return palette::swatch::slateBlue;
-        case 6:return palette::swatch::slateSage;
-        case 7:return palette::swatch::brass;
+        case 1:return palette::swatch::cue1;
+        case 2:return palette::swatch::cue2;
+        case 3:return palette::swatch::cue3;
+        case 4:return palette::swatch::cue4;
+        case 5:return palette::swatch::cue5;
+        case 6:return palette::swatch::cue6;
+        case 7:return palette::swatch::cue7;
         default:return juce::Colour();
     }
 }
