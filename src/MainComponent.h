@@ -24,7 +24,7 @@ class OscClipEditor;
 class ControlPanel;
 class MidiUndoAction;
 // A tab supports direct double-click renaming while preserving normal
-// single-click selection (and its transport-stop safety semantics).
+// single-click selection (without changing the independent live transport).
 // Vector panel-state icons stay crisp at Windows display scaling and avoid
 // font glyph fallback. The two directions are intentionally distinct:
  // open -> collapse right; collapsed -> expand left.
@@ -65,6 +65,9 @@ public:
     void setActiveVisual(bool active) {
         if (activeVisual!=active) { activeVisual=active; repaint(); }
     }
+    void setLiveVisual(bool live) {
+        if (liveVisual!=live) { liveVisual=live; repaint(); }
+    }
     void paintButton(juce::Graphics& g,bool hovered,bool pressed) override {
         const auto area=getLocalBounds().toFloat();
         g.setColour(activeVisual ? palette::selectedTab.withAlpha(.76f) :
@@ -75,6 +78,10 @@ public:
             g.setColour(palette::teal);
             g.fillRoundedRectangle(area.getX()+7.f,area.getBottom()-2.f,
                                    area.getWidth()-14.f,2.f,1.f);
+        }
+        if (liveVisual) {
+            g.setColour(palette::go);
+            g.fillEllipse(area.getX()+4.f,area.getY()+3.f,6.f,6.f);
         }
         g.setColour(activeVisual?palette::text:palette::muted);
         g.setFont(font(13.f,true));
@@ -118,7 +125,7 @@ public:
         else juce::TextButton::mouseDoubleClick(e);
     }
 private:
-    bool pressing=false,wasDragged=false,activeVisual=false;
+    bool pressing=false,wasDragged=false,activeVisual=false,liveVisual=false;
 };
 class CueGrid final : public juce::Component, public juce::FileDragAndDropTarget,
                       public juce::SettableTooltipClient {
@@ -492,6 +499,10 @@ public:
     void seekTimeline(double seconds);
     void goNext();
     int nextCueIndex() const { return nextCue; }
+    int liveCuelistIndex() const noexcept { return liveCuelist; }
+    int liveNextCueIndex() const noexcept { return liveNextCue; }
+    Show liveShowSnapshot() const;
+    std::unique_ptr<RenderState> makeLiveRenderState() const;
     bool hasUnsavedChanges() const { return dirty || inspectorDiffers(); }
     Show show=makeShow();
     ClipMap clips;
@@ -680,6 +691,9 @@ private:
     DockCollapseButton clipCollapseButton;
     juce::TextButton clipCloseButton{"Close"};
     juce::UndoManager editHistory;
+    // UI tab selection and live transport advance independently. The latter
+    // is identified by Cuelist index; row/cell IDs stay stable within each list.
+    int liveCuelist=0,liveNextCue=0;
     juce::File projectFile;
     juce::String status="Ready. Select an Audio cell and import a WAV file.";
     bool dirty=false;

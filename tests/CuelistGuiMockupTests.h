@@ -2,6 +2,41 @@
 #include "ProjectMediaLoader.h"
 
 void cuelistGuiMockupTests() {
+    test("VIEW Cuelist switches without stopping the live transport", [] {
+        MainComponent ui(false);
+        addRow(ui.show,"Following live cue");
+        auto clip=std::make_shared<AudioClip>();
+        clip->sampleRate=100;clip->samples.setSize(1,100);
+        for(int i=0;i<100;++i)clip->samples.setSample(0,i,.2f);
+        const int liveFirst=ui.show.rows[0].id;
+        const int liveSecond=ui.show.rows[1].id;
+        const int audioCell=ui.show.rows[0].cells[0].id;
+        ui.clips[audioCell]=clip;
+        ui.engine.connected.store(true);
+        ui.triggerRow(0); // arms liveNextCue=1, like the real operator GO
+        check(ui.liveNextCueIndex()==1,"Initial live transport was not armed");
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.engine.getCellPlayback(audioCell).playing,
+              "Baseline live audio did not start");
+        ui.createCuelist(); // select a different VIEW, do not touch live playback
+        check(ui.show.activeCuelist==1 && ui.liveCuelistIndex()==0,
+              "VIEW switch unexpectedly changed live Cuelist");
+        check(ui.engine.getCellPlayback(audioCell).playing,
+              "VIEW switch silenced active audio");
+        check(ui.show.rows.front().id!=liveFirst,
+              "Cuelist VIEW did not actually change");
+        ui.goNext(); // Transport GO still targets Cuelist 1, not VIEW Cuelist 2
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.engine.acknowledgedCueId.load()==liveSecond,
+              "Global GO targeted the VIEW tab instead of the LIVE tab");
+        check(ui.liveNextCueIndex()==2,
+              "Independent live cursor did not advance");
+        ui.activateCuelist(0);
+        check(ui.liveCuelistIndex()==ui.show.activeCuelist &&
+              ui.engine.acknowledgedCueId.load()==liveSecond,
+              "Returning to LIVE view lost the transport or its cue");
+    });
+
     using namespace cueViewFixtures;
     test("Cue notepad survives switching Cuelists and v10 persistence", [] {
         MainComponent ui(false);

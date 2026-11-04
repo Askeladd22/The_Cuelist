@@ -87,9 +87,12 @@ void MainComponent::refreshControlSettings() {
     controlMapping.setSettings(show.controls);
     // Resolution order and preset selection are pure, tested show-model
     // operations; device ownership/reconnection stays on the UI thread.
-    controlMapping.setLayers(buildControlLayers(show));
+    // Browsing another Cuelist must never replace the active hardware
+    // mapping layers or selected preset of the Cuelist currently on air.
+    const auto operational=liveShowSnapshot();
+    controlMapping.setLayers(buildControlLayers(operational));
     controlMapping.setActiveCue(activeCueId,
-                                activeControlPresetForCue(show,activeCueId));
+                                activeControlPresetForCue(operational,activeCueId));
     if (midiInput.identifier()!=show.controls.midiInputId) {
         const auto result=midiInput.connect(show.controls.midiInputId);
         if (result.failed()) status=result.getErrorMessage();

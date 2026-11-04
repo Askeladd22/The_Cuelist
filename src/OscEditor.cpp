@@ -89,6 +89,7 @@ OscClipEditor::~OscClipEditor() { setLookAndFeel(nullptr); }
 void OscClipEditor::setFloating(bool floating) { detach.setButtonText(floating?"Reattach":"Detach"); }
 void OscClipEditor::loadClip(const OscClip& next) {
     ++revision; clip=next; selectedEvent=selectedTrack=selectedAutomation=selectedPoint=-1;
+    selectedEvents.clear();selectedAutomations.clear();marqueeSelecting=false;
     ensureTracks();
     dragging=false; rampDrag=RampDrag::none; laneScroll=0; zoom=1; viewStart=0;
     unit.setSelectedId(clip.useBeats ? 2 : 1,juce::dontSendNotification);
@@ -261,11 +262,11 @@ void OscClipEditor::paint(juce::Graphics& g) {
         const float x=xForTime(event.time);
         const int y=eventsY+9+(i%2)*17;
         if (x<left-12 || x>right+12) continue;
-        g.setColour(i==selectedEvent ? palette::amber : palette::purple);
+        g.setColour(selectedEvents.count(i) ? palette::teal : palette::purple);
         g.fillRect(x-4,(float)y,8.f,14.f);
         const auto arguments=describeArguments(event.arguments);
         const auto summary=event.address+(arguments.isNotEmpty() ? "   "+arguments : juce::String());
-        if (i==selectedEvent || clip.events.size()<12)
+        if (selectedEvents.count(i) || clip.events.size()<12)
             label(g,summary,{(int)x+7,y-2,
                 std::max(1,std::min(300,right-(int)x-9)),18},10,palette::text);
     }
@@ -293,7 +294,7 @@ void OscClipEditor::paint(juce::Graphics& g) {
             const auto& a=clip.automations[(size_t)i];
             const float x0=xForTime(a.time),x1=xForTime(a.time+a.duration);
             if (x1<left || x0>right) continue;
-            const bool active=i==selectedAutomation;
+            const bool active=selectedAutomations.count(i)>0;
             // Flat automation segment: subdued lane, explicit selected
             // outline and real end resize grip; no changes to drag geometry.
             const auto segment=juce::Rectangle<float>(
@@ -319,6 +320,17 @@ void OscClipEditor::paint(juce::Graphics& g) {
             g.strokePath(curve,juce::PathStrokeType(1.7f));
         }
     }
+    if (marqueeSelecting) {
+        const auto selection=juce::Rectangle<float>(
+            std::min(marqueeStart.x,marqueeEnd.x),
+            std::min(marqueeStart.y,marqueeEnd.y),
+            std::abs(marqueeEnd.x-marqueeStart.x),
+            std::abs(marqueeEnd.y-marqueeStart.y));
+        g.setColour(palette::teal.withAlpha(.12f));
+        g.fillRect(selection);
+        g.setColour(palette::teal);
+        g.drawRect(selection,1.f);
+    }
     g.restoreState();
     g.setColour(palette::panel);
     g.fillRect(0,std::max(0,getHeight()-26),getWidth(),26);
@@ -337,9 +349,17 @@ void OscClipEditor::paint(juce::Graphics& g) {
               11,palette::muted);
 }
 void OscClipEditor::chooseEvent(int index) {
+    if (!selectedEvents.count(index)) {
+        selectedEvents.clear();selectedEvents.insert(index);
+    }
+    selectedAutomations.clear();
     selectedEvent=index; selectedTrack=selectedAutomation=selectedPoint=-1; repaint();
 }
 void OscClipEditor::chooseAutomation(int index) {
+    if (!selectedAutomations.count(index)) {
+        selectedAutomations.clear();selectedAutomations.insert(index);
+    }
+    selectedEvents.clear();
     selectedAutomation=index; selectedTrack=trackForAutomation(index);
     selectedEvent=selectedPoint=-1; repaint();
 }
@@ -368,16 +388,30 @@ void OscClipEditor::mouseDown(const juce::MouseEvent& e) {
     cursor=quantize(timeForX(x));
     dragEvent=dragAutomation=dragPoint=-1; rampDrag=RampDrag::none;
     dragging=false; changedDuringDrag=false; dragBefore=clip;
+    marqueeSelecting=false;
     dragStartTime=timeForX(x);
     if (y>=rulerTop && y<rulerBottom) { repaint(); return; }
     if (y>=eventLaneTop() && y<eventLaneTop()+eventHeight) {
         for (int i=(int)clip.events.size()-1;i>=0;--i) {
             if (std::abs(xForTime(clip.events[(size_t)i].time)-x)<9) {
+                if (e.mods.isShiftDown() || e.mods.isCommandDown()) {
+                    if (!selectedEvents.insert(i).second) selectedEvents.erase(i);
+                    selectedAutomations.clear();
+                    selectedEvent=selectedEvents.empty() ? -1 : *selectedEvents.rbegin();
+                    selectedAutomation=selectedPoint=selectedTrack=-1;
+                    repaint();return;
+                }
                 chooseEvent(i);
                 dragEvent=i; dragStartTime=clip.events[(size_t)i].time;
                 setTooltip(clip.events[(size_t)i].address+"  "+describeArguments(clip.events[(size_t)i].arguments));
                 return;
             }
+        }
+        if (e.mods.isCommandDown() || e.mods.isShiftDown()) {
+            marqueeSelecting=true;marqueeStart=marqueeEnd=e.position;
+            selectedEvents.clear();selectedAutomations.clear();
+            selectedEvent=selectedAutomation=selectedPoint=-1;
+            repaint();return;
         }
         if (e.getNumberOfClicks()==1 && clip.events.size()<256) {
             const auto before=clip;
@@ -391,7 +425,27 @@ void OscClipEditor::mouseDown(const juce::MouseEvent& e) {
     if (track<0 || track>=(int)clip.tracks.size()) return;
     selectedTrack=track; selectedEvent=-1;
     const int index=automationAt(x,y);
-    if (index<0) { selectedAutomation=selectedPoint=-1; repaint(); return; }
+    if (index<0) {
+        if(e.mods.isCommandDown()) {
+            marqueeSelecting=true;marqueeStart=marqueeEnd=e.position;
+            selectedEvents.clear();selectedAutomations.clear();
+        } else {
+            selectedEvents.clear();selectedAutomations.clear();
+        }
+        selectedAutomation=selectedPoint=-1; repaint(); return;
+    }
+    // Ctrl/Cmd+click toggles ramp selection; Shift+click still inserts a
+    // control point, retaining the original automation editing gesture.
+    if(e.mods.isCommandDown()) {
+        if(!selectedAutomations.insert(index).second)
+            selectedAutomations.erase(index);
+        selectedEvents.clear();
+        selectedAutomation=selectedAutomations.empty() ?
+            -1 : *selectedAutomations.rbegin();
+        selectedTrack=selectedAutomation>=0 ?
+            trackForAutomation(selectedAutomation) : -1;
+        selectedPoint=-1;repaint();return;
+    }
     chooseAutomation(index);
     const auto& a=clip.automations[(size_t)index];
     const float end=xForTime(a.time+a.duration);
@@ -427,13 +481,51 @@ void OscClipEditor::mouseDown(const juce::MouseEvent& e) {
     rampDrag=RampDrag::move;
 }
 void OscClipEditor::mouseDrag(const juce::MouseEvent& e) {
+    if (marqueeSelecting) {
+        marqueeEnd=e.position;
+        const auto rect=juce::Rectangle<float>(
+            std::min(marqueeStart.x,marqueeEnd.x),
+            std::min(marqueeStart.y,marqueeEnd.y),
+            std::abs(marqueeEnd.x-marqueeStart.x),
+            std::abs(marqueeEnd.y-marqueeStart.y));
+        selectedEvents.clear();selectedAutomations.clear();
+        for(int i=0;i<(int)clip.events.size();++i) {
+            const float px=xForTime(clip.events[(size_t)i].time);
+            const int py=eventLaneTop()+9+(i%2)*17;
+            if(rect.intersects(juce::Rectangle<float>(px-5.f,(float)py,10.f,15.f)))
+                selectedEvents.insert(i);
+        }
+        for(int i=0;i<(int)clip.automations.size();++i) {
+            const auto& a=clip.automations[(size_t)i];
+            const int track=trackForAutomation(i);
+            if(track<0)continue;
+            const auto box=juce::Rectangle<float>(
+                xForTime(a.time),(float)laneTop(track)+20,
+                std::max(1.f,xForTime(a.time+a.duration)-xForTime(a.time)),
+                (float)laneHeight-24);
+            if(rect.intersects(box))selectedAutomations.insert(i);
+        }
+        selectedEvent=selectedEvents.empty()?-1:*selectedEvents.rbegin();
+        selectedAutomation=selectedAutomations.empty()?-1:*selectedAutomations.rbegin();
+        selectedPoint=-1;
+        repaint();return;
+    }
     if (dragEvent>=0 && dragEvent<(int)clip.events.size()) {
         const auto before=clip;
-        clip.events[(size_t)dragEvent].time=quantize(timeForX(e.position.x));
-        if (clip.events[(size_t)dragEvent].time!=before.events[(size_t)dragEvent].time) {
+        const double shift=quantize(timeForX(e.position.x))-
+                           dragBefore.events[(size_t)dragEvent].time;
+        double earliest=clip.length,latest=0;
+        for(int index:selectedEvents) {
+            earliest=std::min(earliest,dragBefore.events[(size_t)index].time);
+            latest=std::max(latest,dragBefore.events[(size_t)index].time);
+        }
+        const double delta=juce::jlimit(-earliest,clip.length-.0001-latest,shift);
+        for(int index:selectedEvents)
+            clip.events[(size_t)index].time=
+                dragBefore.events[(size_t)index].time+delta;
+        if(clip.events[(size_t)dragEvent].time!=before.events[(size_t)dragEvent].time) {
             notify(before,false);
-            if (clip.events[(size_t)dragEvent].time!=before.events[(size_t)dragEvent].time)
-                changedDuringDrag=true;
+            changedDuringDrag=true;
         }
         return;
     }
@@ -443,9 +535,24 @@ void OscClipEditor::mouseDrag(const juce::MouseEvent& e) {
     auto& a=clip.automations[(size_t)dragAutomation];
     const auto& original=dragBefore.automations[(size_t)dragAutomation];
     if (rampDrag==RampDrag::move) {
-        const double delta=timeForX(e.position.x)-dragStartTime;
-        a.time=juce::jlimit(0.0,std::max(0.0,clip.length-original.duration),
-                           quantize(original.time+delta));
+        if(selectedAutomations.size()>1) {
+            double first=clip.length,last=0;
+            for(int index:selectedAutomations) {
+                const auto& ramp=dragBefore.automations[(size_t)index];
+                first=std::min(first,ramp.time);
+                last=std::max(last,ramp.time+ramp.duration);
+            }
+            const double raw=quantize(timeForX(e.position.x))-
+                             quantize(dragStartTime);
+            const double shift=juce::jlimit(-first,clip.length-last,raw);
+            for(int index:selectedAutomations)
+                clip.automations[(size_t)index].time=
+                    dragBefore.automations[(size_t)index].time+shift;
+        } else {
+            const double delta=timeForX(e.position.x)-dragStartTime;
+            a.time=juce::jlimit(0.0,std::max(0.0,clip.length-original.duration),
+                               quantize(original.time+delta));
+        }
     } else if (rampDrag==RampDrag::resize ||
                (rampDrag==RampDrag::point && dragPoint==(int)a.points.size()-1)) {
         const double raw=juce::jlimit(0.0,clip.length,
@@ -488,6 +595,9 @@ void OscClipEditor::mouseDrag(const juce::MouseEvent& e) {
     }
 }
 void OscClipEditor::mouseUp(const juce::MouseEvent&) {
+    if(marqueeSelecting) {
+        marqueeSelecting=false;repaint();return;
+    }
     if (changedDuringDrag && onEdit) onEdit(dragBefore,clip,true);
     dragEvent=dragAutomation=dragPoint=-1;
     rampDrag=RampDrag::none; changedDuringDrag=false; repaint();
@@ -525,6 +635,16 @@ void OscClipEditor::mouseWheelMove(const juce::MouseEvent& e,const juce::MouseWh
     }
 }
 bool OscClipEditor::keyPressed(const juce::KeyPress& k) {
+    if(k.getModifiers().isCommandDown() &&
+       (k.getKeyCode()=='A' || k.getKeyCode()=='a')) {
+        selectedEvents.clear();selectedAutomations.clear();
+        for(int i=0;i<(int)clip.events.size();++i) selectedEvents.insert(i);
+        for(int i=0;i<(int)clip.automations.size();++i)selectedAutomations.insert(i);
+        selectedEvent=selectedEvents.empty()?-1:*selectedEvents.rbegin();
+        selectedAutomation=selectedAutomations.empty()?-1:*selectedAutomations.rbegin();
+        selectedPoint=-1;
+        repaint();return true;
+    }
     if (k.getKeyCode()==juce::KeyPress::deleteKey || k.getKeyCode()==juce::KeyPress::backspaceKey) {
         deleteSelection(); return true;
     }
@@ -649,39 +769,86 @@ void OscClipEditor::editTrackAddress(int index) {
         }),true);
 }
 void OscClipEditor::deleteSelection() {
-    if (selectedPoint>=0 && selectedAutomation>=0) {
-        removeSelectedPoint(); return;
+    if(selectedEvents.empty() && selectedAutomations.size()==1 &&
+       selectedPoint>=0) {
+        removeSelectedPoint();return;
     }
     const auto before=clip;
-    if (selectedEvent>=0 && selectedEvent<(int)clip.events.size()) {
-        clip.events.erase(clip.events.begin()+selectedEvent);
-        selectedEvent=-1;
-    } else if (selectedAutomation>=0 && selectedAutomation<(int)clip.automations.size()) {
-        clip.automations.erase(clip.automations.begin()+selectedAutomation);
-        selectedAutomation=selectedPoint=-1;
-    } else if (selectedTrack>=0 && selectedTrack<(int)clip.tracks.size()) {
-        for (int i=(int)clip.automations.size()-1;i>=0;--i)
-            if (trackForAutomation(i)==selectedTrack)
+    bool changed=false;
+    for(auto it=selectedEvents.rbegin();it!=selectedEvents.rend();++it)
+        if(*it>=0 && *it<(int)clip.events.size()) {
+            clip.events.erase(clip.events.begin()+*it);
+            changed=true;
+        }
+    for(auto it=selectedAutomations.rbegin();it!=selectedAutomations.rend();++it)
+        if(*it>=0 && *it<(int)clip.automations.size()) {
+            clip.automations.erase(clip.automations.begin()+*it);
+            changed=true;
+        }
+    selectedEvents.clear();selectedAutomations.clear();
+    selectedEvent=selectedAutomation=selectedPoint=-1;
+    if(!changed && selectedTrack>=0 &&
+       selectedTrack<(int)clip.tracks.size()) {
+        for(int i=(int)clip.automations.size()-1;i>=0;--i)
+            if(trackForAutomation(i)==selectedTrack)
                 clip.automations.erase(clip.automations.begin()+i);
         clip.tracks.erase(clip.tracks.begin()+selectedTrack);
         selectedTrack=-1;
-    } else return;
-    notify(before);
+        changed=true;
+    }
+    if(changed) notify(before);
 }
 void OscClipEditor::duplicateSelection() {
     const auto before=clip;
-    if (selectedEvent>=0 && selectedEvent<(int)clip.events.size() && clip.events.size()<256) {
-        auto copy=clip.events[(size_t)selectedEvent];
-        copy.time=juce::jlimit(0.0,clip.length-.0001,copy.time+.25);
-        clip.events.push_back(copy); chooseEvent((int)clip.events.size()-1);
-    } else if (selectedAutomation>=0 && selectedAutomation<(int)clip.automations.size()
-               && clip.automations.size()<16) {
-        auto copy=clip.automations[(size_t)selectedAutomation];
-        copy.time+=copy.duration+.25; // avoid overlap on the same track
-        clip.length=std::max(clip.length,copy.time+copy.duration);
-        if (clip.length>86400) { clip=before; return; }
-        clip.automations.push_back(copy); chooseAutomation((int)clip.automations.size()-1);
-    } else return;
+    bool changed=false;
+    if(!selectedEvents.empty() &&
+       clip.events.size()+selectedEvents.size()<=256) {
+        std::set<int> copies;
+        for(int index:selectedEvents) {
+            if(index<0 || index>=(int)before.events.size())continue;
+            auto item=before.events[(size_t)index];
+            item.time=juce::jlimit(0.0,clip.length-.0001,item.time+.25);
+            copies.insert((int)clip.events.size());
+            clip.events.push_back(std::move(item));
+            changed=true;
+        }
+        selectedEvents=std::move(copies);
+        selectedEvent=selectedEvents.empty()?-1:*selectedEvents.rbegin();
+    }
+    if(!selectedAutomations.empty() &&
+       clip.automations.size()+selectedAutomations.size()<=16) {
+        double first=clip.length;
+        for(int index:selectedAutomations)
+            if(index>=0 && index<(int)before.automations.size())
+                first=std::min(first,before.automations[(size_t)index].time);
+        const double shift=selectedAutomations.size()>1 ?
+            clip.length-first+.25 : 0;
+        std::set<int> copies;
+        for(int index:selectedAutomations) {
+            if(index<0 || index>=(int)before.automations.size())continue;
+            auto item=before.automations[(size_t)index];
+            item.time+=selectedAutomations.size()>1 ? shift :
+                       item.duration+.25;
+            if(item.time+item.duration>86400) {
+                clip=before;editHint="Duplicate exceeds the OSC clip limit.";
+                repaint();return;
+            }
+            clip.length=std::max(clip.length,item.time+item.duration);
+            copies.insert((int)clip.automations.size());
+            clip.automations.push_back(std::move(item));
+            changed=true;
+        }
+        selectedAutomations=std::move(copies);
+        selectedAutomation=selectedAutomations.empty()?
+            -1:*selectedAutomations.rbegin();
+    }
+    if(!changed)return;
+    if(validateOscClip(clip).failed()) {
+        clip=before;editHint="Duplicated OSC items conflict with existing events.";
+        selectedEvent=selectedAutomation=-1;
+        selectedEvents.clear();selectedAutomations.clear();
+        repaint();return;
+    }
     notify(before);
 }
 void OscClipEditor::editEvent(int index) {

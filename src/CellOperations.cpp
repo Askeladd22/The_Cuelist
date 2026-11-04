@@ -156,7 +156,7 @@ void MainComponent::setClipDuration(int column,double seconds) {
         cell.osc->length=length;
     }
     dirty=true;
-    engine.publish(makeRenderState(show,clips));
+    engine.publish(makeLiveRenderState());
     if (cell.midi && clipEditor && clipEditorCellId==cell.id) clipEditor->loadClip(*cell.midi);
     if (cell.osc && oscEditor && oscEditorCellId==cell.id) oscEditor->loadClip(*cell.osc);
     status="Clip length updated in timeline.";
@@ -167,7 +167,7 @@ void MainComponent::setClipStart(int column,double seconds) {
     if (column<0 || column>=(int)show.columns.size() || !std::isfinite(seconds)) return;
     auto& cell=show.rows[selectedRow].cells[column]; seconds=juce::jlimit(0.0,86400.0,std::round(seconds*100)/100);
     if (cell.startSeconds==seconds) return;
-    cell.startSeconds=seconds; dirty=true; engine.publish(makeRenderState(show,clips));
+    cell.startSeconds=seconds; dirty=true; engine.publish(makeLiveRenderState());
     status="Clip start: "+juce::String(seconds,2)+" s"; timeline.repaint(); repaint();
 }
 

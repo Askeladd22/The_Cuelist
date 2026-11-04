@@ -47,24 +47,22 @@ void MainComponent::toggleColumnCollapsed(int column) {
 void MainComponent::activateCuelist(int index) {
     if (index<0 || index>=(int)show.cuelists.size() ||
         index==show.activeCuelist || !applyInspector()) return;
-    // A tab switch never carries live playback, a pending MIDI/OSC editor
-    // or a stale mapping preset into a different cue order. A background
-    // project-open request must not replace the newly selected Cuelist later.
+    // Browsing only changes the editor view. Never panic, republish a
+    // different Cuelist's voices or reset the current live mapping here.
+    // Editors are closed because their selected cell belongs to the old view.
     if (projectLoader) projectLoader->cancel();
-    stopAll();
     closeMidiClip();closeOscClip();
-    editHistory.clearUndoHistory();
     show.cuelists[(size_t)show.activeCuelist].rows=show.rows;
     show.rows=show.cuelists[(size_t)index].rows;
     show.activeCuelist=index;
-    selectedRow=selectedColumn=nextCue=0;
+    selectedRow=selectedColumn=0;
+    // Returning to the LIVE tab restores its armed cue, not the first row.
+    nextCue=index==liveCuelist ? liveNextCue : 0;
     copiedRow.reset();copiedRowAudio.clear();copiedCell.reset();copiedAudio.reset();
-    resetActiveMapping();
     refreshControlSettings();
-    engine.publish(makeRenderState(show,clips));
     dirty=true; // Active tab is persisted with the project.
-    status="Cuelist selected: "+show.cuelists[(size_t)index].name+
-           ". Playback stopped before switching.";
+    status="Viewing "+show.cuelists[(size_t)index].name+
+           ". LIVE transport remains "+show.cuelists[(size_t)liveCuelist].name+".";
     viewport.setViewPosition(0,0);
     refresh();
 }
@@ -84,6 +82,11 @@ bool MainComponent::moveCuelist(int from,int to) {
     show.cuelists.erase(show.cuelists.begin()+from);
     show.cuelists.insert(show.cuelists.begin()+to,std::move(moved));
 
+    int live=liveCuelist;
+    if (live==from) live=to;
+    else if (from<live && to>=live) --live;
+    else if (from>live && to<=live) ++live;
+    liveCuelist=live;
     int active=show.activeCuelist;
     if (active==from) active=to;
     else if (from<active && to>=active) --active;
@@ -163,15 +166,20 @@ void MainComponent::deleteCuelist(int index) {
     }
 
     if (projectLoader) projectLoader->cancel();
-    stopAll();closeMidiClip();closeOscClip();
-    editHistory.clearUndoHistory();
+    const bool deletingLive=index==liveCuelist;
+    if (deletingLive) stopAll();
+    closeMidiClip();closeOscClip();
+    if (deletingLive) {
+        liveCuelist=candidate.activeCuelist;
+        liveNextCue=0;
+    } else if (index<liveCuelist) --liveCuelist;
     show=std::move(candidate);
     for (int cellId:removedCells) clips.erase(cellId);
     selectedRow=selectedColumn=nextCue=0;
     copiedRow.reset();copiedRowAudio.clear();copiedCell.reset();copiedAudio.reset();
-    resetActiveMapping();
+    if (deletingLive) resetActiveMapping();
     refreshControlSettings();
-    engine.publish(makeRenderState(show,clips));
+    engine.publish(makeLiveRenderState());
     viewport.setViewPosition(0,0);
     dirty=true;
     status="Deleted "+removedName+". Original media files retained.";
@@ -387,7 +395,7 @@ void MainComponent::setAllColumnsCollapsed(bool collapsed) {
 
 void MainComponent::setAutoStop(int row,bool enabled) {
     if (row<0 || row>=(int)show.rows.size()) return;
-    show.rows[row].stopOnNext=enabled; dirty=true; engine.publish(makeRenderState(show,clips));
+    show.rows[row].stopOnNext=enabled; dirty=true; engine.publish(makeLiveRenderState());
     status=enabled ? "The row will stop on another cue's GO." : "The row will continue after another cue's GO.";
     grid.repaint(); cueMetrics.repaint(); repaint();
 }
@@ -398,7 +406,7 @@ void MainComponent::setCellAutoStop(int row,int column,bool enabled) {
     if (cell.stopOnNext==enabled) return;
     cell.stopOnNext=enabled;
     dirty=true;
-    engine.publish(makeRenderState(show,clips));
+    engine.publish(makeLiveRenderState());
     if (row==selectedRow && column==selectedColumn) cellAutoStop.setToggleState(enabled,juce::dontSendNotification);
     status=enabled ? "Cell included in cue Auto Stop." : "Cell excluded from Auto Stop: continues after the next GO.";
     grid.repaint(); repaint();

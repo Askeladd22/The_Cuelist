@@ -142,8 +142,9 @@ bool MainComponent::commitPreparedProject(Show candidate,const juce::File& sourc
     projectFile=recovering ? juce::File{} : source;
     dirty=recovering || migratedLegacy;
     selectedRow=selectedColumn=nextCue=0;
+    liveCuelist=show.activeCuelist; liveNextCue=0;
     resetActiveMapping();refreshControlSettings();
-    engine.publish(makeRenderState(show,clips));refresh();
+    engine.publish(makeLiveRenderState());refresh();
     // Remember only committed projects, after the new selection/Inspector
     // have been rebuilt; updating the sidebar invokes resized().
     if(!recovering) rememberRecentProject(source);
