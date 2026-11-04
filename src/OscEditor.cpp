@@ -700,7 +700,7 @@ void OscClipEditor::showContext(const juce::MouseEvent& e) {
     menu.addItem(1,"Edit",selectedEvent>=0 || selectedAutomation>=0);
     menu.addItem(2,"Duplicate",selectedEvent>=0 || selectedAutomation>=0);
     menu.addItem(3,"Delete",selectedEvent>=0 || selectedAutomation>=0);
-    menu.addItem(4,"OSC track address",selectedTrack>=0);
+    menu.addItem(4,"OSC track settings",selectedTrack>=0);
     auto safe=juce::Component::SafePointer<OscClipEditor>(this);
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(this),[safe](int item) {
         if (!safe) return;
@@ -710,7 +710,7 @@ void OscClipEditor::showContext(const juce::MouseEvent& e) {
         } else if (item==2) safe->duplicateSelection();
         else if (item==3) safe->deleteSelection();
         else if (item==4 && safe->selectedTrack>=0)
-            safe->editTrackAddress(safe->selectedTrack);
+            safe->editTrackSettings(safe->selectedTrack);
     });
 }
 void OscClipEditor::addEvent() {
