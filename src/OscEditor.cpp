@@ -769,39 +769,86 @@ void OscClipEditor::editTrackAddress(int index) {
         }),true);
 }
 void OscClipEditor::deleteSelection() {
-    if (selectedPoint>=0 && selectedAutomation>=0) {
-        removeSelectedPoint(); return;
+    if(selectedEvents.empty() && selectedAutomations.size()==1 &&
+       selectedPoint>=0) {
+        removeSelectedPoint();return;
     }
     const auto before=clip;
-    if (selectedEvent>=0 && selectedEvent<(int)clip.events.size()) {
-        clip.events.erase(clip.events.begin()+selectedEvent);
-        selectedEvent=-1;
-    } else if (selectedAutomation>=0 && selectedAutomation<(int)clip.automations.size()) {
-        clip.automations.erase(clip.automations.begin()+selectedAutomation);
-        selectedAutomation=selectedPoint=-1;
-    } else if (selectedTrack>=0 && selectedTrack<(int)clip.tracks.size()) {
-        for (int i=(int)clip.automations.size()-1;i>=0;--i)
-            if (trackForAutomation(i)==selectedTrack)
+    bool changed=false;
+    for(auto it=selectedEvents.rbegin();it!=selectedEvents.rend();++it)
+        if(*it>=0 && *it<(int)clip.events.size()) {
+            clip.events.erase(clip.events.begin()+*it);
+            changed=true;
+        }
+    for(auto it=selectedAutomations.rbegin();it!=selectedAutomations.rend();++it)
+        if(*it>=0 && *it<(int)clip.automations.size()) {
+            clip.automations.erase(clip.automations.begin()+*it);
+            changed=true;
+        }
+    selectedEvents.clear();selectedAutomations.clear();
+    selectedEvent=selectedAutomation=selectedPoint=-1;
+    if(!changed && selectedTrack>=0 &&
+       selectedTrack<(int)clip.tracks.size()) {
+        for(int i=(int)clip.automations.size()-1;i>=0;--i)
+            if(trackForAutomation(i)==selectedTrack)
                 clip.automations.erase(clip.automations.begin()+i);
         clip.tracks.erase(clip.tracks.begin()+selectedTrack);
         selectedTrack=-1;
-    } else return;
-    notify(before);
+        changed=true;
+    }
+    if(changed) notify(before);
 }
 void OscClipEditor::duplicateSelection() {
     const auto before=clip;
-    if (selectedEvent>=0 && selectedEvent<(int)clip.events.size() && clip.events.size()<256) {
-        auto copy=clip.events[(size_t)selectedEvent];
-        copy.time=juce::jlimit(0.0,clip.length-.0001,copy.time+.25);
-        clip.events.push_back(copy); chooseEvent((int)clip.events.size()-1);
-    } else if (selectedAutomation>=0 && selectedAutomation<(int)clip.automations.size()
-               && clip.automations.size()<16) {
-        auto copy=clip.automations[(size_t)selectedAutomation];
-        copy.time+=copy.duration+.25; // avoid overlap on the same track
-        clip.length=std::max(clip.length,copy.time+copy.duration);
-        if (clip.length>86400) { clip=before; return; }
-        clip.automations.push_back(copy); chooseAutomation((int)clip.automations.size()-1);
-    } else return;
+    bool changed=false;
+    if(!selectedEvents.empty() &&
+       clip.events.size()+selectedEvents.size()<=256) {
+        std::set<int> copies;
+        for(int index:selectedEvents) {
+            if(index<0 || index>=(int)before.events.size())continue;
+            auto item=before.events[(size_t)index];
+            item.time=juce::jlimit(0.0,clip.length-.0001,item.time+.25);
+            copies.insert((int)clip.events.size());
+            clip.events.push_back(std::move(item));
+            changed=true;
+        }
+        selectedEvents=std::move(copies);
+        selectedEvent=selectedEvents.empty()?-1:*selectedEvents.rbegin();
+    }
+    if(!selectedAutomations.empty() &&
+       clip.automations.size()+selectedAutomations.size()<=16) {
+        double first=clip.length;
+        for(int index:selectedAutomations)
+            if(index>=0 && index<(int)before.automations.size())
+                first=std::min(first,before.automations[(size_t)index].time);
+        const double shift=selectedAutomations.size()>1 ?
+            clip.length-first+.25 : 0;
+        std::set<int> copies;
+        for(int index:selectedAutomations) {
+            if(index<0 || index>=(int)before.automations.size())continue;
+            auto item=before.automations[(size_t)index];
+            item.time+=selectedAutomations.size()>1 ? shift :
+                       item.duration+.25;
+            if(item.time+item.duration>86400) {
+                clip=before;editHint="Duplicate exceeds the OSC clip limit.";
+                repaint();return;
+            }
+            clip.length=std::max(clip.length,item.time+item.duration);
+            copies.insert((int)clip.automations.size());
+            clip.automations.push_back(std::move(item));
+            changed=true;
+        }
+        selectedAutomations=std::move(copies);
+        selectedAutomation=selectedAutomations.empty()?
+            -1:*selectedAutomations.rbegin();
+    }
+    if(!changed)return;
+    if(validateOscClip(clip).failed()) {
+        clip=before;editHint="Duplicated OSC items conflict with existing events.";
+        selectedEvent=selectedAutomation=-1;
+        selectedEvents.clear();selectedAutomations.clear();
+        repaint();return;
+    }
     notify(before);
 }
 void OscClipEditor::editEvent(int index) {
