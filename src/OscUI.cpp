@@ -79,19 +79,33 @@ void MainComponent::oscClipEdited(int cellId,const OscClip& before,const OscClip
         if (complete) {
             editHistory.beginNewTransaction("Edit OSC clip");
             editHistory.perform(new OscUndoAction(*this,cellId,before,updated));
+            markHistoryBaseline(); // A single gesture is already in the global manager.
         }
         return;
     }
 }
 void MainComponent::restoreOscClip(int cellId,const OscClip& snapshot) {
-    for (auto& row:show.rows) for (size_t c=0;c<row.cells.size();++c) {
-        if (row.cells[c].id!=cellId || show.columns[c].type!=ColumnType::osc) continue;
-        row.cells[c].osc=snapshot; dirty=true;
-        engine.publish(makeLiveRenderState());
-        if (oscEditor && oscEditorCellId==cellId) oscEditor->loadClip(snapshot);
-        status="OSC edit reverted.";
-        grid.repaint(); timeline.repaint(); repaint();
-        return;
+    auto apply=[&](std::vector<Row>& rows,bool live) {
+        for(auto& row:rows)
+            for(size_t c=0;c<row.cells.size();++c) {
+                if(row.cells[c].id!=cellId ||
+                   show.columns[c].type!=ColumnType::osc)continue;
+                if(live) {engine.panic();resetActiveMapping();}
+                row.cells[c].osc=snapshot;
+                dirty=true;
+                engine.publish(makeLiveRenderState(),!live);
+                if(oscEditor && oscEditorCellId==cellId)
+                    oscEditor->loadClip(snapshot);
+                status="OSC edit reverted.";
+                grid.repaint();timeline.repaint();repaint();
+                return true;
+            }
+        return false;
+    };
+    if(apply(show.rows,show.activeCuelist==liveCuelist))return;
+    for(int index=0;index<(int)show.cuelists.size();++index) {
+        if(index==show.activeCuelist)continue;
+        if(apply(show.cuelists[(size_t)index].rows,index==liveCuelist))return;
     }
 }
 void MainComponent::syncOscEditor() {
