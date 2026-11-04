@@ -154,9 +154,9 @@ juce::Colour CueGrid::cueColour(int id) {
         case 2:return palette::amber;
         case 3:return palette::red;
         case 4:return palette::purple;
-        case 5:return palette::swatch::petrol;
-        case 6:return palette::swatch::sage;
-        case 7:return palette::swatch::leaf;
+        case 5:return palette::swatch::slateBlue;
+        case 6:return palette::swatch::slateSage;
+        case 7:return palette::swatch::brass;
         default:return juce::Colour();
     }
 }
@@ -1080,7 +1080,7 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
             paused=paused||state.paused;
         }
         // Match the N3.3 CueGrid row surface exactly: the persistent
-        // 3px teal pinned-edge rail is painted over all rows at the end.
+        // 3px copper pinned-edge rail is painted over all rows at the end.
         const auto base=(r&1)==0 ? palette::panel :
             palette::panel.interpolatedWith(palette::raised,.10f);
         g.setColour(selected ? palette::raised.interpolatedWith(palette::panel,.20f) : base);
@@ -1164,7 +1164,7 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
     g.setColour(palette::line.withAlpha(.72f));
     g.drawHorizontalLine(CueGrid::headerHeight-1,4.f,(float)getWidth());
 
-    // Native contract: this 3px teal line is continuous across the whole
+    // Native contract: this 3px copper line is continuous across the whole
     // pinned surface, including between rows and underneath the heading.
     g.setColour(palette::teal);
     g.fillRect(0,0,3,getHeight());
