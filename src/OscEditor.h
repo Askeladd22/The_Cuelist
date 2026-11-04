@@ -39,6 +39,7 @@ private:
     juce::ToggleButton grid{"Grid"},snap{"Snap"};
     juce::TextButton add{"+"},remove{"Delete"},duplicate{"Duplicate"},detach{"Detach"};
     juce::TextButton zoomOut{"-"},zoomIn{"+"},zoomFit{"Fit"};
+    HistoryIconButton undo{false},redo{true};
     int selectedEvent=-1,selectedTrack=-1,selectedAutomation=-1,selectedPoint=-1;
     int dragEvent=-1,dragAutomation=-1,dragPoint=-1;
     enum class RampDrag { none, move, resize, point };
