@@ -78,7 +78,7 @@ MainComponent::MainComponent(bool startAudio) {
     // on green action fills, retaining white on the terracotta PANIC fill.
     goButton.setColour(juce::TextButton::textColourOffId,palette::background);
     panicButton.setColour(juce::TextButton::buttonColourId,palette::panic);
-    panicButton.setColour(juce::TextButton::textColourOffId,palette::text);
+    panicButton.setColour(juce::TextButton::textColourOffId,palette::background);
     importButton.setColour(juce::TextButton::buttonColourId,palette::go);
     importButton.setColour(juce::TextButton::textColourOffId,palette::background);
     behaviour.addItemList({"Retrigger","Pause / Restart","Pause / Resume","Continue"},1);
