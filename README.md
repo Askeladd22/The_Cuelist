@@ -4,9 +4,9 @@
 
 The Cuelist is a desktop application for preparing and executing cue-based live productions, theatre performances, concerts and installations. It brings audio playback, MIDI sequences, OSC events and MIDI-controller mappings into one operator-focused workspace. It is not a digital audio workstation and does not include native video or timecode playback.
 
-**Application version:** [`0.9.6`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
+**Application version:** [`0.9.12`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
 
-> **0.9.6 is a feature verification and maintenance update to the 0.9.1 development baseline, not a live-show certification.** The beta numbering has ended, but rehearsals with real devices, licensing verification and Windows DPI/ultrawide visual review remain necessary before commercial distribution or production reliance. CI alone does not prove hardware reliability or end-to-end timing.
+> **0.9.12 introduces the approved Forest/Teal native UI palette; this version is not a live-show certification.** The beta numbering has ended, but rehearsals with real devices, licensing verification and Windows DPI/ultrawide visual review remain necessary before commercial distribution or production reliance. CI alone does not prove hardware reliability or end-to-end timing.
 
 ## Versione e storico aggiornamenti
 
@@ -24,6 +24,10 @@ versioni 0.7/0.8/0.9 e delle 86 PR precedentemente integrate (con
 link alle PR), distinguendo la cronologia di sviluppo dalle release
 pubbliche. La versione del progetto salvato `.cuelist` (**schema v10**)
 è indipendente dal numero del software.
+
+## 0.9.12 — Palette Forest/Teal
+
+Il tema nativo JUCE usa i dodici campioni della palette approvata: sfondi verde scuro, accenti acquamarina e verde, testo avorio/bianco e avvisi terracotta. I colori di Cue Grid, Inspector, mixer, Timeline, editor e menu dipendono dagli stessi token condivisi in `src/Theme.h`. Restano invariati i flussi di lavoro, le assegnazioni delle cue e il formato del progetto. Controlli di contrasto aggiunti; collaudo visivo su Windows ancora richiesto. Dettagli e limitazioni: [CHANGELOG](CHANGELOG.md).
 
 ## 0.9.6 — Control Mappings e LTC Audio
 
