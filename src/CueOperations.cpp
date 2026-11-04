@@ -55,7 +55,9 @@ void MainComponent::activateCuelist(int index) {
     show.cuelists[(size_t)show.activeCuelist].rows=show.rows;
     show.rows=show.cuelists[(size_t)index].rows;
     show.activeCuelist=index;
-    selectedRow=selectedColumn=nextCue=0;
+    selectedRow=selectedColumn=0;
+    // Returning to the LIVE tab restores its armed cue, not the first row.
+    nextCue=index==liveCuelist ? liveNextCue : 0;
     copiedRow.reset();copiedRowAudio.clear();copiedCell.reset();copiedAudio.reset();
     refreshControlSettings();
     dirty=true; // Active tab is persisted with the project.
