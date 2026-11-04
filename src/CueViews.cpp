@@ -96,8 +96,8 @@ void drawLoopIcon(juce::Graphics& g,juce::Rectangle<int> bounds,juce::Colour col
 void playPauseIcon(juce::Graphics& g,juce::Rectangle<int> box,bool pause,
                    bool hovered=false) {
     const IconButtonState state{true,hovered,false,pause,false};
-    drawIconButtonSurface(g,box.toFloat(),palette::teal,state);
-    const auto ink=iconButtonInk(palette::teal,state);
+    drawIconButtonSurface(g,box.toFloat(),palette::playing,state);
+    const auto ink=iconButtonInk(palette::playing,state);
     g.setColour(ink);
     if (drawNotoSymbol(g,(juce::juce_wchar)(pause ? 0x23F8 : 0x25B6),
                        box,17.5f,ink))
@@ -114,7 +114,7 @@ void playPauseIcon(juce::Graphics& g,juce::Rectangle<int> box,bool pause,
 }
 void transportButton(juce::Graphics& g,juce::Rectangle<int> box,bool stop,
                      bool enabled,float iconSize=17.5f,bool hovered=false) {
-    const auto accent=stop ? palette::red : palette::teal;
+    const auto accent=stop ? palette::red : palette::playing;
     const IconButtonState state{enabled,hovered,false,false,false};
     drawIconButtonSurface(g,box.toFloat(),accent,state);
     const auto ink=iconButtonInk(accent,state);
@@ -1081,7 +1081,7 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
             paused=paused||state.paused;
         }
         // Match the N3.3 CueGrid row surface exactly: the persistent
-        // 3px copper pinned-edge rail is painted over all rows at the end.
+        // 3px Industrial Orange pinned-edge rail is painted above rows.
         const auto base=(r&1)==0 ? palette::panel :
             palette::panel.interpolatedWith(palette::raised,.10f);
         g.setColour(selected ? palette::raised.interpolatedWith(palette::panel,.20f) : base);
