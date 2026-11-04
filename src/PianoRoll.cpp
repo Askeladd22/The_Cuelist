@@ -261,7 +261,7 @@ PianoRollEditor::PianoRollEditor(MidiClip value,OnEdit callback)
     detach.onClick=[this] { if (onDetach) onDetach(); };
     undo.onClick=[this] { if (onUndo) onUndo(); };
     redo.onClick=[this] { if (onRedo) onRedo(); };
-    for (auto* b:{&remove,&zoomOut,&zoomIn,&detach,&undo,&redo}) b->setWantsKeyboardFocus(false);
+    for (juce::TextButton* b:std::initializer_list<juce::TextButton*>{&remove,&zoomOut,&zoomIn,&detach,&undo,&redo}) b->setWantsKeyboardFocus(false);
     setSize(940,620); updateCanvas(); selectionChanged();
     const int pitch=clip.notes.empty() ? 64 : clip.notes.front().pitch;
     viewport.setViewPosition(0,std::max(0,rulerHeight+(127-pitch)*noteHeight-viewport.getHeight()/2));
