@@ -32,8 +32,8 @@ private:
     std::unique_ptr<Canvas> canvas;
     juce::ComboBox snap, channel;
     juce::Slider velocity, length;
-    juce::TextButton remove{"Delete"}, zoomOut{"-"}, zoomIn{"+"},
-                     detach{"Detach"};
+    juce::TextButton remove{"Delete"}, zoomOut{"-"}, zoomIn{"+"};
+    EditorDetachIconButton detach;
     HistoryIconButton undo{false},redo{true};
     juce::String hint;
     int selected=-1;
