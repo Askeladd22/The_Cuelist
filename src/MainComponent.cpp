@@ -2056,9 +2056,10 @@ void MainComponent::timerCallback() {
     const int confirmed=engine.acknowledgedCueId.load(std::memory_order_acquire);
     if (confirmed!=activeCueId) {
         activeCueId=0; int preset=0;
-        if (confirmed>0) for (const auto& row:show.rows) if (row.id==confirmed) {
-            activeCueId=confirmed; preset=row.mappingPresetId; break;
-        }
+        if (confirmed>0) for (const auto& row:liveShowSnapshot().rows)
+            if (row.id==confirmed) {
+                activeCueId=confirmed; preset=row.mappingPresetId; break;
+            }
         controlMapping.setActiveCue(activeCueId,preset);
     }
     ControlEvent control; int processed=0;
