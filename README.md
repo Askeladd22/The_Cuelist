@@ -4,9 +4,9 @@
 
 The Cuelist is a desktop application for preparing and executing cue-based live productions, theatre performances, concerts and installations. It brings audio playback, MIDI sequences, OSC events and MIDI-controller mappings into one operator-focused workspace. It is not a digital audio workstation and does not include native video or timecode playback.
 
-**Application version:** [`0.9.16`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
+**Application version:** [`0.9.17`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
 
-> **0.9.16 introduces the approved Industrial Orange colour system and is not a live-show certification.** The beta numbering has ended, but rehearsals with real devices, licensing verification and Windows DPI/ultrawide visual review remain necessary before commercial distribution or production reliance. CI alone does not prove hardware reliability or end-to-end timing.
+> **0.9.17 separates the live Cuelist transport from the viewed Cuelist and is not a live-show certification.** The beta numbering has ended, but rehearsals with real devices, licensing verification and Windows DPI/ultrawide visual review remain necessary before commercial distribution or production reliance. CI alone does not prove hardware reliability or end-to-end timing.
 
 ## Versione e storico aggiornamenti
 
@@ -24,6 +24,10 @@ versioni 0.7/0.8/0.9 e delle 86 PR precedentemente integrate (con
 link alle PR), distinguendo la cronologia di sviluppo dalle release
 pubbliche. La versione del progetto salvato `.cuelist` (**schema v10**)
 è indipendente dal numero del software.
+
+## 0.9.17 — VIEW e LIVE separati
+
+Cambiare tab seleziona soltanto la Cuelist da visualizzare/modificare. L'indicatore verde sulla tab contrassegna la **LIVE**: il GO globale (incluso Space e comandi mappati) continua ad avanzare la LIVE, senza spostare la VIEW; il controllo mapping e gli snapshot audio/MIDI/OSC mantengono la sequenza live. Un GO esplicito su una cue della VIEW trasferisce invece la riproduzione a quella Cuelist arrestando il trasporto precedente. La gestione delle uscite e il formato dei file non cambiano. Le operazioni distruttive sulla Cuelist live mantengono PANIC di sicurezza; necessaria verifica su hardware reale. Vedi [CHANGELOG](CHANGELOG.md).
 
 ## 0.9.16 — Industrial Orange
 
@@ -174,7 +178,7 @@ e BPM/Auto Stop ancora fissi. Vedere la
 
 | Area | Current functionality |
 | --- | --- |
-| **Cuelists** | Up to 12 named Cuelists within a show, independent cue sequences, tabs with rename/delete, overflow navigation and safe transport stop when switching. |
+| **Cuelists** | Up to 12 named Cuelists within a show, independent cue sequences, tabs with rename/delete, overflow navigation, and independent VIEW/LIVE transport (tab browsing does not stop GO). |
 | **Cue control** | Row and cell GO, Stop, Pause/Resume, Panic, overlapping playback, loop, inclusion in Row GO and per-row/per-cell Auto Stop. |
 | **Audio** | WAV/MP3; independent audio columns, gain, pan, mute, phase inversion, output routing, Master Send, Direct Out with PRE/POST selection and an optional Master peak limiter. |
 | **MIDI** | MIDI note-clip creation/import, built-in Piano Roll, named output selection, cue tempo mapping, editing and transport. |
