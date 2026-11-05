@@ -13,6 +13,18 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.30] - 2026-11-05
+
+**Stato:** fix della suite Windows dopo la 0.9.29.
+
+### Corretto
+- Allineata la seconda riga dei controlli OSC alla baseline da 35 px dell'editor MIDI (Add, Delete, Duplicate, Grid, Snap, Resolution, Unit e zoom): nessuna modifica ai callback o alla gestione dei dati OSC.
+- Aggiornati i test di geometria nativa che conservavano le vecchie coordinate di Timeline Collapse (+112 px, ora +12 px) e le vecchie dimensioni di Undo/Redo (28 px, ora 24 px). Le asserzioni confermano anche le separazioni reali dalle altre aree della barra.
+- Rafforzati i controlli di parità della seconda riga OSC/MIDI, inclusi i pulsanti Add e Fit.
+
+### Verifiche
+- Il log Windows della 0.9.29 mostra compilazione di eseguibile e CuelistTests riuscita, 419498 asserzioni e tre test UI falliti per geometrie non allineate. Versioning e CI/CTest della 0.9.30 da verificare sulla nuova PR; nessun test hardware reale né build portable.
+
 ## [0.9.29] - 2026-11-05
 
 **Stato:** affinamento UI/UX nativa; modifica non ancora certificata da build e dispositivi reali.

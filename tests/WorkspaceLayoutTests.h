@@ -15,7 +15,8 @@ void workspaceLayoutTests() {
             check(ui.isTimelineVisible() && timeline->isVisible() &&
                   arrow->isVisible() && arrow->getWidth()==28 &&
                   arrow->getHeight()==26 &&
-                  arrow->getX()==timeline->getX()+112 &&
+                  arrow->getX()==timeline->getX()+12 &&
+                  arrow->getRight()<=timeline->getX()+49 &&
                   arrow->getY()==timeline->getY()+10 &&
                   arrow->getTooltip().contains("Collapse"),
                   "Timeline Collapse control is missing from the native header");

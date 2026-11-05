@@ -191,7 +191,9 @@ void oscAutomationV9Tests() {
                   t.detach==midi.detach && t.close==midi.close &&
                   t.title.getY()==midi.title.getY() &&
                   t.undo.getHeight()==midi.undo.getHeight() &&
-                  t.grid.getY()==midi.snap.getY(),
+                  t.grid.getY()==midi.snap.getY() &&
+                  t.add.getY()==midi.snap.getY() &&
+                  t.zoomFit.getY()==midi.zoomIn.getY(),
                   "OSC/MIDI dock actions no longer share the toolbar hierarchy");
             check(!t.collapse.intersects(t.undo) &&
                   !t.close.intersects(t.redo) &&

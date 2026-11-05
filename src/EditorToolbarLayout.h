@@ -59,21 +59,23 @@ struct OscEditorToolbarLayout {
         t.compact=w<950;
         // Same two-row hierarchy and 28x26 top-right window controls
         // as the MIDI editor. No OSC command is dropped or covered.
+        // The second-row baseline is y=35 in both editors; the 5px
+        // separation from the first row and the ruler remains intact.
         t.title={16,6,230,25};
         t.undo={256,4,28,26}; t.redo={290,4,28,26};
         t.collapse={w-104,4,28,26};
         t.detach={w-72,4,28,26};
         t.close={w-40,4,28,26};
-        t.add={13,38,32,26};
-        t.remove={50,38,64,26};
-        t.duplicate={119,38,77,26};
-        t.grid={202,38,58,26};
-        t.snap={265,38,56,26};
-        t.resolution={326,38,75,26};
-        t.unit={w-267,38,100,26};
-        t.zoomOut={w-159,38,28,26};
-        t.zoomIn={w-127,38,28,26};
-        t.zoomFit={w-95,38,39,26};
+        t.add={13,35,32,26};
+        t.remove={50,35,64,26};
+        t.duplicate={119,35,77,26};
+        t.grid={202,35,58,26};
+        t.snap={265,35,56,26};
+        t.resolution={326,35,75,26};
+        t.unit={w-267,35,100,26};
+        t.zoomOut={w-159,35,28,26};
+        t.zoomIn={w-127,35,28,26};
+        t.zoomFit={w-95,35,39,26};
         return t;
     }
 };
