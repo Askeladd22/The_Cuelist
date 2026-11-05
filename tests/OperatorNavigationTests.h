@@ -46,8 +46,13 @@ void operatorNavigationTests() {
         check(undo->getX()>guide->getRight() &&
               redo->getX()>undo->getRight() &&
               redo->getRight()<clock.getX() &&
-              undo->getHeight()==OperatorNavigationLayout::menuHeight &&
-              redo->getWidth()==28,
+              undo->getWidth()==24 && redo->getWidth()==24 &&
+              undo->getHeight()==24 && redo->getHeight()==24 &&
+              undo->getY()==OperatorNavigationLayout::menuY+
+                  (OperatorNavigationLayout::menuHeight-24)/2 &&
+              redo->getY()==undo->getY() &&
+              !undo->getBounds().intersects(guide->getBounds()) &&
+              !redo->getBounds().intersects(clock),
               "Undo/Redo buttons must fit between Guide and telemetry");
         check(!undo->isEnabled() && !redo->isEnabled(),
               "Empty Show history must disable Undo/Redo");
