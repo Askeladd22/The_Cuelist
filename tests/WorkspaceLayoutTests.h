@@ -221,7 +221,9 @@ void workspaceLayoutTests() {
                   g->timeline.getY()==g->dockEditor.getBottom() &&
                   g->dockEditor.getY()==g->dockY,
                   "Docked layout allowed panels to overlap");
-            check(g->dockResize.getY()==g->dockY-8 &&
+            check(g->dockResize.getY()==g->dockY-7 &&
+                  g->dockResize.getWidth()==g->timelineResize.getWidth() &&
+                  g->dockResize.getX()==g->timelineResize.getX() &&
                   g->dockCollapse.getY()==g->dockY+4 &&
                   g->dockClose.getY()==g->dockY+4,
                   "Docked editor buttons are offset from their panel");

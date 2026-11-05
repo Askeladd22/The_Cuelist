@@ -3,6 +3,22 @@
 #include "MixerControls.h"
 
 void gainMeterFaderTests() {
+    test("Fader wheel steps are calibrated, precise and respect silence",[] {
+        GainMeterFader fader;
+        near(GainMeterFader::wheelTargetDb(-12.0f,1,false),-11.5);
+        near(GainMeterFader::wheelTargetDb(-12.0f,-1,false),-12.5);
+        near(GainMeterFader::wheelTargetDb(-12.0f,1,true),-11.9);
+        near(GainMeterFader::wheelTargetDb(-12.0f,0,false),-12.0);
+        near(GainMeterFader::wheelTargetDb(0.0f,1,false,0.0f),0.0);
+        near(GainMeterFader::wheelTargetDb(GainMeterFader::silenceDb,1,false),-59.5);
+        check(GainMeterFader::wheelTargetDb(-60.0f,-1,false)==
+                  GainMeterFader::silenceDb &&
+              GainMeterFader::wheelTargetDb(GainMeterFader::silenceDb,-1,true)==
+                  GainMeterFader::silenceDb,
+              "Wheel edits cannot reach and preserve digital silence");
+        fader.setGainDb(-8.0f,true);
+        near(fader.getGainDb(),-8.0);
+    });
     test("Fader range geometry round-trips at -inf/+6 and -inf/0 ceilings", [] {
         const float top=12,bottom=124;
         for (const float ceiling:{6.0f,0.0f}) {

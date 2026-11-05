@@ -595,7 +595,7 @@ void uiRefinementTests() {
                 nav.visibleMenuCount==OperatorNavigationLayout::menuCount;
             const bool roomForHistory=guideVisible &&
                 nav.bounds[OperatorNavigationLayout::menuCount-1].getRight()
-                    +6+28+4+28 <= telemetry.clock.getX()-8;
+                    +6+24+3+24 <= telemetry.clock.getX()-8;
             check(undo->isVisible()==roomForHistory &&
                   redo->isVisible()==roomForHistory,
                   "Undo/Redo visibility does not follow available header space");
@@ -604,6 +604,7 @@ void uiRefinementTests() {
                       undo->getX()>guide->getRight() &&
                       redo->getX()>undo->getRight() &&
                       redo->getRight()<=telemetry.clock.getX()-8 &&
+                      undo->getWidth()==24 && redo->getWidth()==24 &&
                       undo->getBottom()<=43 && redo->getBottom()<=43,
                       "Header history controls obscure Guide, telemetry or Cuelist tabs");
             } else {
