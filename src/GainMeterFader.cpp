@@ -132,6 +132,19 @@ void GainMeterFader::mouseDown(const juce::MouseEvent& e) {
     setFromMouse(e.position.y);
 }
 void GainMeterFader::mouseDrag(const juce::MouseEvent& e) { setFromMouse(e.position.y); }
+void GainMeterFader::mouseWheelMove(const juce::MouseEvent& e,
+                                    const juce::MouseWheelDetails& wheel) {
+    const float delta=wheel.isReversed ? -wheel.deltaY : wheel.deltaY;
+    if (!std::isfinite(delta) || delta==0.0f) return;
+    // JUCE reports mouse-wheel notches as either ~0.1 or ~1.0 depending
+    // on device/platform. Trackpads deliver smaller fractions; accumulate
+    // those without amplifying a single physical notch tenfold.
+    wheelAccumulator+=std::abs(delta)>=0.5f ? std::copysign(0.1f,delta) : delta;
+    const int ticks=(int)std::trunc(wheelAccumulator/0.099f);
+    if (ticks==0) return;
+    wheelAccumulator-=ticks*0.1f;
+    setGainDb(wheelTargetDb(gainDb,ticks,e.mods.isShiftDown(),ceilingDb),true);
+}
 bool GainMeterFader::keyPressed(const juce::KeyPress& key) {
     const int k=key.getKeyCode();
     if (k==juce::KeyPress::upKey || k==juce::KeyPress::rightKey) {

@@ -85,7 +85,7 @@ public:
             g.fillEllipse(area.getX()+4.f,area.getY()+3.f,6.f,6.f);
         }
         g.setColour(activeVisual?palette::text:palette::muted);
-        g.setFont(font(13.f,true));
+        g.setFont(font(15.f,true));
         g.drawFittedText(getButtonText(),getLocalBounds().reduced(4,0),
                          juce::Justification::centred,1);
     }
@@ -310,7 +310,7 @@ private:
     };
     juce::ScrollBar horizontalScroll{false};
     juce::ComboBox gridDivision, snapDivision;
-    juce::TextButton gridToggle{"Grid ON"};
+    GridVisibilityIconButton gridToggle;
     MagnetToggle snapToggle;
     bool gridVisible=true, snapEnabled=true;
     double gridStepBeats() const;
@@ -559,7 +559,7 @@ private:
     void positionInlineNameEditor();
     juce::TextButton preflightButton{"Preflight"},diagnosticsButton{"Diagnostics"};
     juce::TextButton goButton{"GO  /  SPACE"},panicButton{"PANIC  /  ESC"},deviceButton{"Audio devices"},controlButton{"Control Mapping"};
-    juce::TextButton collapseAllButton{"Collapse all"};
+    ColumnFoldIconButton collapseAllButton;
     InspectorGripButton inspectorSideTab;
     // Up to twelve independent Cuelists; only the physically fitting tabs
     // are displayed. Their tab and close controls have stable identity.
@@ -642,7 +642,14 @@ private:
     } timelineResize{*this};
     struct DockResizeHandle : juce::Component, juce::SettableTooltipClient {
         explicit DockResizeHandle(MainComponent& p) : owner(p) { setMouseCursor(juce::MouseCursor::UpDownResizeCursor); }
-        void paint(juce::Graphics& g) override { g.setColour(palette::muted); g.fillRoundedRectangle(getLocalBounds().toFloat().withSizeKeepingCentre(76,3),1.5f); }
+        void paint(juce::Graphics& g) override {
+            // Same inset track and centre grip as TimelineResizeHandle.
+            const auto area=getLocalBounds().toFloat();
+            g.setColour(palette::background.withAlpha(.92f));
+            g.fillRoundedRectangle(area.reduced(0.0f,1.0f),3.0f);
+            g.setColour(palette::line.withAlpha(.80f));
+            g.fillRoundedRectangle(area.withSizeKeepingCentre(57.0f,3.0f),1.5f);
+        }
         void mouseDown(const juce::MouseEvent&) override {
             // Drag from the dock's actual visible height, not a remembered
             // preferred height that may be larger than the current window.

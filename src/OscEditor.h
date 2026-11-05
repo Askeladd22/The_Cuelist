@@ -38,7 +38,8 @@ private:
     std::function<void(const OscClip&,const OscClip&,bool)> onEdit;
     juce::ComboBox unit,resolution;
     juce::ToggleButton grid{"Grid"},snap{"Snap"};
-    juce::TextButton add{"+"},remove{"Delete"},duplicate{"Duplicate"},detach{"Detach"};
+    juce::TextButton add{"+"},remove{"Delete"},duplicate{"Duplicate"};
+    EditorDetachIconButton detach;
     juce::TextButton zoomOut{"-"},zoomIn{"+"},zoomFit{"Fit"};
     HistoryIconButton undo{false},redo{true};
     int selectedEvent=-1,selectedTrack=-1,selectedAutomation=-1,selectedPoint=-1;

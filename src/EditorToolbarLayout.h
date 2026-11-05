@@ -52,24 +52,28 @@ struct MidiEditorToolbarLayout {
 
 struct OscEditorToolbarLayout {
     bool compact=false;
-    juce::Rectangle<int> add,remove,duplicate,grid,snap,resolution;
-    juce::Rectangle<int> zoomOut,zoomIn,zoomFit,unit,detach,undo,redo;
+    juce::Rectangle<int> title,add,remove,duplicate,grid,snap,resolution;
+    juce::Rectangle<int> zoomOut,zoomIn,zoomFit,unit,detach,collapse,close,undo,redo;
     static OscEditorToolbarLayout atWidth(int w) {
         OscEditorToolbarLayout t;
         t.compact=w<950;
-        t.add={13,7,35,26};
-        t.remove={53,7,70,26};
-        t.duplicate={128,7,83,26};
-        t.grid={219,7,69,26};
-        t.snap={291,7,60,26};
-        t.resolution={353,8,78,24};
-        t.unit={w-228,7,110,26};
-        t.detach={w-105,7,95,27};
-        t.zoomOut={t.compact ? 13 : 435,t.compact ? 39 : 7,29,26};
-        t.zoomIn={t.compact ? 46 : 468,t.compact ? 39 : 7,29,26};
-        t.zoomFit={t.compact ? 79 : 501,t.compact ? 39 : 7,30,26};
-        t.undo={t.compact ? 116 : 540,t.compact ? 39 : 7,30,26};
-        t.redo={t.compact ? 151 : 575,t.compact ? 39 : 7,30,26};
+        // Same two-row hierarchy and 28x26 top-right window controls
+        // as the MIDI editor. No OSC command is dropped or covered.
+        t.title={16,6,230,25};
+        t.undo={256,4,28,26}; t.redo={290,4,28,26};
+        t.collapse={w-104,4,28,26};
+        t.detach={w-72,4,28,26};
+        t.close={w-40,4,28,26};
+        t.add={13,38,32,26};
+        t.remove={50,38,64,26};
+        t.duplicate={119,38,77,26};
+        t.grid={202,38,58,26};
+        t.snap={265,38,56,26};
+        t.resolution={326,38,75,26};
+        t.unit={w-267,38,100,26};
+        t.zoomOut={w-159,38,28,26};
+        t.zoomIn={w-127,38,28,26};
+        t.zoomFit={w-95,38,39,26};
         return t;
     }
 };
