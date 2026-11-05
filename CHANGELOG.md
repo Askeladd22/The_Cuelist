@@ -13,6 +13,18 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.28] - 2026-11-05
+
+### Interfaccia operatore
+
+- Regolazione del gain tramite rotellina sul Master Audio e sui fader delle colonne Audio. La linea superiore del Master è allineata a quella delle strip.
+- Nome della Cuelist più leggibile, comandi Undo/Redo compatti e comando grafico per espandere o comprimere tutte le colonne.
+- La Timeline usa un simbolo per la griglia. Timeline e dock condividono la posizione dei comandi di collasso e l'aspetto della maniglia di ridimensionamento. I controlli dell'editor OSC seguono quelli del Piano Roll MIDI.
+
+### Verifiche
+
+- La CI Windows compila la versione Release, esegue i test JUCE e conserva le schermate native del mixer e degli editor. Il controllo del prototipo HTML viene eseguito soltanto quando il relativo file è presente.
+
 ## [0.9.27] - 2026-11-04
 
 **Tipo:** sistema temi selezionabili e revisione cromatica Industrial Orange.

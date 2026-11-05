@@ -42,3 +42,11 @@ jobs:
       - name: Windows Release and all tests
         shell: powershell
         run: .\scripts\build.ps1
+
+      - name: Upload native workspace screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-workspace-previews
+          path: build/Release/test-artifacts/interface-*.png
+          if-no-files-found: error
+          retention-days: 7
