@@ -475,6 +475,15 @@ int main() {
         // Entire Q and Cell are simultaneously visible, no tab-switch.
         preview.setSize(1180,820);
         savePreview("interface-row-small.png");
+        preview.setSize(1440,900);
+        preview.select(0,1);
+        preview.editMidiClip();
+        savePreview("interface-midi-editor.png");
+        preview.closeMidiClip();
+        preview.select(0,2);
+        preview.editOscClip();
+        savePreview("interface-osc-editor.png");
+        preview.closeOscClip();
         std::cerr << "VISUAL QA: all snapshots complete" << std::endl;
     }
     std::cout << checks << " assertions, " << failures << " failed tests\n";
