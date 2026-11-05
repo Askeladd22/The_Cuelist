@@ -21,8 +21,8 @@ struct MidiEditorToolbarLayout {
             // controls at the RIGHT edge (Collapse / Detach / Close).
             // MainComponent owns Collapse and Close; PianoRoll owns Detach.
             t.title={16,6,185,25};
-            t.undo={210,4,66,26};
-            t.redo={282,4,66,26};
+            t.undo={210,4,28,26};
+            t.redo={244,4,28,26};
             // Labels and controls are packed into the second row without
             // hiding Delete, MIDI note length, or either zoom direction.
             t.snapLabel={10,38,36,22}; t.snap={50,35,67,26};
@@ -33,7 +33,7 @@ struct MidiEditorToolbarLayout {
             t.zoomOut={w-82,35,30,26}; t.zoomIn={w-44,35,30,26};
         } else {
             t.title={16,6,290,25};
-            t.undo={w-269,4,74,26}; t.redo={w-185,4,74,26};
+            t.undo={312,4,28,26}; t.redo={346,4,28,26};
             t.snapLabel={16,38,40,22}; t.snap={54,35,80,26};
             t.channelLabel={142,38,48,22}; t.channel={190,35,67,26};
             t.velocityLabel={270,38,50,22}; t.velocity={325,35,166,26};
