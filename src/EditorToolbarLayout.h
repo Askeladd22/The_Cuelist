@@ -21,8 +21,8 @@ struct MidiEditorToolbarLayout {
             // controls at the RIGHT edge (Collapse / Detach / Close).
             // MainComponent owns Collapse and Close; PianoRoll owns Detach.
             t.title={16,6,185,25};
-            t.undo={210,4,66,26};
-            t.redo={282,4,66,26};
+            t.undo={210,4,28,26};
+            t.redo={244,4,28,26};
             // Labels and controls are packed into the second row without
             // hiding Delete, MIDI note length, or either zoom direction.
             t.snapLabel={10,38,36,22}; t.snap={50,35,67,26};
@@ -33,7 +33,7 @@ struct MidiEditorToolbarLayout {
             t.zoomOut={w-82,35,30,26}; t.zoomIn={w-44,35,30,26};
         } else {
             t.title={16,6,290,25};
-            t.undo={w-269,4,74,26}; t.redo={w-185,4,74,26};
+            t.undo={312,4,28,26}; t.redo={346,4,28,26};
             t.snapLabel={16,38,40,22}; t.snap={54,35,80,26};
             t.channelLabel={142,38,48,22}; t.channel={190,35,67,26};
             t.velocityLabel={270,38,50,22}; t.velocity={325,35,166,26};
@@ -52,24 +52,28 @@ struct MidiEditorToolbarLayout {
 
 struct OscEditorToolbarLayout {
     bool compact=false;
-    juce::Rectangle<int> add,remove,duplicate,grid,snap,resolution;
-    juce::Rectangle<int> zoomOut,zoomIn,zoomFit,unit,detach,undo,redo;
+    juce::Rectangle<int> title,add,remove,duplicate,grid,snap,resolution;
+    juce::Rectangle<int> zoomOut,zoomIn,zoomFit,unit,detach,collapse,close,undo,redo;
     static OscEditorToolbarLayout atWidth(int w) {
         OscEditorToolbarLayout t;
         t.compact=w<950;
-        t.add={13,7,35,26};
-        t.remove={53,7,70,26};
-        t.duplicate={128,7,83,26};
-        t.grid={219,7,69,26};
-        t.snap={291,7,60,26};
-        t.resolution={353,8,78,24};
-        t.unit={w-228,7,110,26};
-        t.detach={w-105,7,95,27};
-        t.zoomOut={t.compact ? 13 : 435,t.compact ? 39 : 7,29,26};
-        t.zoomIn={t.compact ? 46 : 468,t.compact ? 39 : 7,29,26};
-        t.zoomFit={t.compact ? 79 : 501,t.compact ? 39 : 7,30,26};
-        t.undo={t.compact ? 116 : 540,t.compact ? 39 : 7,30,26};
-        t.redo={t.compact ? 151 : 575,t.compact ? 39 : 7,30,26};
+        // Same two-row hierarchy and 28x26 top-right window controls
+        // as the MIDI editor. No OSC command is dropped or covered.
+        t.title={16,6,230,25};
+        t.undo={256,4,28,26}; t.redo={290,4,28,26};
+        t.collapse={w-104,4,28,26};
+        t.detach={w-72,4,28,26};
+        t.close={w-40,4,28,26};
+        t.add={13,38,32,26};
+        t.remove={50,38,64,26};
+        t.duplicate={119,38,77,26};
+        t.grid={202,38,58,26};
+        t.snap={265,38,56,26};
+        t.resolution={326,38,75,26};
+        t.unit={w-267,38,100,26};
+        t.zoomOut={w-159,38,28,26};
+        t.zoomIn={w-127,38,28,26};
+        t.zoomFit={w-95,38,39,26};
         return t;
     }
 };

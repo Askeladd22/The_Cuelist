@@ -195,8 +195,8 @@ void CueGrid::paint(juce::Graphics& g) {
     const auto activeName=show.cuelists.empty()
         ? juce::String("Cuelist 1")
         : show.cuelists[(size_t)show.activeCuelist].name;
-    label(g,activeName,{24,9,nameWidth-173,24},
-          15,palette::text,true);
+    label(g,activeName,{24,7,nameWidth-173,28},
+          18,palette::text,true);
     // Count is useful operator telemetry, unlike the duplicate
     // "CUE / TRANSPORT" section label which consumed a third text row.
     label(g,juce::String((int)show.rows.size())+" cues  /  "+

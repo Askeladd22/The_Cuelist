@@ -186,6 +186,18 @@ void oscAutomationV9Tests() {
                           "N7.2 OSC compact toolbar controls overlap");
             check(t.compact==(width<950),
                   "N7.2 OSC toolbar breakpoint drifted from dock profile");
+            const auto midi=MidiEditorToolbarLayout::atWidth(width);
+            check(t.collapse==midi.collapse &&
+                  t.detach==midi.detach && t.close==midi.close &&
+                  t.title.getY()==midi.title.getY() &&
+                  t.undo.getHeight()==midi.undo.getHeight() &&
+                  t.grid.getY()==midi.snap.getY(),
+                  "OSC/MIDI dock actions no longer share the toolbar hierarchy");
+            check(!t.collapse.intersects(t.undo) &&
+                  !t.close.intersects(t.redo) &&
+                  !t.collapse.intersects(t.detach) &&
+                  !t.detach.intersects(t.close),
+                  "OSC history or window actions overlap");
         }
         auto* detach=dynamic_cast<juce::TextButton*>(find("oscDetach"));
         check(detach!=nullptr,"Original OSC Detach action missing");

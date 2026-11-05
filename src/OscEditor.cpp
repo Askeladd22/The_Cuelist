@@ -91,7 +91,10 @@ void OscClipEditor::refreshAppearance() {
     sendLookAndFeelChange();
     repaint();
 }
-void OscClipEditor::setFloating(bool floating) { detach.setButtonText(floating?"Reattach":"Detach"); }
+void OscClipEditor::setFloating(bool floating) {
+    detach.setFloating(floating);
+    detach.setButtonText(floating?"Reattach":"Detach");
+}
 void OscClipEditor::loadClip(const OscClip& next) {
     ++revision; clip=next; selectedEvent=selectedTrack=selectedAutomation=selectedPoint=-1;
     selectedEvents.clear();selectedAutomations.clear();marqueeSelecting=false;
@@ -219,16 +222,14 @@ void OscClipEditor::createTrack() {
 }
 void OscClipEditor::paint(juce::Graphics& g) {
     g.fillAll(palette::panel);
-    const bool compact=getWidth()<950;
-    // Keep the fixed controls and their tested compact layout. Remove
-    // instructional banner clutter and distinguish OSC with one type rule.
-    label(g,"OSC  /  AUTOMATION",{compact ? 120 : 13,38,
-          compact ? 166 : 235,24},13,palette::text,true);
-    g.setColour(palette::purple.withAlpha(.82f));
-    g.fillRect(compact ? 120 : 13,63,compact ? 52 : 64,2);
-    if (!compact)
-        label(g,"EVENTS  /  CURVES",{255,38,
-              std::max(1,getWidth()-275),24},11,palette::muted,true);
+    // OSC and MIDI now have the same editorial title, history placement,
+    // protocol accent and fixed two-row toolbar before the ruler.
+    const auto toolbar=OscEditorToolbarLayout::atWidth(getWidth());
+    label(g,"OSC  /  AUTOMATION",toolbar.title,15,palette::text,true);
+    g.setColour(palette::purple.withAlpha(.86f));
+    g.fillRect(16,30,52,2);
+    g.setColour(palette::line.withAlpha(.6f));
+    g.drawHorizontalLine(64,16.f,(float)std::max(16,getWidth()-16));
     const int left=axisLeft(),right=left+axisWidth();
     const auto ruler=juce::Rectangle<float>((float)left,rulerTop,(float)axisWidth(),rulerBottom-rulerTop);
     g.setColour(palette::background); g.fillRect(ruler);

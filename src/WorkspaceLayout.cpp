@@ -85,7 +85,8 @@ WorkspaceLayout calculateWorkspaceLayout(const WorkspaceLayoutInput& input) {
     result.utilities={cueLeft,utilityY,cueWidth,utilityHeight};
 
     result.dockY=dockBaseY+gridHeight;
-    result.dockResize={std::max(700,result.editorX-245),result.dockY-8,94,11};
+    // Both splitters have the same 104x12 hitbox, centre and visual grip.
+    result.dockResize={cueLeft+(lowerWidth-104)/2,result.dockY-7,104,12};
     result.dockCollapse={522,result.dockY+4,86,26};
     result.dockClose={615,result.dockY+4,82,26};
     result.dockEditor={cueLeft,result.dockY,lowerWidth,result.effectiveDockHeight};

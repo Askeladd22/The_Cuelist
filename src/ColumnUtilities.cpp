@@ -504,8 +504,8 @@ void ColumnUtilities::paint(juce::Graphics& g) {
     g.setColour(palette::panel);
     g.fillRect(layout.card);
     g.setColour(palette::type((int)ColumnType::audio).withAlpha(.81f));
-    g.fillRect(layout.card.getX(),layout.card.getY(),
-               layout.card.getWidth(),2);
+    // Match the adjacent strip's 2px top accent (strips start at y=1).
+    g.fillRect(1,1,MasterAudioLayout::laneWidth-2,2);
     label(g,"MASTER AUDIO",layout.title,14,palette::text,true);
     // The PAN caption now has its own clean line above the knob; a
     // redundant L/R header badge would collide at compact panel heights.

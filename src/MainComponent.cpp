@@ -204,7 +204,7 @@ MainComponent::MainComponent(bool startAudio) {
     inlineNameEditor.setEscapeAndReturnKeysConsumed(true);
     inlineNameEditor.setSelectAllWhenFocused(true);
     inlineNameEditor.setJustification(juce::Justification::centredLeft);
-    inlineNameEditor.setFont(font(13.0f));
+    inlineNameEditor.setFont(font(16.0f));
     inlineNameEditor.setColour(juce::TextEditor::backgroundColourId,palette::input);
     inlineNameEditor.setColour(juce::TextEditor::textColourId,palette::text);
     inlineNameEditor.setColour(juce::TextEditor::outlineColourId,palette::teal);
@@ -852,7 +852,7 @@ void MainComponent::paint(juce::Graphics& g) {
     g.setColour(audioConnected?palette::playing:palette::red);
     g.fillEllipse((float)telemetry.audioStatus.getX()-17.f,39.f,11.f,11.f);
     label(g,audioConnected?"AVAILABLE":"UNAVAILABLE",
-          telemetry.audioStatus,14,audioConnected?palette::playing:palette::red,true);
+          telemetry.audioStatus,12.5f,audioConnected?palette::playing:palette::red,true);
     // N2: one editable Show identity instead of two redundant Show/Project
     // cards. File, Settings and Control Mapping are in genuine JUCE menus.
     label(g,"WORKSPACE",{20,91,140,17},11,palette::muted,true);
@@ -1458,18 +1458,19 @@ void MainComponent::resized() {
                             OperatorNavigationLayout::menuCount-1;
     const int historyLeft=guideVisible ?
         nav.bounds[OperatorNavigationLayout::menuCount-1].getRight()+6 : 0;
-    constexpr int historyButtonSize=28, historyGap=4;
+    constexpr int historyButtonSize=24, historyGap=3;
     const int historyRight=HeaderTelemetryLayout::atWidth(getWidth()).clock.getX()-8;
     const bool showHistory=guideVisible &&
         historyLeft+2*historyButtonSize+historyGap<=historyRight;
     undoButton.setVisible(showHistory);
     redoButton.setVisible(showHistory);
     if(showHistory) {
-        undoButton.setBounds(historyLeft,OperatorNavigationLayout::menuY,
-                             historyButtonSize,OperatorNavigationLayout::menuHeight);
+        const int historyY=OperatorNavigationLayout::menuY+
+            (OperatorNavigationLayout::menuHeight-historyButtonSize)/2;
+        undoButton.setBounds(historyLeft,historyY,
+                             historyButtonSize,historyButtonSize);
         redoButton.setBounds(historyLeft+historyButtonSize+historyGap,
-                             OperatorNavigationLayout::menuY,
-                             historyButtonSize,OperatorNavigationLayout::menuHeight);
+                             historyY,historyButtonSize,historyButtonSize);
     }
     // Retain both original one-click actions and their Learn callbacks.
     const auto ioActivity=HeaderTelemetryLayout::atWidth(getWidth());
@@ -1480,6 +1481,7 @@ void MainComponent::resized() {
     const bool allCollapsed=std::all_of(show.columns.begin(),show.columns.end(),
         [](const Column& col){return col.collapsed;});
     collapseAllButton.setButtonText(allCollapsed ? "Expand all" : "Collapse all");
+    collapseAllButton.setAllCollapsed(allCollapsed);
     // A minimal edge grip: 20 x 46px instead of the oversized 26 x 86px
     // handle. The 26px collapsed rail remains unchanged to preserve all
     // pinned metrics, mixer and Timeline geometry.
@@ -1517,18 +1519,15 @@ void MainComponent::resized() {
     }
     if (docked) {
         if (oscEditor && !oscWindow) {
-            // OSC dock actions have fixed slots, clear of its controls.
-            // The compact arrangement uses the second toolbar row.
-            const bool compact=geometry.dockEditor.getWidth()<950;
-            const int x=geometry.dockEditor.getX();
-            // Collapsed docks are only 36px high: their two actions
-            // must return to the first row instead of covering Timeline.
-            const int y=geometry.dockY+
-                (clipCollapsed ? 4 : compact ? 36 : 4);
+            // The OSC editor uses the same top-right native window controls
+            // as MIDI (and remains reachable when its body is collapsed).
+            const auto layout=OscEditorToolbarLayout::atWidth(
+                geometry.dockEditor.getWidth());
+            const auto origin=geometry.dockEditor.getPosition();
             clipCollapseButton.setBounds(
-                x+(clipCollapsed ? 14 : compact ? 290 : 541),y,28,26);
+                layout.collapse.translated(origin.x,origin.y));
             clipCloseButton.setBounds(
-                x+(clipCollapsed ? 109 : compact ? 383 : 634),y,82,26);
+                layout.close.translated(origin.x,origin.y));
         } else if (clipEditor && !clipWindow) {
             // All MIDI dock widths use the SAME editor-local geometry.
             // Detach is owned by PianoRoll; Collapse and Close are owned
@@ -1563,7 +1562,9 @@ void MainComponent::resized() {
     timelineCollapseButton.setTooltip(timelineVisible ?
         "Collapse Timeline (also available in View)." :
         "Expand Timeline (also available in View).");
-    const int timelineGripX=geometry.timeline.getX()+(timelineVisible?112:10);
+    // The fold control precedes the title on the left in both states,
+    // so it never intersects GRID, SNAP or the right-aligned zoom tools.
+    const int timelineGripX=geometry.timeline.getX()+12;
     const int timelineGripY=timelineVisible ? geometry.timeline.getY()+10 :
         std::max(72,std::min(getHeight()-52,geometry.timeline.getY()-31));
     timelineCollapseButton.setBounds(timelineGripX,timelineGripY,28,26);
@@ -1629,8 +1630,8 @@ void MainComponent::resized() {
     columnHeaders.setBounds(columnHeaderX,viewport.getY(),
                             columnHeaderWidth,CueGrid::headerHeight);
     columnHeaders.toFront(false);
-    collapseAllButton.setBounds(cueHeaders.getX()+CueGrid::nameWidth-84,
-                                cueHeaders.getY()+9,77,24);
+    collapseAllButton.setBounds(cueHeaders.getX()+CueGrid::nameWidth-38,
+                                cueHeaders.getY()+9,30,24);
     cueMetrics.setBounds(geometry.metrics);
     cueMetrics.syncBpmEditor();
     cueMetrics.toFront(false);

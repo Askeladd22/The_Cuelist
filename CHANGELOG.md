@@ -13,6 +13,26 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.29] - 2026-11-05
+
+**Stato:** affinamento UI/UX nativa; modifica non ancora certificata da build e dispositivi reali.
+
+### Aggiunto
+- Rotellina sul fader PCM di ciascuna colonna audio e sul Master, con passo di 0,5 dB, Shift per incrementi fini di 0,1 dB, supporto wheel/trackpad e rispetto del silenzio digitale. Il valore raggiunge gli stessi callback del fader trascinato.
+
+### Modificato
+- Grid Timeline trasformato in icona vettoriale con stato ON/OFF leggibile e snap indipendente; comando di collasso spostato prima del titolo.
+- Pulsanti Undo/Redo globali compattati a 24 px; titoli delle Cuelist ingranditi nella tab e nella zona fissa delle cue; comando Collapse/Expand all convertito in icona con direzioni distinte.
+- La maniglia di ridimensionamento del dock MIDI/OSC condivide con la Timeline dimensioni, posizione centrata e geometria grafica. La linea superiore del Master Audio segue l'accento delle strip.
+- Barra OSC rivista con la stessa gerarchia a due righe del MIDI: titolo, storico e comandi di finestra nel primo livello, editing e zoom nel secondo. Collasso/Detach/Close hanno la stessa geometria e lo stesso stile vettoriale del MIDI.
+
+### Corretto
+- Eliminata la precedente sovrapposizione tra i controlli OSC e i pulsanti di collasso/chiusura del dock; stato Audio nell'header reso più compatto per ridurre il rischio di ritaglio.
+
+### Test
+- Aggiornate le verifiche di Timeline, Undo/Redo, layout dei due splitter e dock OSC/MIDI. Aggiunti test unitari per la conversione dei tick della rotellina, i limiti del fader e il silenzio digitale.
+- Verifica Windows MSVC/CTest e controllo visivo DPI ancora da confermare; nessun test con dispositivi hardware reali. Nessuna build portable.
+
 ## [0.9.28] - 2026-11-05
 
 ### Interfaccia operatore

@@ -24,7 +24,7 @@ public:
         setName("columnGainDb");
         setWantsKeyboardFocus(true);
         setMouseCursor(juce::MouseCursor::PointingHandCursor);
-        setTooltip("Fader gain in dB; L/R peak meters in dBFS. Double-click to reset to 0 dB.");
+        setTooltip("Fader gain in dB; L/R peak meters in dBFS. Use mouse wheel to adjust (Shift: fine); double-click to reset to 0 dB.");
     }
 
     // Calibrated logarithmic taper: unity sits around 75% of the travel.
@@ -79,6 +79,18 @@ public:
     void paint(juce::Graphics& g) override;
     void mouseDown(const juce::MouseEvent& e) override;
     void mouseDrag(const juce::MouseEvent& e) override;
+    void mouseWheelMove(const juce::MouseEvent&,const juce::MouseWheelDetails&) override;
+    // The wheel and keyboard share the same audible 0.1 dB calibration.
+    // Default wheel ticks are 0.5 dB, Shift uses 0.1 dB precision.
+    static float wheelTargetDb(float current,int ticks,bool fine,float ceiling=maxDb) noexcept {
+        if (ticks==0) return current;
+        if (ticks<0 && (current==silenceDb || current<=minDb))
+            return silenceDb;
+        const float base=current==silenceDb ? minDb : current;
+        const float result=std::round((base+ticks*(fine ? 0.1f : 0.5f))*10.0f)*0.1f;
+        if (ticks<0 && result<minDb) return silenceDb;
+        return juce::jlimit(minDb,ceiling,result);
+    }
     void mouseDoubleClick(const juce::MouseEvent&) override { setGainDb(0,true); }
     bool keyPressed(const juce::KeyPress& key) override;
 private:
@@ -87,6 +99,7 @@ private:
     float gainDb=0.0f;
     bool compact=false;
     float ceilingDb=6.0f;
+    float wheelAccumulator=0.0f;
     float topY() const noexcept { return compact ? 7.0f : 12.0f; }
     // Leave separate lanes for L/R legends and the gain readout, including
     // the longer Noto Math infinity glyph at silence.

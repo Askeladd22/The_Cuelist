@@ -246,6 +246,66 @@ public:
 private:
     bool redoDirection=false;
 };
+// A semantic grid button without fragile Unicode glyph coverage.
+class GridVisibilityIconButton final : public juce::TextButton {
+public:
+    GridVisibilityIconButton() : juce::TextButton("Grid") {}
+    void paintButton(juce::Graphics& g,bool hovered,bool pressed) override {
+        const bool active=getToggleState();
+        const IconButtonState state{isEnabled(),hovered,pressed,active,
+                                    hasKeyboardFocus(false)};
+        drawIconButtonSurface(g,getLocalBounds().toFloat(),palette::teal,state,4.f);
+        const auto c=getLocalBounds().toFloat().getCentre();
+        const float left=c.x-8.f,top=c.y-7.f;
+        g.setColour(active ? palette::teal : palette::muted);
+        for (int i=0;i<4;++i) {
+            g.drawVerticalLine((int)(left+i*5.3f),top,top+14.f);
+            g.drawHorizontalLine((int)(top+i*4.7f),left,left+16.f);
+        }
+        if (!active) {
+            g.setColour(palette::red);
+            g.drawLine(left-1.f,top+15.f,left+17.f,top-1.f,1.6f);
+        }
+    }
+};
+// Both actions share one compact hitbox; opposed chevrons indicate whether
+// the columns will fold together or open outward.
+class ColumnFoldIconButton final : public juce::TextButton {
+public:
+    ColumnFoldIconButton() : juce::TextButton("Collapse all") {}
+    void setAllCollapsed(bool collapsed) {
+        if (allCollapsed!=collapsed) {allCollapsed=collapsed; repaint();}
+    }
+    void paintButton(juce::Graphics& g,bool hovered,bool pressed) override {
+        const IconButtonState state{isEnabled(),hovered,pressed,false,
+                                    hasKeyboardFocus(false)};
+        drawIconButtonSurface(g,getLocalBounds().toFloat(),palette::teal,state,4.f);
+        const auto c=getLocalBounds().toFloat().getCentre();
+        g.setColour(hovered || pressed ? palette::text : palette::teal);
+        juce::Path arrows;
+        if (allCollapsed) {
+            arrows.startNewSubPath(c.x-2.f,c.y-4.f);
+            arrows.lineTo(c.x-6.f,c.y);
+            arrows.lineTo(c.x-2.f,c.y+4.f);
+            arrows.startNewSubPath(c.x+2.f,c.y-4.f);
+            arrows.lineTo(c.x+6.f,c.y);
+            arrows.lineTo(c.x+2.f,c.y+4.f);
+        } else {
+            arrows.startNewSubPath(c.x-7.f,c.y-4.f);
+            arrows.lineTo(c.x-3.f,c.y);
+            arrows.lineTo(c.x-7.f,c.y+4.f);
+            arrows.startNewSubPath(c.x+7.f,c.y-4.f);
+            arrows.lineTo(c.x+3.f,c.y);
+            arrows.lineTo(c.x+7.f,c.y+4.f);
+        }
+        g.strokePath(arrows,juce::PathStrokeType(1.7f,
+            juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+        g.setColour(palette::muted.withAlpha(.77f));
+        g.drawVerticalLine((int)c.x,c.y-6.f,c.y+6.f);
+    }
+private:
+    bool allCollapsed=false;
+};
 // Dock edge-grip follows the Inspector's vector/button styling.
 // The icon changes direction while the existing Collapse/Expand action remains.
 class DockCollapseButton final : public juce::TextButton {

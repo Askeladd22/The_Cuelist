@@ -76,7 +76,8 @@ Timeline::Timeline(MainComponent& p) : owner(p) {
         combo->addItemList({"1/4","1/8","1/16","1/32"},1);
     gridDivision.setSelectedId(3,juce::dontSendNotification);
     snapDivision.setSelectedId(3,juce::dontSendNotification);
-    gridToggle.setTooltip("Show/hide BPM grid lines without changing snap.");
+    gridToggle.setToggleState(true,juce::dontSendNotification);
+    gridToggle.setTooltip("Grid ON: show BPM grid lines without changing snap.");
     gridDivision.setTooltip("Displayed musical grid division, independent of snap.");
     snapDivision.setTooltip("Division used to snap clips, even when the grid is hidden.");
     snapToggle.setButtonText("Snap ON");
@@ -84,7 +85,9 @@ Timeline::Timeline(MainComponent& p) : owner(p) {
     snapToggle.setTooltip("Snap ON: clips align to beats. Click to disable.");
     gridToggle.onClick=[this] {
         gridVisible=!gridVisible;
-        gridToggle.setButtonText(gridVisible ? "Grid ON" : "Grid OFF");
+        gridToggle.setToggleState(gridVisible,juce::dontSendNotification);
+        gridToggle.setTooltip(gridVisible ?
+            "Grid ON: hide BPM grid lines." : "Grid OFF: show BPM grid lines.");
         repaint();
     };
     snapToggle.onClick=[this] {
@@ -111,10 +114,10 @@ void Timeline::resized() {
     horizontalScroll.setVisible(showFooter);
     horizontalScroll.setBounds(timelineStart,std::max(0,getHeight()-43),
                                std::max(0,getWidth()-timelineStart-20),12);
-    gridToggle.setBounds(196,10,76,25);
-    gridDivision.setBounds(278,10,80,25);
-    snapToggle.setBounds(408,10,41,25);
-    snapDivision.setBounds(459,10,80,25);
+    gridToggle.setBounds(196,10,36,25);
+    gridDivision.setBounds(239,10,80,25);
+    snapToggle.setBounds(378,10,41,25);
+    snapDivision.setBounds(427,10,80,25);
     syncViewport();
 }
 double Timeline::gridStepBeats() const {
@@ -173,10 +176,10 @@ void Timeline::paint(juce::Graphics& g) {
     g.fillRect(0,0,getWidth(),45);
     if (owner.selectedRow<0 || owner.selectedRow>=(int)owner.show.rows.size()) return;
     const auto& row=owner.show.rows[owner.selectedRow];
-    label(g,"TIMELINE",{20,11,88,23},14,palette::text,true); // arrow at x=112
+    label(g,"TIMELINE",{49,11,88,23},14,palette::text,true); // fold icon at x=12
     if (getHeight()>=detailedToolbarHeight) {
         label(g,"GRID",{143,11,52,23},11,palette::muted,true);
-        label(g,"SNAP",{370,11,35,23},11,palette::muted,true);
+        label(g,"SNAP",{337,11,35,23},11,palette::muted,true);
     }
     if (getHeight()>=detailedToolbarHeight) for (int i=0;i<3;++i) {
         const auto box=zoomButton(getWidth(),i);
