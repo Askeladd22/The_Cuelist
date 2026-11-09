@@ -13,6 +13,24 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.33] - 2026-11-09
+
+**Stato:** correzione mirata RQ-001 su VIEW/LIVE e isolamento del selettore file nei test. Non certificata per lo show live; schema .cuelist JSON v10 invariato.
+
+### Corretto
+- `triggerCell()` non chiama PANIC né trasferisce LIVE quando il comando dalla VIEW si limita a importare un file, aprire editor OSC/MIDI o modificare Control Map. Un Cell Play con clip reale continua invece ad assumere LIVE intenzionalmente e ora pubblica il nuovo RenderState prima dell'invio.
+- `triggerCellAt()` preserva il cursore GO `liveNextCue` oltre a `nextCue`: l'azione Cell Play diretta non ri-arma accidentalmente un altro GO.
+- Spostato il test T02 con `juce::FileChooser::launchAsync` all'ultima posizione della suite, per non interferire con i test successivi di input/focus su finestre native.
+
+### Test
+- Log Windows dell'utente sulla 0.9.32: compilazione completata, 419.987 asserzioni e 5 test falliti, di cui T02/T01 rossi attesi e tre fallimenti UI successivi da distinguere da possibili effetti del dialogo modale.
+- Aggiunto test per il trasferimento LIVE esplicito con una cella Audio già caricata nella VIEW, inclusa adozione del relativo RenderState.
+- Questa PR richiede un nuovo CTest Windows, verifica dei tre fallimenti UI, prova operatore, screenshot DPI e banco MIDI/OSC/LTC hardware: **ND** fino a risultati reali; non attestare gate superati.
+
+### Rischi residui
+- Misurazione timing end-to-end e hardware esterno non eseguiti.
+- Il comportamento del dialogo asincrono e la semantica del GO vanno verificati anche tramite UI nativa Windows.
+
 ## [0.9.32] - 2026-11-09
 
 **Stato:** RQ-001, branch di prova con asserzioni di regressione intenzionalmente strette. PR draft, non pronto al merge se CI rossa. Nessuna modifica al runtime o allo schema JSON v10.
