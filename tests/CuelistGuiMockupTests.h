@@ -129,35 +129,9 @@ void cuelistGuiMockupTests() {
               "Returning to LIVE view lost the transport or its cue");
     });
 
-    // RQ-001: intentionally strict reproductions. These assertions should
-    // turn red until the real VIEW/LIVE side effects are understood and fixed.
-    // Keep the runtime unchanged in this validation-only PR.
-    test("RQ001 T02: inspecting empty Audio in VIEW preserves running LIVE", [] {
-        MainComponent ui(false);
-        auto audio=std::make_shared<AudioClip>();
-        audio->sampleRate=100;
-        audio->samples.setSize(1,1200);
-        for (int i=0;i<1200;++i) audio->samples.setSample(0,i,.2f);
-        const int liveCell=ui.show.rows[0].cells[0].id;
-        ui.clips[liveCell]=audio;
-        ui.engine.connected.store(true);
-        ui.triggerRow(0);
-        ui.engine.processBlock(nullptr,0,1,100);
-        check(ui.engine.getCellPlayback(liveCell).playing,
-              "T02 setup: LIVE Audio is not playing");
-        ui.createCuelist(); // VIEW B is an empty Audio cell; LIVE stays A.
-        check(ui.show.activeCuelist!=ui.liveCuelistIndex() &&
-              ui.show.rows[0].cells[0].file.isEmpty(),
-              "T02 setup: expected empty Audio cell in non-LIVE VIEW");
-        // This is the same operation dispatched by an Audio-cell double-click.
-        // FileChooser::launchAsync is nonblocking; no file is selected.
-        ui.triggerCell();
-        ui.engine.processBlock(nullptr,0,1,100);
-        check(ui.liveCuelistIndex()==0,
-              "T02: opening an empty VIEW cell took ownership of LIVE");
-        check(ui.engine.getCellPlayback(liveCell).playing,
-              "T02: opening an empty VIEW cell sent PANIC to LIVE");
-    });
+    // RQ-001 regression: independent VIEW and LIVE transport cursors.
+    // The native file-picker scenario runs LAST in Tests.cpp to prevent an
+    // asynchronous modal dialog from influencing subsequent UI click tests.
     test("RQ001 T01: Cell Play preserves armed LIVE cue across VIEW change", [] {
         MainComponent ui(false);
         for (int i=1;i<4;++i) addRow(ui.show,"Cue "+juce::String(i+1));
@@ -184,6 +158,39 @@ void cuelistGuiMockupTests() {
         ui.engine.processBlock(nullptr,0,1,100);
         check(ui.engine.acknowledgedCueId.load()==armedCueId,
               "T01: Space/GO from VIEW launched the wrong LIVE cue");
+    });
+
+    test("RQ001: loaded Cell Play in VIEW transfers LIVE and starts Audio", [] {
+        MainComponent ui(false);
+        auto makeAudio=[] {
+            auto audio=std::make_shared<AudioClip>();
+            audio->sampleRate=100;
+            audio->samples.setSize(1,1200);
+            for (int i=0;i<1200;++i) audio->samples.setSample(0,i,.2f);
+            return audio;
+        };
+        const int firstCell=ui.show.rows[0].cells[0].id;
+        ui.clips[firstCell]=makeAudio();
+        ui.engine.connected.store(true);
+        ui.engine.publish(ui.makeLiveRenderState());
+        ui.triggerRow(0);
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.engine.getCellPlayback(firstCell).playing,
+              "RQ001 transfer setup: LIVE A audio did not start");
+        ui.createCuelist();
+        const int secondCell=ui.show.rows[0].cells[0].id;
+        ui.clips[secondCell]=makeAudio();
+        check(ui.liveCuelistIndex()!=ui.show.activeCuelist,
+              "RQ001 transfer setup: VIEW did not separate from LIVE");
+        ui.triggerCell();
+        ui.engine.collectRetired();
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.liveCuelistIndex()==ui.show.activeCuelist,
+              "RQ001: explicit Cell Play failed to transfer LIVE");
+        check(ui.engine.getCellPlayback(secondCell).playing,
+              "RQ001: transferred LIVE did not publish the selected Audio clip");
+        check(!ui.engine.getCellPlayback(firstCell).playing,
+              "RQ001: old LIVE Audio continued after explicit transfer");
     });
 
     using namespace cueViewFixtures;
