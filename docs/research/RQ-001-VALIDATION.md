@@ -1,10 +1,10 @@
 # RQ-001 — Validazione VIEW/LIVE, GO e focus (protocollo)
 
 **Data:** 2026-11-09
-**Baseline di sola lettura:** \`main@21e75aabbaa551c2342340c63a822d94bbc07f2a\`, versione 0.9.31.
-**Branch di verifica:** \`test/rq001-view-live-fault-repro\`.
+**Baseline di sola lettura:** `main@21e75aabbaa551c2342340c63a822d94bbc07f2a`, versione 0.9.31.
+**Branch di verifica:** `test/rq001-view-live-fault-repro`.
 **Formato progetto:** JSON v10, invariato.
-**Stato:** test di regressione proposti sul codice nativo JUCE; risultati Windows, operatori e hardware **ND** finché non viene allegato un report eseguito.
+**Stato aggiornato:** l'utente ha fornito il log Windows/CTest della 0.9.32; la prova automatizzata è stata eseguita, con fallimenti dettagliati sotto. Prove operatore, screenshot DPI e hardware **ND**.
 
 ## Ipotesi, non risultati
 
@@ -16,11 +16,11 @@ La semantica di **GO esplicito su una riga** è differente dalla visualizzazione
 
 ## Evidenza di codice disponibile
 
-- \`src/CueOperations.cpp\`, \`activateCuelist\`: cambia VIEW senza chiamare PANIC, preserva \`liveCuelist\` e \`liveNextCue\`.
-- \`src/MainComponent.cpp\`, \`triggerCell\`: al momento applica \`stopAll()\` e trasferisce la LIVE **prima** di discriminare il caso della cella vuota / import.
-- \`src/MainComponent.cpp\`, \`triggerCellAt\`: salva/ripristina \`nextCue\`, mentre \`select()\` ha anche modificato \`liveNextCue\`.
-- \`src/MainComponent.cpp\`, \`refreshCuelistTabs\`: l'overflow mantiene la tab VIEW attiva visibile e può occultare la LIVE.
-- \`tests/CuelistGuiMockupTests.h\`: mantiene i test preesistenti della separazione VIEW/LIVE; le nuove prove T02 e T01 sono inserite accanto a essi.
+- `src/CueOperations.cpp`, `activateCuelist`: cambia VIEW senza chiamare PANIC, preserva `liveCuelist` e `liveNextCue`.
+- `src/MainComponent.cpp`, `triggerCell`: al momento applica `stopAll()` e trasferisce la LIVE **prima** di discriminare il caso della cella vuota / import.
+- `src/MainComponent.cpp`, `triggerCellAt`: salva/ripristina `nextCue`, mentre `select()` ha anche modificato `liveNextCue`.
+- `src/MainComponent.cpp`, `refreshCuelistTabs`: l'overflow mantiene la tab VIEW attiva visibile e può occultare la LIVE.
+- `tests/CuelistGuiMockupTests.h`: mantiene i test preesistenti della separazione VIEW/LIVE; le nuove prove T02 e T01 sono inserite accanto a essi.
 
 I percorsi sopra sono verificati staticamente. Non sono una misurazione di comportamento su Windows o una certificazione.
 
@@ -30,32 +30,32 @@ I percorsi sopra sono verificati staticamente. Non sono una misurazione di compo
 
 **Fixture:** MainComponent nativo, LIVE A con un clip PCM lungo in playback, seconda Cuelist B appena creata con cella Audio vuota.
 
-1. Avviare cue in A e verificare \`getCellPlayback(...).playing\`.
+1. Avviare cue in A e verificare `getCellPlayback(...).playing`.
 2. Creare/selezionare VIEW B senza cambiare LIVE.
-3. Invocare \`triggerCell()\` sulla cella Audio vuota di B (stesso callback del doppio clic Audio).
+3. Invocare `triggerCell()` sulla cella Audio vuota di B (stesso callback del doppio clic Audio).
 4. Processare un ulteriore blocco audio simulato.
 5. Asserire che LIVE sia ancora A e che il clip originario sia in playback.
 
 **Atteso:** nessun PANIC per il solo intento d'import. Il selettore file asincrono non deve influire sul trasporto.
 
-**Rischio infrastrutturale:** il test attraversa \`juce::FileChooser::launchAsync\`; su runner Windows headless verificare che il selettore non provochi blocco o failure indipendente dal trasporto. In quel caso il risultato rimane **inconcludente**, non classificato come difetto provato.
+**Rischio infrastrutturale:** il test attraversa `juce::FileChooser::launchAsync`; su runner Windows headless verificare che il selettore non provochi blocco o failure indipendente dal trasporto. In quel caso il risultato rimane **inconcludente**, non classificato come difetto provato.
 
 ### T01 — Cell Play e cursore GO
 
 **Fixture:** A con quattro cue e clip PCM disponibile nella cella della cue 4.
 
 1. Armare la cue 2 in A.
-2. Eseguire \`triggerCellAt(3,0)\`, simulando Cell Play della cue 4.
+2. Eseguire `triggerCellAt(3,0)`, simulando Cell Play della cue 4.
 3. Asserire che il cursore della prossima GO rimanga sulla cue 2.
 4. Aprire VIEW B.
-5. Eseguire \`goNext()\` e processare il blocco di ack.
-6. Verificare che \`acknowledgedCueId\` sia quello della cue 2.
+5. Eseguire `goNext()` e processare il blocco di ack.
+6. Verificare che `acknowledgedCueId` sia quello della cue 2.
 
 **Atteso:** Cell Play distinto da selezione/GO di riga; nessun cambiamento accidentale del cursore. Confermare questa policy con gli operatori prima di fissarla come contratto definitivo.
 
 ## T03 — task UX su interfaccia nativa
 
-**Fixture:** nove Cuelist con nomi non intercambiabili: \`Pre-show\`, \`Act I\`, \`Act II\`, \`Act III\`, \`Intermission\`, \`Finale\`, \`Backup\`, \`Soundcheck\`, \`Emergency\`. Finestra 1180×820 Windows, scalatura 100% e 150%, almeno una prova con operatore che non conosce The CUElist.
+**Fixture:** nove Cuelist con nomi non intercambiabili: `Pre-show`, `Act I`, `Act II`, `Act III`, `Intermission`, `Finale`, `Backup`, `Soundcheck`, `Emergency`. Finestra 1180×820 Windows, scalatura 100% e 150%, almeno una prova con operatore che non conosce The CUElist.
 
 1. Avviare A, poi aprire una VIEW distante nell'overflow.
 2. Chiedere «Quale lista riceverà Space?» prima di ogni pressione.
@@ -95,4 +95,30 @@ Registrare task success, identificazioni errate, tempo dalla domanda alla rispos
 - [ ] Verifica nessuna regressione a GO, PANIC, editing inline, Control Map, Undo/Redo, JSON v10.
 - [ ] Gate hardware separato; CI verde **non** equivale a ready for live.
 
-**Strategia di rollback:** scartare il branch/PR di esperimento senza toccare \`main\`. Eventuali fix richiedono un ulteriore gate e un piano di regressione. Nessun merge automatico.
+**Strategia di rollback:** scartare il branch/PR di esperimento senza toccare `main`. Eventuali fix richiedono un ulteriore gate e un piano di regressione. Nessun merge automatico.
+
+
+## Evidenza Windows fornita dall'utente — 0.9.32 (2026-11-09)
+
+**Provenienza:** log di compilazione/CTest su Windows fornito dall'utente, non esecuzione da parte dell'assistente. Log originale conservato nella conversazione, non allegato alla PR.
+
+- Configurazione CMake e MSBuild: completata, con `The Cuelist.exe` e `CuelistTests.exe` prodotti.
+- CTest: 1 target eseguito (`CuelistTests`), risultato complessivo fallito. All'interno del target: **419.987 asserzioni, 5 test falliti**.
+- **T02 fallito:** `T02: opening an empty VIEW cell took ownership of LIVE`. Questo conferma il trasferimento di stato improprio. Il test si interrompe al primo `check` non soddisfatto: non prova autonomamente che l'audio abbia cessato di suonare su un dispositivo.
+- **T01 fallito:** `T01: direct Cell Play unexpectedly changed the LIVE GO cursor`. Confermato il disallineamento interno; il test si interrompe prima dell'assert sull'ack del successivo GO.
+- **Altri tre fallimenti:** spostamento tab con freccia sinistra, pulsante aggiunta Cuelist, rinomina inline. Questi test seguono T02 nella suite. La causa è **ND**: l'interferenza del dialogo asincrono è un'ipotesi da falsificare, non una conclusione.
+- La CI della versione 0.9.31 (PR precedente, SHA `224cce506d8bd6496530daee685c9ead53686259`) risultava positiva nel job Windows consultato; questo rafforza, ma non prova, la correlazione temporale tra T02 e i tre fallimenti.
+
+**Controllo del controesempio:** il riferimento ufficiale JUCE indica che [`FileChooser::launchAsync`](https://docs.juce.com/develop/classjuce_1_1FileChooser.html) apre un dialogo modale e ritorna immediatamente. Spostare T02 alla fine della suite è un esperimento per isolare i test UI seguenti, non una modifica del comportamento dell'applicazione.
+
+## Esperimento di correzione — 0.9.33, PR separata
+
+- In `triggerCell()`, gestire i percorsi di edit/import prima del trasferimento LIVE.
+- Su Cell Play con un clip presente nella VIEW, il trasferimento resta esplicito e pubblica il RenderState della nuova LIVE prima del comando.
+- In `triggerCellAt()`, preservare `nextCue` e `liveNextCue` durante il Cell Play diretto.
+- Eseguire T02 come **ultimo test** della suite per separare gli effetti del `FileChooser` dai test di frecce, pulsante + e rinomina.
+- Nuovo test automatico: Cell Play Audio caricato in VIEW trasferisce LIVE e produce playback del clip corretto.
+
+**Gate 0.9.33:** nuovi Windows CI/CTest ND fino alla conclusione; verificare i 5 test precedentemente falliti, il test di trasferimento esplicito e la generazione screenshot. Se falliscono ancora i tre test UI, investigare indipendentemente prima di qualunque merge.
+
+**Rischi operativi:** nessuna misura end-to-end con MIDI/OSC/LTC esterni; nessuna prova di recupero hardware; nessuna evidenza ancora per T03. **Rollback**: mantenere il fix in branch non integrato se i gate non passano.
