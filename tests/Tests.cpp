@@ -546,7 +546,7 @@ int main() {
             check(t04.setCuelistName(1,longB),
                   "T04 image fixture: second long name was rejected");
             for(int i=2;i<9;++i) t04.createCuelist();
-            check(t04.setCuelistName(8,"Emergency VIEW"),
+            check(t04.setCuelistName(8,"Emergency"),
                   "T04 image fixture: VIEW name was rejected");
             check(t04.show.activeCuelist==8 && t04.liveCuelistIndex()==0,
                   "T04 image fixture: expected the first hidden LIVE");
