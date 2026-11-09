@@ -449,7 +449,10 @@ void cuelistGuiMockupTests() {
         check(liveTab->isVisible() && viewTab->isVisible() &&
               !overflow->isVisible(),
               "T03: wide comparison must expose LIVE and VIEW together");
-        check(liveTab->getTooltip().contains("[LIVE]"),
+        // controlsV3::named returns a juce::Component*. TooltipClient
+        // is implemented by the actual native TextButton, not Component.
+        auto* liveButton=dynamic_cast<juce::TextButton*>(liveTab);
+        check(liveButton && liveButton->getTooltip().contains("[LIVE]"),
               "T03: visible LIVE tab has lost its textual identity");
     });
 
