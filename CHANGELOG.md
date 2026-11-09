@@ -19,10 +19,10 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ### Aggiunto
 - Due test nativi nel percorso Cuelist per riprodurre le ipotesi T02 (import Audio dalla VIEW non LIVE durante playback) e T01 (Cell Play non deve modificare il cursore GO armato).
-- Protocollo \`docs/research/RQ-001-VALIDATION.md\` con scenario T03 per la comprensibilità della LIVE nascosta nell'overflow, metrica, rischi e gate hardware/UX.
+- Protocollo `docs/research/RQ-001-VALIDATION.md` con scenario T03 per la comprensibilità della LIVE nascosta nell'overflow, metrica, rischi e gate hardware/UX.
 
 ### Verifiche
-- Analisi statica di \`src/MainComponent.cpp\`, \`src/CueOperations.cpp\`, \`src/CueViews.cpp\`, \`src/ControlRuntime.cpp\` e dei test al commit base \`21e75aab\`.
+- Analisi statica di `src/MainComponent.cpp`, `src/CueOperations.cpp`, `src/CueViews.cpp`, `src/ControlRuntime.cpp` e dei test al commit base `21e75aab`.
 - Windows build/CTest: non ancora eseguiti al momento dell'apertura della PR; registrare l'esito effettivo senza interpretare i test rossi come certificazione di un bug finché non sono riprodotti.
 - Hardware, operatori, screenshot DPI: non eseguiti. Per T02 il selettore file asincrono potrebbe richiedere un controllo manuale su Windows.
 - Nessuna modifica all'engine Audio/MIDI/OSC, al modello di GO/PANIC o alla serializzazione.
