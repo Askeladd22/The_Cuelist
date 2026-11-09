@@ -201,8 +201,11 @@ void CueGrid::paint(juce::Graphics& g) {
     // "CUE / TRANSPORT" section label which consumed a third text row.
     // The title names the browsed VIEW, not necessarily the GO destination.
     // Keep title geometry unchanged; add the textual role to its metadata row.
-    label(g,"VIEW  /  "+juce::String((int)show.rows.size())+" cues  /  "+
-          juce::String(owner.visibleClipCount)+" clips",
+    const int viewCues=(int)show.rows.size();
+    const int viewClips=owner.visibleClipCount;
+    label(g,"VIEW  /  "+juce::String(viewCues)+
+          (viewCues==1 ? " cue  /  " : " cues  /  ")+
+          juce::String(viewClips)+(viewClips==1 ? " clip" : " clips"),
           {24,36,nameWidth-48,20},11,palette::muted,true);
     g.setColour(palette::line.withAlpha(.28f));
     g.fillRoundedRectangle(24.f,63.f,(float)nameWidth-48.f,1.f,.5f);
@@ -918,7 +921,19 @@ void PinnedCueHeaders::mouseMove(const juce::MouseEvent& e) {
     if (!valid) { setTooltip({});return; }
     switch (CueGrid::headerActionAt(e.x,localY)) {
         case CueGrid::HeaderAction::go:
-            setTooltip("GO — trigger this cue"); return;
+            // Row GO is deliberately different from the global GO / Space:
+            // launching a cue from another VIEW stops the old LIVE and
+            // transfers ownership. Explain this before an operator clicks.
+            if (owner.liveCuelistIndex()!=owner.show.activeCuelist) {
+                setTooltip("Row GO: stop LIVE "+owner.liveCuelistNameForUi()+
+                           ", switch LIVE to "+
+                           owner.show.cuelists[(size_t)owner.show.activeCuelist].name+
+                           " and trigger cue "+juce::String(row+1));
+            } else {
+                setTooltip("Row GO: trigger cue "+juce::String(row+1)+
+                           " on LIVE "+owner.liveCuelistNameForUi());
+            }
+            return;
         case CueGrid::HeaderAction::playPause:
             setTooltip("Play or pause this cue"); return;
         case CueGrid::HeaderAction::stop:
