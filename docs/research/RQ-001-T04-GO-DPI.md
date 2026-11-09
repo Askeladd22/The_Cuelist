@@ -84,5 +84,8 @@ Proporre almeno 12 partecipanti volontari, con esperienza eterogenea, e controbi
 ## Risultati dichiarabili
 
 - **0.9.36 baseline:** Windows CI e screenshot acquisiti, PASS.
-- **0.9.37 candidato:** codice e test predisposti; CI, screenshot, DPI reali e prova operatori **ND** fino a esecuzione.
+- **0.9.37 candidato (commit `2ee48e4cb00ff0fbccc39aece346fae5caaa68f9`):** Windows CI `42700175769` **PASS**, CTest `CuelistTests` 420.071 asserzioni, 0 test falliti, 5,06 s complessivi. Nuovi test T04 e generazione PNG PASS. L'artefatto `native-workspace-previews` è stato scaricato e aperto per revisione.
+- **Revisione dei PNG a 1180×820:** il nome principale di due Cuelist da 64 caratteri con prefisso identico compare in entrambi i casi come `Emergency Light...`; `L01` e `L02` sono distinguibili e senza sovrapposizioni. La *distinguibilità del nome* è ancora debole: l'operatore deve comprendere l'ordinale e la sua relazione con l'ordine delle tab.
+- **Revisione del PNG a 1920×1080:** la LIVE si identifica con punto verde e `L02`; tuttavia anche i nomi sulle tab iniziano entrambi con `Emergency L...` e possono risultare confondibili. Questi risultati **non** dimostrano un miglioramento quantitativo di errori/tempo dell'operatore.
+- **Gate ancora ND:** ultimo commit documentale e nuova CI, screenshot Windows con DPI effettivo 100/150%, osservazioni di operatori, banco con dispositivi esterni e tempo end-to-end.
 - **Pronto per spettacolo live / hardware esterno:** **NO — non verificato**.
