@@ -720,6 +720,19 @@ WorkspaceLayout MainComponent::workspaceLayout() const {
         timelineVisible});
 }
 
+juce::String MainComponent::liveCuelistNameForUi() const {
+    if (liveCuelist<0 || liveCuelist>=(int)show.cuelists.size())
+        return "LIVE unavailable";
+    return show.cuelists[(size_t)liveCuelist].name;
+}
+juce::String MainComponent::nextLiveGoCueForUi() const {
+    if (liveCuelist<0 || liveCuelist>=(int)show.cuelists.size())
+        return "END";
+    const auto& rows=liveCuelist==show.activeCuelist
+        ? show.rows : show.cuelists[(size_t)liveCuelist].rows;
+    return liveNextCue>=0 && liveNextCue<(int)rows.size()
+        ? juce::String(liveNextCue+1).paddedLeft('0',2) : "END";
+}
 void MainComponent::paint(juce::Graphics& g) {
     const int w=getWidth(),h=getHeight();
     const auto geometry=workspaceLayout();
@@ -869,13 +882,15 @@ void MainComponent::paint(juce::Graphics& g) {
     }
     g.setColour(palette::amber.withAlpha(.11f));
     g.fillRoundedRectangle(12.0f,(float)h-339,156.0f,51.0f,8.0f);
-    label(g,"ON DECK",{20,h-333,145,16},11,palette::amber,true);
-    const auto& liveRows=liveCuelist==show.activeCuelist || liveCuelist<0 ||
-                             liveCuelist>=(int)show.cuelists.size()
-        ? show.rows : show.cuelists[(size_t)liveCuelist].rows;
-    label(g,liveNextCue<(int)liveRows.size() ?
-          "LIVE  /  "+juce::String(liveNextCue+1).paddedLeft('0',2) :
-          "END OF LIVE",{20,h-314,148,24},17,palette::text,true);
+    // Keep the established 51px ON DECK panel and its adjacent GO/PANIC
+    // hitboxes. The actual LIVE name remains on-screen even when its tab
+    // is hidden behind the Cuelist overflow menu.
+    label(g,"ON DECK  /  LIVE",{20,h-333,145,16},11,palette::amber,true);
+    label(g,liveCuelistNameForUi(),{20,h-314,94,24},15,palette::text,true);
+    const auto nextLiveGo=nextLiveGoCueForUi();
+    label(g,nextLiveGo=="END" ? "END" : "GO "+nextLiveGo,
+          {115,h-314,45,24},12,palette::text,true,
+          juce::Justification::centredRight);
     // Output meter removed from the sidebar; audio peak telemetry remains
     // available in the Master and channel meters.
     // Continue the non-scrollable metrics surface beneath the mixer. This
@@ -1011,7 +1026,10 @@ void MainComponent::showCuelistOverflowMenu() {
     menu.setLookAndFeel(&theme);
     for (int i=0;i<(int)show.cuelists.size();++i)
         if (!cuelistTabs[(size_t)i]->isVisible())
-            menu.addItem(100+i,show.cuelists[(size_t)i].name,true,
+            menu.addItem(100+i,
+                         (i==liveCuelist ? juce::String("LIVE  /  ") :
+                                            juce::String())+
+                             show.cuelists[(size_t)i].name,true,
                          i==show.activeCuelist);
 
     // Off-screen tabs must remain manageable, not just selectable.
@@ -1126,6 +1144,8 @@ void MainComponent::refreshCuelistTabs() {
     const int trailingX=left+displayed*slot;
     cuelistOverflowButton.setVisible(overflow);
     if (overflow) {
+        cuelistOverflowButton.setTooltip("More Cuelists. Current LIVE: "+
+                                        liveCuelistNameForUi());
         cuelistOverflowButton.setBounds(trailingX,43,38,buttonHeight);
         cuelistOverflowButton.setColour(juce::TextButton::buttonColourId,palette::raised);
     }
@@ -2397,6 +2417,14 @@ void MainComponent::timerCallback() {
         quickLearnPulseBright=!quickLearnPulseBright;
         updateQuickLearnVisuals();
     }
+    // Keep the full untruncated LIVE target discoverable on the existing
+    // native GO button. A 25Hz UI tick handles cue advances without touching
+    // the audio callback or queue.
+    const auto nextLiveGo=nextLiveGoCueForUi();
+    const auto goTooltip="Global GO / Space targets LIVE: "+liveCuelistNameForUi()+
+                         (nextLiveGo=="END" ? juce::String(" / END OF LIVE") :
+                                              juce::String(" / cue ")+nextLiveGo);
+    if (goButton.getTooltip()!=goTooltip) goButton.setTooltip(goTooltip);
     utilities.syncScroll(viewport.getViewPositionX()); utilities.refreshRouting();
     grid.repaint(); cueHeaders.repaint(); columnHeaders.repaint();
     displayPeak=std::max(engine.peak.load(),displayPeak*.88f);
