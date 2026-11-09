@@ -129,6 +129,63 @@ void cuelistGuiMockupTests() {
               "Returning to LIVE view lost the transport or its cue");
     });
 
+    // RQ-001: intentionally strict reproductions. These assertions should
+    // turn red until the real VIEW/LIVE side effects are understood and fixed.
+    // Keep the runtime unchanged in this validation-only PR.
+    test("RQ001 T02: inspecting empty Audio in VIEW preserves running LIVE", [] {
+        MainComponent ui(false);
+        auto audio=std::make_shared<AudioClip>();
+        audio->sampleRate=100;
+        audio->samples.setSize(1,1200);
+        for (int i=0;i<1200;++i) audio->samples.setSample(0,i,.2f);
+        const int liveCell=ui.show.rows[0].cells[0].id;
+        ui.clips[liveCell]=audio;
+        ui.engine.connected.store(true);
+        ui.triggerRow(0);
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.engine.getCellPlayback(liveCell).playing,
+              "T02 setup: LIVE Audio is not playing");
+        ui.createCuelist(); // VIEW B is an empty Audio cell; LIVE stays A.
+        check(ui.show.activeCuelist!=ui.liveCuelistIndex() &&
+              ui.show.rows[0].cells[0].file.isEmpty(),
+              "T02 setup: expected empty Audio cell in non-LIVE VIEW");
+        // This is the same operation dispatched by an Audio-cell double-click.
+        // FileChooser::launchAsync is nonblocking; no file is selected.
+        ui.triggerCell();
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.liveCuelistIndex()==0,
+              "T02: opening an empty VIEW cell took ownership of LIVE");
+        check(ui.engine.getCellPlayback(liveCell).playing,
+              "T02: opening an empty VIEW cell sent PANIC to LIVE");
+    });
+    test("RQ001 T01: Cell Play preserves armed LIVE cue across VIEW change", [] {
+        MainComponent ui(false);
+        for (int i=1;i<4;++i) addRow(ui.show,"Cue "+juce::String(i+1));
+        auto audio=std::make_shared<AudioClip>();
+        audio->sampleRate=100;
+        audio->samples.setSize(1,1200);
+        for (int i=0;i<1200;++i) audio->samples.setSample(0,i,.2f);
+        const int playedCell=ui.show.rows[3].cells[0].id;
+        ui.clips[playedCell]=audio;
+        ui.engine.connected.store(true);
+        ui.engine.publish(ui.makeLiveRenderState());
+        check(ui.select(1,0),"T01 setup: cannot arm cue 2");
+        const int armedCueId=ui.show.rows[1].id;
+        check(ui.liveNextCueIndex()==1,"T01 setup: wrong armed cue");
+        // Direct Cell Play must not change the next GO for the same LIVE list.
+        ui.triggerCellAt(3,0);
+        check(ui.liveNextCueIndex()==1,
+              "T01: direct Cell Play unexpectedly changed the LIVE GO cursor");
+        ui.createCuelist(); // Switch VIEW, leave LIVE on the original list.
+        check(ui.liveCuelistIndex()==0 && ui.show.activeCuelist==1,
+              "T01 setup: VIEW and LIVE did not separate");
+        ui.goNext();
+        ui.engine.collectRetired();
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.engine.acknowledgedCueId.load()==armedCueId,
+              "T01: Space/GO from VIEW launched the wrong LIVE cue");
+    });
+
     using namespace cueViewFixtures;
     test("Cue notepad survives switching Cuelists and v10 persistence", [] {
         MainComponent ui(false);
