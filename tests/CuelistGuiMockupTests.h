@@ -508,6 +508,109 @@ void cuelistGuiMockupTests() {
               "T03B: explicit LIVE selection did not rearm the displayed GO");
     });
 
+    test("RQ001 T04: global GO preserves LIVE while native Row GO takes over VIEW",[] {
+        MainComponent ui(false);
+        check(ui.setCuelistName(0,"Act I"),
+              "T04 setup: cannot name original LIVE");
+        addRow(ui.show,"Second LIVE cue");
+        const int liveNextId=ui.show.rows[1].id;
+        ui.engine.connected.store(true);
+        ui.triggerRow(0);
+        ui.engine.collectRetired();
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.liveCuelistIndex()==0 && ui.liveNextCueIndex()==1,
+              "T04 setup: wrong initial LIVE cursor");
+        ui.createCuelist();
+        check(ui.setCuelistName(1,"Emergency"),
+              "T04 setup: cannot name browsed VIEW");
+        const int viewedCueId=ui.show.rows[0].id;
+        ui.setSize(1180,820);
+        ui.resized();
+        auto* pinned=cueViewFixtures::find<PinnedCueHeaders>(ui);
+        check(pinned!=nullptr,"T04: missing native pinned row GO surface");
+        const auto go=CueGrid::rowGoBounds(CueGrid::headerHeight);
+        const auto x=(float)go.getCentreX();
+        const auto y=(float)(go.getCentreY()+CueGrid::rowContentInset);
+        pinned->mouseMove(cueViewFixtures::event(*pinned,{x,y},{x,y}));
+        check(pinned->getTooltip().contains("stop LIVE Act I") &&
+              pinned->getTooltip().contains("Emergency"),
+              "T04: native Row GO does not warn about LIVE takeover");
+
+        // Global Space/GO remains on Act I even though Emergency is VIEW.
+        ui.goNext();
+        ui.engine.collectRetired();
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.engine.acknowledgedCueId.load()==liveNextId &&
+              ui.liveCuelistIndex()==0 && ui.show.activeCuelist==1,
+              "T04: global GO incorrectly took ownership of browsed VIEW");
+        check(ui.nextLiveGoCueForUi()=="END",
+              "T04: global GO did not advance the independent LIVE cursor");
+
+        // Click the genuinely painted Row GO target in the pinned JUCE
+        // overlay; do not call triggerRow() as a substitute for native input.
+        cueViewFixtures::click(*pinned,x,y);
+        ui.engine.collectRetired();
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.engine.acknowledgedCueId.load()==viewedCueId &&
+              ui.liveCuelistIndex()==1 && ui.show.activeCuelist==1,
+              "T04: native Row GO did not intentionally transfer LIVE");
+        pinned->mouseMove(cueViewFixtures::event(*pinned,{x,y},{x,y}));
+        check(pinned->getTooltip().contains("on LIVE Emergency"),
+              "T04: Row GO tooltip did not update after LIVE takeover");
+    });
+
+    test("RQ001 T04: similar 64-character LIVE names have distinct visible locators",[] {
+        MainComponent ui(false);
+        const juce::String prefix="Emergency Lighting Subsystem - Cue Group ";
+        const auto left=prefix+juce::String::repeatedString("A",64-prefix.length());
+        const auto right=prefix+juce::String::repeatedString("B",64-prefix.length());
+        check(left.length()==64 && right.length()==64 && left!=right,
+              "T04 setup: two maximal similar names are required");
+        check(ui.setCuelistName(0,left),
+              "T04 setup: cannot name first long LIVE");
+        ui.engine.connected.store(true);
+        ui.triggerRow(0);
+        ui.engine.processBlock(nullptr,0,1,100);
+        ui.createCuelist();
+        check(ui.setCuelistName(1,right),
+              "T04 setup: cannot name second long LIVE");
+        for(int i=2;i<9;++i) ui.createCuelist();
+        ui.setSize(1180,820);
+        ui.resized();
+        auto* overflow=dynamic_cast<juce::TextButton*>(
+            controlsV3::named(ui,"cuelistOverflow"));
+        check(overflow && overflow->isVisible() && ui.show.activeCuelist==8,
+              "T04 setup: LIVE must be hidden in compact overflow");
+        check(ui.liveCuelistNameForUi()==left &&
+              overflow->getTooltip().contains(left),
+              "T04: long LIVE name A lost its full operator identity");
+        const auto bounds=juce::Rectangle<int>(129,ui.getHeight()-333,31,16);
+        const auto imageA=ui.createComponentSnapshot(bounds);
+        check(imageA.isValid(),"T04: first native locator cannot be rendered");
+
+        // Explicit Row GO in the second Cuelist transfers LIVE. Return to
+        // the same VIEW to isolate only the live identity in the snapshot.
+        ui.activateCuelist(1);
+        ui.triggerRow(0);
+        ui.engine.collectRetired();
+        ui.engine.processBlock(nullptr,0,1,100);
+        ui.activateCuelist(8);
+        check(ui.liveCuelistIndex()==1 && ui.liveCuelistNameForUi()==right &&
+              overflow->getTooltip().contains(right),
+              "T04: switching to similarly named LIVE lost exact identity");
+        const auto imageB=ui.createComponentSnapshot(bounds);
+        check(imageB.isValid() && imageB.getSize()==imageA.getSize(),
+              "T04: native locator snapshots have inconsistent dimensions");
+        bool distinct=false;
+        for(int y=0;y<imageA.getHeight() && !distinct;++y)
+            for(int x=0;x<imageA.getWidth();++x)
+                if(imageA.getPixelAt(x,y)!=imageB.getPixelAt(x,y)) {
+                    distinct=true; break;
+                }
+        check(distinct,
+              "T04: visually identical LIVE locators for two long similar names");
+    });
+
     test("Deleting Cuelists protects data and reuses the first free number",[] {
         MainComponent ui(false);
         ui.createCuelist();
