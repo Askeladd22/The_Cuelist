@@ -523,6 +523,11 @@ int main() {
             };
             capture(1180,820,"interface-rq001-t03-live-hidden-1180.png");
             capture(1920,1080,"interface-rq001-t03-live-visible-1920.png");
+            // T03-B keeps the same fixture/layout as the user-supplied
+            // 0.9.35 reference images, with distinct filenames for
+            // side-by-side inspection of the revised native JUCE labels.
+            capture(1180,820,"interface-rq001-t03b-live-hidden-1180.png");
+            capture(1920,1080,"interface-rq001-t03b-live-visible-1920.png");
         });
         std::cerr << "VISUAL QA: all snapshots complete" << std::endl;
     }

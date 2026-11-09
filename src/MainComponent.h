@@ -513,6 +513,9 @@ public:
     int nextCueIndex() const { return nextCue; }
     int liveCuelistIndex() const noexcept { return liveCuelist; }
     int liveNextCueIndex() const noexcept { return liveNextCue; }
+    // Read-only operator labels: never change LIVE ownership or GO cursors.
+    juce::String liveCuelistNameForUi() const;
+    juce::String nextLiveGoCueForUi() const;
     Show liveShowSnapshot() const;
     std::unique_ptr<RenderState> makeLiveRenderState() const;
     bool hasUnsavedChanges() const { return dirty || inspectorDiffers(); }

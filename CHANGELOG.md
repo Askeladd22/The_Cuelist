@@ -13,6 +13,23 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.36] - 2026-11-09
+
+**Stato:** RQ-001/T03-B, variante sperimentale nativa JUCE per rendere più esplicito il rapporto VIEW/LIVE. Nessun merge automatico; la sola CI non certifica un utilizzo live.
+
+### Sperimentazione UI
+- ON DECK conserva la geometria 156×51 e presenta il nome effettivo della Cuelist LIVE (ellissi se necessario) accanto al successivo `GO 02` o `END`; il numero e il nome derivano dallo stato LIVE, non dalla VIEW.
+- Il sottotitolo dell'header della lista indica `VIEW` mantenendo il titolo e le hitbox di rinomina e trasporto.
+- La riga armata di una Cuelist visualizzata che non è LIVE viene denominata `VIEW NEXT`; la riga LIVE conserva `NEXT CUE`. Non alterate le precedenze PLAYING/PAUSED/MUTED.
+- L'overflow delle tab nascoste indica esplicitamente `LIVE` per la Cuelist che controlla GO; il tooltip del pulsante GO rivela il target completo nel timer UI.
+- Nessuna variazione al routing/audio callback, GO/STOP/PANIC, mapping, Undo/Redo o serializzazione JSON v10.
+
+### Test e ricerca
+- Regressione T03-B verifica nome LIVE, cue armata, tooltip dell'overflow, GO da VIEW, END, rinomina e riarmo; mantiene il test T03 originale.
+- Due nuove immagini da componenti JUCE (`interface-rq001-t03b-*.png`) affiancabili agli screenshot della 0.9.35 ricevuti dall'utente; le due precedenti immagini T03 continuano a essere generate nello stesso CTest.
+- Protocollo e controesempi: `docs/research/RQ-001-T03B-COMPARISON.md`; CSV vuoto dei dati comparativi `docs/research/RQ-001-T03B-OBSERVATIONS.csv`. Misure operatori, screenshot desktop a DPI 100/150 e hardware esterno: **ND**.
+- Compilazione/CTest Windows della PR: **da verificare**. Il log 0.9.35 fornito dall'utente aveva 420.023 asserzioni e 0 fallimenti.
+
 ## [0.9.35] - 2026-11-09
 
 **Stato:** correzione puntuale della compilazione dei test nativi RQ-001/T03 dopo l'integrazione della 0.9.34; runtime e interfaccia JUCE invariati.
