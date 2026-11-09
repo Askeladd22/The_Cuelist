@@ -122,3 +122,22 @@ Registrare task success, identificazioni errate, tempo dalla domanda alla rispos
 **Gate 0.9.33:** nuovi Windows CI/CTest ND fino alla conclusione; verificare i 5 test precedentemente falliti, il test di trasferimento esplicito e la generazione screenshot. Se falliscono ancora i tre test UI, investigare indipendentemente prima di qualunque merge.
 
 **Rischi operativi:** nessuna misura end-to-end con MIDI/OSC/LTC esterni; nessuna prova di recupero hardware; nessuna evidenza ancora per T03. **Rollback**: mantenere il fix in branch non integrato se i gate non passano.
+
+
+## Aggiornamento RQ-001 / T03 — 2026-11-09
+
+**Baseline:** `main@895346a32272efd8fb7db338075187d401df38ac`, versione 0.9.33. `VERSION.txt` e CMake coerenti.
+
+### Risultato 0.9.33 acquisito
+
+L'utente ha fornito un log Windows di 0.9.33 con compilazione di `The Cuelist.exe` e `CuelistTests.exe`, CTest concluso con **419.999 asserzioni e zero test falliti**, durata complessiva **5,44 s**. T01, T02 e il test di trasferimento LIVE esplicito risultano PASS. Anche i tre test UI precedentemente rossi passano. È un collaudo locale riportato nel log; il banco hardware esterno non è stato eseguito. Non attribuire il risultato a una prova hardware o a un test dell'operatore.
+
+### T03 predisposto su branch separato
+
+- Regressione nativa a 1180×820 e 1920×1080 con 9 Cuelist: verifica **LIVE nascosta sotto overflow**, VIEW visibile, GO globale destinato comunque alla LIVE corretta, controprova su layout largo.
+- Snapshot da veri componenti JUCE in `test-artifacts`, pubblicati nel workflow esistente come `interface-rq001-t03-live-hidden-1180.png` e `interface-rq001-t03-live-visible-1920.png` solo se il job completa il percorso di screenshot.
+- Protocollo di misura registrato in `RQ-001-T03-PILOT.md` e CSV vuoto in `RQ-001-T03-OBSERVATIONS.csv`.
+
+**Distinzione critica:** screenshot off-screen (raster 1×) **non** sono screenshot del desktop Windows a DPI 100% e 150%. La quota di risposte corrette, i tempi degli operatori e il comportamento al vero scaling Windows sono **ND**. Per il resto della RQ il prerequisito è misurare prima di modificare l'indicatore LIVE.
+
+**Gate residuo:** PR T03 Windows CI/CTest e immagini, ispezione visiva, scaling reale, pilota con operatori, hardware esterno separato. Nessuna modifica all'applicazione, all'engine o allo schema .cuelist v10 in questa iterazione.
