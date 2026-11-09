@@ -27,7 +27,7 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 - Test T04 con due nomi diversi di 64 caratteri con prefisso identico: il nome completo rimane nel modello e nell'overflow, i due marcatori LIVE producono snapshot distinguibili.
 - La suite genera tre screenshot nativi JUCE `interface-rq001-t04-*.png` a 1180/1920 per ispezione senza sostituirli a un test DPI Windows.
 - Protocollo `docs/research/RQ-001-T04-GO-DPI.md` e CSV anonimo vuoto `RQ-001-T04-OBSERVATIONS.csv`: criteri, controesempi, 100/150% DPI reale, pilot con operatori, test hardware separati.
-- Baseline 0.9.36: Windows CI `42691760123` PASS, **420.039 asserzioni e zero fallimenti**; nuovi Windows CI/CTest 0.9.37: **ND fino al risultato**.
+- Baseline 0.9.36: Windows CI `42691760123` PASS, **420.039 asserzioni / 0 fallimenti**. Candidato 0.9.37 sul commit `2ee48e4cb00ff0fbccc39aece346fae5caaa68f9`: Windows CI `42700175769` PASS, **420.071 asserzioni / 0 fallimenti**, CTest 5,06 s; artefatto screenshot caricato. Immagini esaminate: L01/L02 visibili, nomi lunghi ancora troncati in modo identico; 100/150% DPI reali e pilota operatori **ND**.
 - Nessuna modifica a motore Audio/MIDI/OSC/LTC, GO/STOP/PANIC runtime, Control Map, Undo/Redo o schema .cuelist JSON v10.
 
 ## [0.9.36] - 2026-11-09
