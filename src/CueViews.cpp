@@ -199,7 +199,9 @@ void CueGrid::paint(juce::Graphics& g) {
           18,palette::text,true);
     // Count is useful operator telemetry, unlike the duplicate
     // "CUE / TRANSPORT" section label which consumed a third text row.
-    label(g,juce::String((int)show.rows.size())+" cues  /  "+
+    // The title names the browsed VIEW, not necessarily the GO destination.
+    // Keep title geometry unchanged; add the textual role to its metadata row.
+    label(g,"VIEW  /  "+juce::String((int)show.rows.size())+" cues  /  "+
           juce::String(owner.visibleClipCount)+" clips",
           {24,36,nameWidth-48,20},11,palette::muted,true);
     g.setColour(palette::line.withAlpha(.28f));
@@ -330,8 +332,12 @@ void CueGrid::paint(juce::Graphics& g) {
               row.colour>0 && palette::activeAppearance==
                   palette::Appearance::industrialOrange ?
                   palette::readableInk(customSurface) : palette::text,true);
+        // NEXT inside a browsed non-LIVE tab arms only that VIEW's editor
+        // cursor; global GO still targets LIVE. Keep PLAYING/PAUSED priority.
         const auto state=playing?"PLAYING":paused?"PAUSED":
-                         next?"NEXT CUE":row.muted?"MUTED":"STANDBY";
+                         next ? (owner.show.activeCuelist==owner.liveCuelistIndex()
+                                 ? "NEXT CUE" : "VIEW NEXT") :
+                         row.muted?"MUTED":"STANDBY";
         const auto stateInk=playing ? palette::playing :
                             paused || next ? palette::standby :
                             row.muted ? palette::red : palette::muted;
