@@ -13,6 +13,20 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.32] - 2026-11-09
+
+**Stato:** RQ-001, branch di prova con asserzioni di regressione intenzionalmente strette. PR draft, non pronto al merge se CI rossa. Nessuna modifica al runtime o allo schema JSON v10.
+
+### Aggiunto
+- Due test nativi nel percorso Cuelist per riprodurre le ipotesi T02 (import Audio dalla VIEW non LIVE durante playback) e T01 (Cell Play non deve modificare il cursore GO armato).
+- Protocollo `docs/research/RQ-001-VALIDATION.md` con scenario T03 per la comprensibilità della LIVE nascosta nell'overflow, metrica, rischi e gate hardware/UX.
+
+### Verifiche
+- Analisi statica di `src/MainComponent.cpp`, `src/CueOperations.cpp`, `src/CueViews.cpp`, `src/ControlRuntime.cpp` e dei test al commit base `21e75aab`.
+- Windows build/CTest: non ancora eseguiti al momento dell'apertura della PR; registrare l'esito effettivo senza interpretare i test rossi come certificazione di un bug finché non sono riprodotti.
+- Hardware, operatori, screenshot DPI: non eseguiti. Per T02 il selettore file asincrono potrebbe richiedere un controllo manuale su Windows.
+- Nessuna modifica all'engine Audio/MIDI/OSC, al modello di GO/PANIC o alla serializzazione.
+
 ## [0.9.31] - 2026-11-09
 
 **Stato:** bootstrap del laboratorio R&D, senza modifica del runtime audio/MIDI/OSC, del gameplay operatore o dello schema .cuelist v10.
