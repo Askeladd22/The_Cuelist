@@ -1,4 +1,4 @@
-# Folio R&D? No — The CUElist: protocollo tecnico e di ricerca
+# The CUElist — protocollo tecnico di ricerca e validazione
 
 **Ambito:** affidabilità e usabilità di un'app JUCE di show control, non game design.
 
