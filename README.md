@@ -4,7 +4,7 @@
 
 The Cuelist is a desktop application for preparing and executing cue-based live productions, theatre performances, concerts and installations. It brings audio playback, MIDI sequences, OSC events and MIDI-controller mappings into one operator-focused workspace. It is not a digital audio workstation and does not include native video or timecode playback.
 
-**Application version:** [`0.9.28`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
+**Application version:** see [`VERSION.txt`](VERSION.txt) · **Platform:** Windows x64 · **Project format:** `.cuelist` JSON schema v10 · **Technology:** C++17, JUCE 8.0.12 · **License:** proprietary.
 
 > **0.9.28 adds mouse-wheel gain adjustment and aligns the Timeline, MIDI and OSC editor controls; it is not a live-show certification.** The beta numbering has ended, but rehearsals with real devices, licensing verification and Windows DPI/ultrawide visual review remain necessary before commercial distribution or production reliance. CI alone does not prove hardware reliability or end-to-end timing.
 
@@ -339,3 +339,7 @@ The Cuelist is **proprietary software; all rights reserved**. The single [LICENS
 GitHub confirms that **without an open-source licence**, copyright remains with the rights holder; public repository visibility nevertheless permits other users to view and fork through GitHub's functionality. See [GitHub's licensing guidance](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/licensing-a-repository) and [GitHub's Terms of Service](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service). To restrict *future* access to the source, the owner should consider making the repository private. Existing forks and local copies may remain accessible.
 
 Third-party rights, particularly JUCE, remain subject to [NOTICE.md](NOTICE.md) and the respective vendor licences. Commercial binary distribution requires verification of those separate rights.
+
+## Research & Development Lab
+
+[Research & Development Lab](docs/research/README.md) organizza benchmark di software concorrenti, protocolli Audio/MIDI/OSC/LTC, valutazioni UX di operatori, prove riproducibili e decisioni tecniche. È **documentazione di ricerca**, non una certificazione per show dal vivo né una modifica al comportamento dell'app.

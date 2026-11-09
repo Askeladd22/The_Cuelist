@@ -13,6 +13,23 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.31] - 2026-11-09
+
+**Stato:** bootstrap del laboratorio R&D, senza modifica del runtime audio/MIDI/OSC, del gameplay operatore o dello schema .cuelist v10.
+
+### Aggiunto
+- Laboratorio documentale `docs/research/`: protocollo, baseline verificata, brief Deep research, benchmark concorrenti, metodologia di validazione, registro RQ/ADR, istruzioni ChatGPT e schede fonti/esperimenti/operatore/hardware.
+- Priorità di ricerca su workflow VIEW/LIVE, timing end-to-end, fault recovery, interoperabilità MIDI/OSC/LTC, UX Windows e gate commerciali.
+
+### Modificato
+- README collega il laboratorio e usa VERSION.txt come fonte della versione, eliminando l'etichetta iniziale 0.9.28 non aggiornata.
+- VERSION.txt e versione CMake aggiornate coerentemente a 0.9.31.
+
+### Verifiche
+- Letti su main@ae671d77 README, checklist release, versioning, test, build/hardware check e Windows workflow; verificata la struttura del repository.
+- Nessuna build, CTest, misura hardware, test operatore o esecuzione Deep research effettuata per questa PR.
+- Da verificare: CI Windows e revisione del protocollo da parte del team; prima campagna RQ-001 da avviare separatamente.
+
 ## [0.9.30] - 2026-11-05
 
 **Stato:** fix della suite Windows dopo la 0.9.29.
