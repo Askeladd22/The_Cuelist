@@ -415,6 +415,44 @@ void cuelistGuiMockupTests() {
               "Overflow scrolling skipped sequential Cuelists");
     });
 
+    test("RQ001 T03: hidden LIVE still receives GO while another tab is viewed",[] {
+        MainComponent ui(false);
+        addRow(ui.show,"Next LIVE cue");
+        const int nextLiveCueId=ui.show.rows[1].id;
+        ui.engine.connected.store(true);
+        ui.triggerRow(0);
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.liveNextCueIndex()==1,
+              "T03 setup: second cue in LIVE was not armed");
+        for(int i=1;i<9;++i) ui.createCuelist();
+        ui.setSize(1180,820);
+        ui.resized();
+        auto* liveTab=controlsV3::named(ui,"cuelistTab0");
+        auto* viewTab=controlsV3::named(ui,"cuelistTab8");
+        auto* overflow=controlsV3::named(ui,"cuelistOverflow");
+        check(liveTab && viewTab && overflow,
+              "T03: native tab or overflow control is missing");
+        check(!liveTab->isVisible() && viewTab->isVisible() &&
+              overflow->isVisible(),
+              "T03: compact VIEW did not hide the LIVE tab in overflow");
+        check(ui.liveCuelistIndex()==0 && ui.show.activeCuelist==8,
+              "T03: browsing changed LIVE ownership");
+        ui.goNext();
+        ui.engine.collectRetired();
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.engine.acknowledgedCueId.load()==nextLiveCueId,
+              "T03: global GO targeted the browsed VIEW, not hidden LIVE");
+        check(ui.liveCuelistIndex()==0 && ui.show.activeCuelist==8,
+              "T03: GO unexpectedly switched the visible tab");
+        ui.setSize(1920,1080);
+        ui.resized();
+        check(liveTab->isVisible() && viewTab->isVisible() &&
+              !overflow->isVisible(),
+              "T03: wide comparison must expose LIVE and VIEW together");
+        check(liveTab->getTooltip().contains("[LIVE]"),
+              "T03: visible LIVE tab has lost its textual identity");
+    });
+
     test("Deleting Cuelists protects data and reuses the first free number",[] {
         MainComponent ui(false);
         ui.createCuelist();
