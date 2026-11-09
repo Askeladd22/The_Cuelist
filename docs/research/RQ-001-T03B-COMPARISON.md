@@ -39,7 +39,7 @@ Modifiche limitate a componenti JUCE/C++ esistenti e ai test/documentazione: nes
 
 Utilizzare un disegno pilota con **due gruppi controbilanciati** (idealmente 12 operatori, 6 baseline/6 variante al primo contatto, poi crossover con scenari equivalenti ma nomi e numeri cue diversi per ridurre effetto memoria). Confrontare *a parità di larghezza e di DPI*: A 0.9.35 vs B 0.9.36; poi confrontare separatamente le due larghezze.
 
-Domanda: «Se premi ora Space, quale Cuelist e quale cue riceveranno GO?». Misurare tempo prima della risposta in ms, risposta corretta (nome e numero), esitazioni, fiducia 1–5, aperture overflow e richieste di aiuto. Annotare esperienza e ordine. **No dati inventati o prove con apparecchi di spettacolo collegati.**
+Domanda: «Se premi ora Space, quale Cuelist e quale cue riceveranno GO?». Misurare tempo prima della risposta in ms, risposta corretta (nome e numero), esitazioni, fiducia 1–5, aperture overflow e richieste di aiuto. Annotare esperienza e ordine nel CSV vuoto `RQ-001-T03B-OBSERVATIONS.csv`, distinguendo `variant` (A=0.9.35, B=0.9.36) da `condition` (compact/wide). **No dati inventati o prove con apparecchi di spettacolo collegati.**
 
 **Gate esplorativo, NON prescritto da ISO:** trattenere il redesign se aumenta anche un solo errore di identificazione, oppure se causa clipping non aggirabile; proseguire alla valutazione con un campione più ampio se la differenza sembra positiva. Un pilota di 12 persone non può certificare la sicurezza dal vivo.
 
