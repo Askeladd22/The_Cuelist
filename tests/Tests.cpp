@@ -484,6 +484,46 @@ int main() {
         preview.editOscClip();
         savePreview("interface-osc-editor.png");
         preview.closeOscClip();
+        test("RQ001 T03: capture real JUCE VIEW/LIVE overflow comparison", [&] {
+            // Both images have the same semantic state. Only viewport width
+            // changes, so the comparison isolates overflow visibility.
+            MainComponent t03(false);
+            const juce::StringArray names{
+                "Pre-show","Act I","Act II","Act III","Intermission",
+                "Finale","Backup","Soundcheck","Emergency"
+            };
+            check(t03.setCuelistName(0,names[0]),
+                  "T03 image fixture: cannot rename first Cuelist");
+            addRow(t03.show,"Next LIVE cue");
+            t03.engine.connected.store(true);
+            t03.triggerRow(0); // Arm the second cue in LIVE Pre-show.
+            t03.engine.processBlock(nullptr,0,1,100);
+            for (int i=1;i<names.size();++i) {
+                t03.createCuelist();
+                check(t03.setCuelistName(i,names[i]),
+                      "T03 image fixture: cannot rename Cuelist");
+            }
+            check(t03.liveCuelistIndex()==0 && t03.show.activeCuelist==8 &&
+                  t03.liveNextCueIndex()==1,
+                  "T03 image fixture changed LIVE or next GO");
+            auto capture=[&](int width,int height,const juce::String& filename) {
+                t03.setSize(width,height);
+                t03.resized();
+                const auto bitmap=t03.createComponentSnapshot(t03.getLocalBounds());
+                check(bitmap.isValid() && bitmap.getWidth()==width &&
+                      bitmap.getHeight()==height,
+                      "T03 snapshot dimensions differ from native JUCE bounds");
+                auto stream=folder.getChildFile(filename).createOutputStream();
+                check(stream!=nullptr,
+                      "T03 could not create native screenshot artifact");
+                stream->setPosition(0);
+                stream->truncate();
+                check(juce::PNGImageFormat{}.writeImageToStream(bitmap,*stream),
+                      "T03 failed to encode native JUCE screenshot");
+            };
+            capture(1180,820,"interface-rq001-t03-live-hidden-1180.png");
+            capture(1920,1080,"interface-rq001-t03-live-visible-1920.png");
+        });
         std::cerr << "VISUAL QA: all snapshots complete" << std::endl;
     }
     // Run this last: FileChooser::launchAsync opens a modal UI dialog and
