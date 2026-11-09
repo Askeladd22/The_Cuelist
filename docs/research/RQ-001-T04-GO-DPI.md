@@ -76,6 +76,8 @@ Proporre almeno 12 partecipanti volontari, con esperienza eterogenea, e controbi
 ## 7. Red team e rollback
 
 - L01/L02 cambia al riordino delle tab: va verificato al test e segnalato all'operatore. Se crea confusione, **rimuovere solo l'ordinale** in una PR mirata, mantenendo gli altri miglioramenti.
+- Nei PNG T04 la cue LIVE ha raggiunto `END` mentre il pulsante laterale `GO / SPACE` rimane verde e attivabile. È il comportamento preesistente, non un bug introdotto: il pilota deve verificare se l'operatore interpreta erroneamente il pulsante come un GO disponibile. Non cambiare la logica del trasporto in questa PR.
+- La fixture screenshot usa il nome VIEW `Emergency`, senza aggiungere manualmente la parola `VIEW` al nome della Cuelist: il prefisso `VIEW` proviene esclusivamente dall'interfaccia JUCE.
 - Il testo del tooltip non sostituisce un avviso visibile prima di un GO ad alto rischio: se la prova Q2 fallisce anche con tooltip, discutere un indicatore persistente dedicato in nuova decisione UX, non aggiungere un dialogo modale di conferma che ritardi GO.
 - I nomi identici sono proibiti dalla validazione del modello; i prefissi identici **no**. Non modificare i nomi utente automaticamente.
 - Un test che controlla la cue ACK nel motore non dimostra che un dispositivo MIDI/OSC/LTC esterno abbia ricevuto l'evento con timing certificato.
