@@ -54,6 +54,13 @@ Eseguire su **Windows desktop reale**, con output show non collegati, copia del 
 
 **Segnalare separatamente:** (a) risultato automatico, (b) screenshot off-screen, (c) screenshot del desktop Windows 100%, (d) 150%, (e) test con operatori, (f) dispositivi Audio/MIDI/OSC/LTC esterni.
 
+### Fonte tecnica DPI e verifica delle assunzioni
+
+- **Documentazione ufficiale Microsoft Learn:** [High DPI Desktop Application Development on Windows](https://learn.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows) richiede di distinguere il supporto reale per DPI per-monitor dalla semplice scalatura bitmap. Raccomanda di provare avvio a fattori di scala differenti, passaggio tra display con DPI diversi e variazioni a processo aperto.
+- **Definizioni ufficiali Microsoft:** [WM_DPICHANGED](https://learn.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged) associa **100% a 96 DPI** e **150% a 144 DPI**, ma ciò non prova quale DPI l'applicazione abbia effettivamente ricevuto.
+- **API ufficiale JUCE:** [juce::Desktop::getDisplays()](https://docs.juce.com/develop/classjuce_1_1Desktop.html) consente di interrogare i display; la presenza della API non prova che questa build gestisca correttamente tutti i cambi DPI.
+- **Audit sorgenti di questa iterazione:** nei file `CMakeLists.txt`, `src/Main.cpp` e `src/MainComponent.cpp` esaminati non è dichiarata esplicitamente la modalità DPI-awareness di Windows. **Modalità DPI-awareness dell'eseguibile = ND** fino a ispezione del manifest binario e prova in Windows. Non inferire `PerMonitorV2` dalla sola presenza di JUCE.
+
 ## 6. Pilota con operatori e gate di giudizio
 
 Proporre almeno 12 partecipanti volontari, con esperienza eterogenea, e controbilanciare gli ordini A/B. Evitare che tutti vedano prima la versione nuova. Gli scenari dovranno essere equivalenti ma con nomi, posizioni e numeri cue controbilanciati per non affidarsi alla memoria.
