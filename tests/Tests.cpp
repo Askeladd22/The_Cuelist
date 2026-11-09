@@ -486,6 +486,34 @@ int main() {
         preview.closeOscClip();
         std::cerr << "VISUAL QA: all snapshots complete" << std::endl;
     }
+    // Run this last: FileChooser::launchAsync opens a modal UI dialog and
+    // must not affect later synthetic button/focus tests in this process.
+    test("RQ001 T02: inspecting empty Audio in VIEW preserves running LIVE", [] {
+        MainComponent ui(false);
+        auto audio=std::make_shared<AudioClip>();
+        audio->sampleRate=100;
+        audio->samples.setSize(1,1200);
+        for (int i=0;i<1200;++i) audio->samples.setSample(0,i,.2f);
+        const int liveCell=ui.show.rows[0].cells[0].id;
+        ui.clips[liveCell]=audio;
+        ui.engine.connected.store(true);
+        ui.triggerRow(0);
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.engine.getCellPlayback(liveCell).playing,
+              "T02 setup: LIVE Audio is not playing");
+        ui.createCuelist(); // VIEW B is an empty Audio cell; LIVE stays A.
+        check(ui.show.activeCuelist!=ui.liveCuelistIndex() &&
+              ui.show.rows[0].cells[0].file.isEmpty(),
+              "T02 setup: expected empty Audio cell in non-LIVE VIEW");
+        // This is the same operation dispatched by an Audio-cell double-click.
+        // FileChooser::launchAsync is nonblocking; no file is selected.
+        ui.triggerCell();
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.liveCuelistIndex()==0,
+              "T02: opening an empty VIEW cell took ownership of LIVE");
+        check(ui.engine.getCellPlayback(liveCell).playing,
+              "T02: opening an empty VIEW cell sent PANIC to LIVE");
+    });
     std::cout << checks << " assertions, " << failures << " failed tests\n";
     return failures == 0 ? 0 : 1;
 }
