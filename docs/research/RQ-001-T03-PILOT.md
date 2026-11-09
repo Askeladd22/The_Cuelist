@@ -81,3 +81,11 @@ I record vanno nel file `RQ-001-T03-OBSERVATIONS.csv`: una riga per partecipante
 - [ ] Decisione ADR: lasciare UI invariata oppure prototipare un'indicazione LIVE più esplicita e ripetere il test.
 
 **Rollback:** PR sperimentale, solo test/documenti; chiuderla senza merge in caso di incompatibilità. Nessun cambio di transport, UI o schema JSON v10.
+
+
+## 8. Blocco compilazione T03 e remediation (2026-11-09)
+
+- Log Windows **fornito dall'utente**, baseline 0.9.34 (PR #155 già unita a `main`): applicazione `The Cuelist.exe` compilata, progetto `CuelistTests.vcxproj` **non compilato**. MSVC C2039 su `tests/CuelistGuiMockupTests.h:452`: `getTooltip` non è un membro di `juce::Component`.
+- Origine statica: `controlsV3::named()` restituisce `juce::Component*`; `juce::TextButton` implementa `TooltipClient` e permette `getTooltip()`.
+- In `0.9.35`, il test usa `dynamic_cast<juce::TextButton*>(liveTab)` con verifica di null prima di esaminare il tooltip. La modifica è limitata al test; nessun runtime, layout o comportamento GO modificato.
+- **Non** considerare T03 passato dal log 0.9.34: CTest non è partito. Gate 0.9.35: compilazione completa, nuovo CTest, i due PNG screenshot T03, successiva ispezione dei PNG. Gate DPI reali, operatori e hardware ancora **ND**.
