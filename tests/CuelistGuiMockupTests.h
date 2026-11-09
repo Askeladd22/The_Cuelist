@@ -599,7 +599,8 @@ void cuelistGuiMockupTests() {
               overflow->getTooltip().contains(right),
               "T04: switching to similarly named LIVE lost exact identity");
         const auto imageB=ui.createComponentSnapshot(bounds);
-        check(imageB.isValid() && imageB.getSize()==imageA.getSize(),
+        check(imageB.isValid() && imageB.getWidth()==imageA.getWidth() &&
+              imageB.getHeight()==imageA.getHeight(),
               "T04: native locator snapshots have inconsistent dimensions");
         bool distinct=false;
         for(int y=0;y<imageA.getHeight() && !distinct;++y)
