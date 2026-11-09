@@ -27,7 +27,7 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 ### Test e ricerca
 - Regressione T03-B verifica nome LIVE, cue armata, tooltip dell'overflow, GO da VIEW, END, rinomina e riarmo; mantiene il test T03 originale.
 - Due nuove immagini da componenti JUCE (`interface-rq001-t03b-*.png`) affiancabili agli screenshot della 0.9.35 ricevuti dall'utente; le due precedenti immagini T03 continuano a essere generate nello stesso CTest.
-- Protocollo e controesempi: `docs/research/RQ-001-T03B-COMPARISON.md`. Misure operatori, screenshot desktop a DPI 100/150 e hardware esterno: **ND**.
+- Protocollo e controesempi: `docs/research/RQ-001-T03B-COMPARISON.md`; CSV vuoto dei dati comparativi `docs/research/RQ-001-T03B-OBSERVATIONS.csv`. Misure operatori, screenshot desktop a DPI 100/150 e hardware esterno: **ND**.
 - Compilazione/CTest Windows della PR: **da verificare**. Il log 0.9.35 fornito dall'utente aveva 420.023 asserzioni e 0 fallimenti.
 
 ## [0.9.35] - 2026-11-09
