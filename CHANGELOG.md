@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.34] - 2026-11-09
+
+**Stato:** strumentazione di ricerca RQ-001/T03, nessuna modifica al runtime né alla grafica. Non si tratta di una release certificata per impiego live.
+
+### Aggiunto
+- Test JUCE di regressione che copre GO dalla VIEW `Emergency` verso la Cuelist LIVE nascosta nell'overflow a 1180×820 e controprova con tab visibili a 1920×1080.
+- Due snapshot native JUCE della stessa scena VIEW/LIVE a 1180×820 e 1920×1080, pubblicati come `interface-rq001-t03-*.png` fra gli artefatti del workflow Windows.
+- Protocollo preregistrato `docs/research/RQ-001-T03-PILOT.md` e modello CSV anonimo `RQ-001-T03-OBSERVATIONS.csv` per la misura con operatori reali.
+
+### Documentazione e verifiche
+- `RQ-001-VALIDATION.md` aggiornata con il log Windows 0.9.33 fornito dall'utente: 419.999 asserzioni, zero fallimenti, durata CTest 5,44 s; T01 e T02 superati.
+- CI Windows/CTest 0.9.34, review visiva dei PNG, DPI Windows reali 100%/150% e pilota operatori: **da verificare**; la sola rasterizzazione off-screen non convalida scaling DPI o usabilità.
+- Banco Audio/MIDI/OSC/LTC con dispositivi esterni: **non eseguito**, gate separato.
+- Restano intatti GO/STOP/PANIC, engine Audio/MIDI/OSC, editor, Undo/Redo, Control Map e lo schema .cuelist JSON v10.
+
 ## [0.9.33] - 2026-11-09
 
 **Stato:** correzione mirata RQ-001 su VIEW/LIVE e isolamento del selettore file nei test. Non certificata per lo show live; schema .cuelist JSON v10 invariato.
