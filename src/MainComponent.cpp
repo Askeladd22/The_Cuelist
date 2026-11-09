@@ -885,7 +885,13 @@ void MainComponent::paint(juce::Graphics& g) {
     // Keep the established 51px ON DECK panel and its adjacent GO/PANIC
     // hitboxes. The actual LIVE name remains on-screen even when its tab
     // is hidden behind the Cuelist overflow menu.
-    label(g,"ON DECK  /  LIVE",{20,h-333,145,16},11,palette::amber,true);
+    // The numeric locator is the LIVE Cuelist's CURRENT tab position,
+    // not a persistent project ID. It disambiguates long names that render
+    // identically after ellipsis in the fixed 94px name field.
+    label(g,"ON DECK / LIVE",{20,h-333,106,16},11,palette::amber,true);
+    label(g,"L"+juce::String(liveCuelist+1).paddedLeft('0',2),
+          {129,h-333,31,16},10,palette::amber,true,
+          juce::Justification::centredRight);
     label(g,liveCuelistNameForUi(),{20,h-314,94,24},15,palette::text,true);
     const auto nextLiveGo=nextLiveGoCueForUi();
     label(g,nextLiveGo=="END" ? "END" : "GO "+nextLiveGo,

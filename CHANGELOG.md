@@ -13,6 +13,23 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.37] - 2026-11-09
+
+**Stato:** RQ-001/T04, indagine reversibile sulla comprensibilità dei due comandi GO e sulla distinzione di Cuelist LIVE con nomi lunghi simili. Nessun merge automatico; non certificata per uno spettacolo live.
+
+### Interfaccia JUCE
+- Il pannello ON DECK / LIVE include ora un piccolo marcatore `L01`–`L12` della posizione corrente della Cuelist LIVE. Non è un ID persistente: segue l'ordine delle tab e affianca il nome LIVE e `GO NN` senza cambiare layout o hitbox.
+- Il tooltip del vero GO di riga nel pannello CueGrid distingue il GO sulla LIVE corrente dal click da una VIEW diversa, che interrompe la precedente LIVE e trasferisce il controllo alla Cuelist visualizzata. Il pulsante laterale GO / SPACE continua ad agire sulla LIVE senza aprire la VIEW.
+- Il sottotitolo della Cuelist usa correttamente `1 cue` e `1 clip` al singolare, mantenendo gli altri conteggi invariati.
+
+### Test e documenti
+- Test T04 di interazione JUCE sulla superficie GO della riga, separata dal GO globale; verifica conferma cue, cambio della LIVE e tooltip prima/dopo.
+- Test T04 con due nomi diversi di 64 caratteri con prefisso identico: il nome completo rimane nel modello e nell'overflow, i due marcatori LIVE producono snapshot distinguibili.
+- La suite genera tre screenshot nativi JUCE `interface-rq001-t04-*.png` a 1180/1920 per ispezione senza sostituirli a un test DPI Windows.
+- Protocollo `docs/research/RQ-001-T04-GO-DPI.md` e CSV anonimo vuoto `RQ-001-T04-OBSERVATIONS.csv`: criteri, controesempi, 100/150% DPI reale, pilot con operatori, test hardware separati.
+- Baseline 0.9.36: Windows CI `42691760123` PASS, **420.039 asserzioni / 0 fallimenti**. Candidato 0.9.37 sul commit `2ee48e4cb00ff0fbccc39aece346fae5caaa68f9`: Windows CI `42700175769` PASS, **420.071 asserzioni / 0 fallimenti**, CTest 5,06 s; artefatto screenshot caricato. Immagini esaminate: L01/L02 visibili, nomi lunghi ancora troncati in modo identico; 100/150% DPI reali e pilota operatori **ND**.
+- Nessuna modifica a motore Audio/MIDI/OSC/LTC, GO/STOP/PANIC runtime, Control Map, Undo/Redo o schema .cuelist JSON v10.
+
 ## [0.9.36] - 2026-11-09
 
 **Stato:** RQ-001/T03-B, variante sperimentale nativa JUCE per rendere più esplicito il rapporto VIEW/LIVE. Nessun merge automatico; la sola CI non certifica un utilizzo live.
