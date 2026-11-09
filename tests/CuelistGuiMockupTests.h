@@ -456,6 +456,58 @@ void cuelistGuiMockupTests() {
               "T03: visible LIVE tab has lost its textual identity");
     });
 
+    test("RQ001 T03B: persistent LIVE identity and hidden-tab discovery survive GO",[] {
+        MainComponent ui(false);
+        check(ui.setCuelistName(0,"Pre-show"),
+              "T03B setup: cannot name LIVE Cuelist");
+        addRow(ui.show,"Next LIVE cue");
+        const int liveSecond=ui.show.rows[1].id;
+        ui.engine.connected.store(true);
+        ui.triggerRow(0);
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.liveCuelistNameForUi()=="Pre-show" &&
+              ui.nextLiveGoCueForUi()=="02",
+              "T03B: LIVE label does not represent the armed cue");
+        for(int i=1;i<9;++i) ui.createCuelist();
+        check(ui.setCuelistName(8,"Emergency"),
+              "T03B setup: cannot name VIEW Cuelist");
+        ui.setSize(1180,820);
+        ui.resized();
+        auto* overflow=dynamic_cast<juce::TextButton*>(
+            controlsV3::named(ui,"cuelistOverflow"));
+        check(overflow && overflow->isVisible() &&
+              overflow->getTooltip().contains("Pre-show"),
+              "T03B: hidden LIVE has no textual discoverability in overflow");
+        check(ui.show.activeCuelist==8 && ui.liveCuelistIndex()==0 &&
+              ui.liveCuelistNameForUi()=="Pre-show" &&
+              ui.nextLiveGoCueForUi()=="02",
+              "T03B: VIEW switched the LIVE label or the armed GO target");
+        const auto snapshot=ui.createComponentSnapshot(
+            {12,ui.getHeight()-339,156,51});
+        check(snapshot.isValid() && snapshot.getWidth()==156 &&
+              snapshot.getHeight()==51,
+              "T03B: native ON DECK surface cannot be rendered");
+        ui.goNext();
+        ui.engine.collectRetired();
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.engine.acknowledgedCueId.load()==liveSecond &&
+              ui.show.activeCuelist==8 &&
+              ui.liveCuelistNameForUi()=="Pre-show" &&
+              ui.nextLiveGoCueForUi()=="END",
+              "T03B: GO from VIEW failed to refresh LIVE target/end-of-sequence");
+        check(ui.setCuelistName(0,"Pre-show renamed") &&
+              ui.liveCuelistNameForUi()=="Pre-show renamed" &&
+              overflow->getTooltip().contains("Pre-show renamed"),
+              "T03B: a LIVE rename did not refresh hidden-tab identity");
+        ui.activateCuelist(0);
+        check(ui.show.activeCuelist==ui.liveCuelistIndex() &&
+              ui.nextLiveGoCueForUi()=="END",
+              "T03B: returning to LIVE changed its GO cursor");
+        ui.select(0,0);
+        check(ui.nextLiveGoCueForUi()=="01",
+              "T03B: explicit LIVE selection did not rearm the displayed GO");
+    });
+
     test("Deleting Cuelists protects data and reuses the first free number",[] {
         MainComponent ui(false);
         ui.createCuelist();
