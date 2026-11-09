@@ -2006,6 +2006,10 @@ void MainComponent::triggerCell() {
         liveCuelist=show.activeCuelist;
         liveNextCue=nextCue;
         refreshCuelistTabs();
+        // The audio callback still owns the old LIVE RenderState until a
+        // snapshot of this Cuelist is published. A Cell Play from VIEW must
+        // enqueue its command against the newly selected LIVE voices.
+        engine.publish(makeLiveRenderState());
     }
     const bool playing=engine.getCellPlayback(c.id).playing;
     const bool needsOutput=c.behaviour!=Behaviour::stop && !(playing && (c.behaviour==Behaviour::pauseResume
