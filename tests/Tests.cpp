@@ -529,6 +529,53 @@ int main() {
             capture(1180,820,"interface-rq001-t03b-live-hidden-1180.png");
             capture(1920,1080,"interface-rq001-t03b-live-visible-1920.png");
         });
+        test("RQ001 T04: native screenshots of two similarly named hidden LIVE Cuelists", [&] {
+            MainComponent t04(false);
+            const juce::String common="Emergency Lighting Subsystem - Cue Group ";
+            const auto longA=common+
+                juce::String::repeatedString("A",64-common.length());
+            const auto longB=common+
+                juce::String::repeatedString("B",64-common.length());
+            check(t04.setCuelistName(0,longA),
+                  "T04 image fixture: first long name was rejected");
+            t04.engine.connected.store(true);
+            t04.triggerRow(0);
+            t04.engine.collectRetired();
+            t04.engine.processBlock(nullptr,0,1,100);
+            t04.createCuelist();
+            check(t04.setCuelistName(1,longB),
+                  "T04 image fixture: second long name was rejected");
+            for(int i=2;i<9;++i) t04.createCuelist();
+            check(t04.setCuelistName(8,"Emergency VIEW"),
+                  "T04 image fixture: VIEW name was rejected");
+            check(t04.show.activeCuelist==8 && t04.liveCuelistIndex()==0,
+                  "T04 image fixture: expected the first hidden LIVE");
+            auto save=[&](int width,int height,const juce::String& fileName) {
+                t04.setSize(width,height);
+                t04.resized();
+                const auto bitmap=t04.createComponentSnapshot(t04.getLocalBounds());
+                check(bitmap.isValid() && bitmap.getWidth()==width &&
+                      bitmap.getHeight()==height,
+                      "T04 native screenshot has incorrect dimensions");
+                auto stream=folder.getChildFile(fileName).createOutputStream();
+                check(stream!=nullptr,
+                      "T04 failed to open screenshot artifact stream");
+                stream->setPosition(0);
+                stream->truncate();
+                check(juce::PNGImageFormat{}.writeImageToStream(bitmap,*stream),
+                      "T04 failed writing native screenshot");
+            };
+            save(1180,820,"interface-rq001-t04-long-live-1-1180.png");
+            t04.activateCuelist(1);
+            t04.triggerRow(0);
+            t04.engine.collectRetired();
+            t04.engine.processBlock(nullptr,0,1,100);
+            t04.activateCuelist(8);
+            check(t04.liveCuelistIndex()==1 && t04.show.activeCuelist==8,
+                  "T04 image fixture: LIVE transfer did not retain VIEW");
+            save(1180,820,"interface-rq001-t04-long-live-2-1180.png");
+            save(1920,1080,"interface-rq001-t04-long-live-2-1920.png");
+        });
         std::cerr << "VISUAL QA: all snapshots complete" << std::endl;
     }
     // Run this last: FileChooser::launchAsync opens a modal UI dialog and
