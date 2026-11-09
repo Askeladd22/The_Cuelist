@@ -13,6 +13,18 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.35] - 2026-11-09
+
+**Stato:** correzione puntuale della compilazione dei test nativi RQ-001/T03 dopo l'integrazione della 0.9.34; runtime e interfaccia JUCE invariati.
+
+### Corretto
+- `tests/CuelistGuiMockupTests.h`: il controllo del tooltip LIVE usa il vero `juce::TextButton` tramite `dynamic_cast` verificato prima di chiamare `getTooltip()`. Il lookup generico `controlsV3::named()` restituisce `juce::Component*`, che non dispone di tale membro.
+
+### Verifiche
+- Windows locale 0.9.34, log dell'utente: MSBuild ha prodotto `The Cuelist.exe`, ma `CuelistTests.vcxproj` non compila a causa di C2039 (`getTooltip` non appartiene a `juce::Component`), alla riga 452 del test; CTest non eseguito. Lo stesso workflow Windows della PR #155 risulta fallito.
+- La correzione 0.9.35 richiede nuova build/CTest Windows e verifica degli artefatti screenshot T03. **ND fino all'esito**, senza attestare risoluzione non misurata.
+- Nessuna modifica al trasporto, a Audio/MIDI/OSC/LTC, a GO/PANIC, alla GUI nativa o allo schema JSON v10. Validazione operatore/DPI/hardware ancora aperta.
+
 ## [0.9.34] - 2026-11-09
 
 **Stato:** strumentazione di ricerca RQ-001/T03, nessuna modifica al runtime né alla grafica. Non si tratta di una release certificata per impiego live.
