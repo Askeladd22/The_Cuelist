@@ -1993,18 +1993,20 @@ void MainComponent::goNext() {
 }
 void MainComponent::triggerCell() {
     if (!applyInspector()) return;
+    auto& c=show.rows[selectedRow].cells[selectedColumn];
+    // Editing or importing a dormant VIEW cell is not a playback action.
+    // Only an actual clip trigger may transfer ownership of the LIVE transport.
+    if (show.columns[selectedColumn].type==ColumnType::control) {
+        editControlSet(selectedRow,selectedColumn); return;
+    }
+    if (show.columns[selectedColumn].type==ColumnType::osc && !c.osc) { editOscClip(); return; }
+    if (!hasClip(selectedRow,selectedColumn)) { if (show.columns[selectedColumn].type==ColumnType::midi) editMidiClip(); else if (show.columns[selectedColumn].type==ColumnType::osc) editOscClip(); else importDialog(); return; }
     if(liveCuelist!=show.activeCuelist) {
         stopAll();
         liveCuelist=show.activeCuelist;
         liveNextCue=nextCue;
         refreshCuelistTabs();
     }
-    auto& c=show.rows[selectedRow].cells[selectedColumn];
-    if (show.columns[selectedColumn].type==ColumnType::control) {
-        editControlSet(selectedRow,selectedColumn); return;
-    }
-    if (show.columns[selectedColumn].type==ColumnType::osc && !c.osc) { editOscClip(); return; }
-    if (!hasClip(selectedRow,selectedColumn)) { if (show.columns[selectedColumn].type==ColumnType::midi) editMidiClip(); else if (show.columns[selectedColumn].type==ColumnType::osc) editOscClip(); else importDialog(); return; }
     const bool playing=engine.getCellPlayback(c.id).playing;
     const bool needsOutput=c.behaviour!=Behaviour::stop && !(playing && (c.behaviour==Behaviour::pauseResume
         || c.behaviour==Behaviour::pauseRestart || c.behaviour==Behaviour::continuePlaying));
@@ -2018,9 +2020,14 @@ void MainComponent::triggerCell() {
     send(c.id,false);
 }
 void MainComponent::triggerCellAt(int row,int column) {
-    const int armed=nextCue;
+    const int armed=nextCue, armedLive=liveNextCue;
+    const bool wasLiveView=liveCuelist==show.activeCuelist;
     if (!select(row,column)) return;
-    nextCue=armed; triggerCell(); grid.repaint();
+    // select() intentionally arms row GO during normal selection, but
+    // the direct Cell Play hitbox must preserve both independent GO cursors.
+    nextCue=armed;
+    if (wasLiveView) liveNextCue=armedLive;
+    triggerCell(); grid.repaint();
 }
 void MainComponent::stopCellAt(int row,int column) {
     if (row<0 || row>=(int)show.rows.size() || column<0 || column>=(int)show.columns.size()) return;
