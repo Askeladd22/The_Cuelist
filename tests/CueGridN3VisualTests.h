@@ -381,16 +381,20 @@ void cueGridN3VisualTests() {
               "Hidden disabled Stop region prevented empty cell selection");
     });
 
-    test("N3.4 keeps only BPM and cue Auto Stop non-overlapping hit targets",[] {
+    test("N3.4+ keeps BPM, Auto Stop and + as separate hit targets",[] {
         using namespace cuelist;
         const auto bpm=CueMetricsOverlay::bpmEditBounds(0);
         const auto toggle=CueMetricsOverlay::autoStopToggleBounds(0);
+        const auto plus=CueMetricsOverlay::autoStopCellsBounds(0);
         check(CueMetricsOverlay::width==184 &&
               bpm==juce::Rectangle<int>(0,0,91,62) &&
               toggle==juce::Rectangle<int>(102,8,78,26) &&
-              !bpm.intersects(toggle) &&
-              toggle.getRight()<=CueMetricsOverlay::width,
-              "N3.4 fixed metrics shrank or lost its independent controls");
+              plus==juce::Rectangle<int>(127,38,28,20) &&
+              !bpm.intersects(toggle) && !bpm.intersects(plus) &&
+              !toggle.intersects(plus) &&
+              toggle.getRight()<=CueMetricsOverlay::width &&
+              plus.getBottom()<CueGrid::rowHeight,
+              "BPM, row toggle and + picker hitboxes overlap or exceed their row");
     });
 
     test("N3.4 selected metric row matches the continuous CueGrid surface",[] {
@@ -440,11 +444,14 @@ void cueGridN3VisualTests() {
               ui.show.rows[(size_t)rowIndex+1].stopOnNext==neighbor,
               "Auto Stop toggled the wrong row after Y scroll");
         const auto changed=encodeShow(ui.show);
-        // This used to expand CELLS. It must now be visually and
-        // functionally inert; edit exceptions via cell context menus.
-        cueViewFixtures::click(*metrics,121.0f,(float)y+46.0f);
+        // Blank space outside the restored + must not alter cue state.
+        cueViewFixtures::click(*metrics,169.0f,(float)y+46.0f);
         check(encodeShow(ui.show)==changed,
-              "Removed CELLS area still performs a hidden action");
+              "Blank metrics area still performs an accidental action");
+        const juce::Point<float> picker{141.f,(float)y+48.f};
+        metrics->mouseMove(cueViewFixtures::event(*metrics,picker,picker));
+        check(metrics->getTooltip().contains("celle"),
+              "Restored + has no accessible cell-selection tooltip");
     });
 
     test("N3.4 metric hover is visual only and restores when pointer exits",[] {
