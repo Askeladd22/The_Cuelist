@@ -348,12 +348,15 @@ void MainComponent::positionInlineNameEditor() {
             cancelInlineRename();return;
         }
         // Inline cell editing follows the viewport, not the pinned headers.
-        const int x=viewport.getX()+grid.columnX(column)-
+        // A visible vertical scrollbar is on the LEFT of the grid.
+        const int leftInset=viewport.getVerticalScrollBar().isVisible() ?
+                            viewport.getScrollBarThickness() : 0;
+        const int x=viewport.getX()+leftInset+grid.columnX(column)-
                     viewport.getViewPositionX()+8;
         const int y=viewport.getY()+CueGridGeometry::rowTop(row)-
                     viewport.getViewPositionY()+CueGrid::rowContentInset+6;
         rect={x,y,grid.columnWidthAt(column)-16,27};
-        if (rect.getX()<viewport.getX() ||
+        if (rect.getX()<viewport.getX()+leftInset ||
             rect.getRight()>viewport.getRight() ||
             rect.getY()<viewport.getY()+CueGrid::headerHeight ||
             rect.getBottom()>viewport.getBottom()) {
