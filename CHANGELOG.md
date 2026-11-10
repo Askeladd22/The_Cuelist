@@ -13,6 +13,18 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.41] - 2026-11-10
+
+**Stato:** hotfix test Windows della modalità di selezione celle Auto Stop introdotta nella 0.9.40. Non modifica i componenti JUCE operativi, il motore, VIEW/LIVE o i file `.cuelist` JSON v10.
+
+### Corretto
+- `tests/CueGridN3VisualTests.h`: il test di sicurezza PANIC costruisce esplicitamente `juce::KeyPress{juce::KeyPress::escapeKey}` prima di invocare `MainComponent::keyPressed`. La costante `escapeKey` è un intero e non viene convertita implicitamente dal costruttore `explicit` di JUCE.
+- La build Release 0.9.40 fornita dall'operatore compilava `The Cuelist.exe` ma **falliva** su `CuelistTests.vcxproj` (MSVC C2664 alla riga 581), pertanto non era una compilazione completa riuscita.
+
+### Verifiche e limiti
+- Nuovo candidato 0.9.41: Windows CI Release/CTest da verificare prima del merge. Hardware Audio/MIDI/OSC/LTC, DPI e prove con operatori: **ND**.
+- Rollback: revert della PR senza migrazione di progetto.
+
 ## [0.9.40] - 2026-11-10
 
 **Stato:** intervento UX richiesto dall'operatore: Auto Stop inline per cella, senza PopupMenu. Candidato non certificato per uso live; verificare Windows CI/CTest e screenshot nativi.
