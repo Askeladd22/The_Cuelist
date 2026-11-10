@@ -8,6 +8,31 @@ namespace cuelist {
 // Cell clipboard, swaps and clip timing edits retain their existing
 // transport/engine publication semantics. No audio callback changes.
 
+juce::File MainComponent::audioFileForExplorer(int row,int column) const {
+    if (row<0 || row>=(int)show.rows.size() ||
+        column<0 || column>=(int)show.columns.size() ||
+        show.columns[(size_t)column].type!=ColumnType::audio) return {};
+    const auto& filePath=show.rows[(size_t)row].cells[(size_t)column].file;
+    if (filePath.isEmpty() || !juce::File::isAbsolutePath(filePath)) return {};
+    const juce::File file(filePath);
+    return file.existsAsFile() ? file : juce::File{};
+}
+
+bool MainComponent::revealAudioCellInExplorer(int row,int column) {
+    const auto file=audioFileForExplorer(row,column);
+    if (file==juce::File{}) {
+        status="Audio file unavailable. Reconnect the source before using Find in Explorer.";
+        repaint();
+        return false;
+    }
+    // revealToUser opens Explorer on Windows and highlights the file.
+    // It does not execute media, rename files or change playback routing.
+    file.revealToUser();
+    status="Requested Explorer location for "+file.getFileName()+".";
+    repaint();
+    return true;
+}
+
 void MainComponent::moveClip(int sr,int sc,int tr,int tc) {
     if (sc>=0 && tc>=0 && sc<(int)show.columns.size() && tc<(int)show.columns.size() &&
         (show.columns[(size_t)sc].collapsed || show.columns[(size_t)tc].collapsed))
