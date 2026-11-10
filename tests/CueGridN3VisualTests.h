@@ -454,6 +454,67 @@ void cueGridN3VisualTests() {
               "Restored + has no accessible cell-selection tooltip");
     });
 
+    test("N3.4+ cell picker lists Audio, MIDI, OSC and Control with live checks",[] {
+        using namespace cuelist;
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::midi,"MIDI triggers");
+        addColumn(ui.show,ColumnType::osc,"OSC lights");
+        addColumn(ui.show,ColumnType::control,"Control Map");
+        addRow(ui.show,"Second cue");
+        ui.setSize(1440,900);
+        auto* metrics=cueViewFixtures::find<CueMetricsOverlay>(ui);
+        check(metrics!=nullptr,"Fixed Auto Stop + is missing");
+        const bool rowGate=ui.show.rows[0].stopOnNext;
+        const auto menu=metrics->createAutoStopCellsMenu(0);
+        std::function<void()> midiAction,controlAction,oscAction;
+        int actions=0;
+        for (juce::PopupMenu::MenuItemIterator it(menu);it.next();) {
+            const auto& item=it.getItem();
+            if (!item.action) continue; // Ignore the section header.
+            ++actions;
+            check(item.isTicked,"New cells should be checked in the + menu");
+            if (item.text.contains("MIDI triggers")) midiAction=item.action;
+            if (item.text.contains("OSC lights")) oscAction=item.action;
+            if (item.text.contains("Control Map")) controlAction=item.action;
+        }
+        check(actions==(int)ui.show.columns.size() &&
+              (bool)midiAction && (bool)oscAction && (bool)controlAction,
+              "The + menu omitted a column type or a selectable cell");
+        midiAction();
+        controlAction();
+        check(ui.show.rows[0].cells[0].stopOnNext &&
+              !ui.show.rows[0].cells[1].stopOnNext &&
+              ui.show.rows[0].cells[2].stopOnNext &&
+              !ui.show.rows[0].cells[3].stopOnNext &&
+              ui.show.rows[0].stopOnNext==rowGate &&
+              ui.show.rows[1].cells[1].stopOnNext,
+              "The + menu changed unrelated cells, cue gate or adjacent row");
+
+        const auto updated=metrics->createAutoStopCellsMenu(0);
+        bool midiChecked=true,controlChecked=true,oscChecked=false;
+        for (juce::PopupMenu::MenuItemIterator it(updated);it.next();) {
+            const auto& item=it.getItem();
+            if (!item.action) continue;
+            if (item.text.contains("MIDI triggers")) midiChecked=item.isTicked;
+            if (item.text.contains("Control Map")) controlChecked=item.isTicked;
+            if (item.text.contains("OSC lights")) oscChecked=item.isTicked;
+        }
+        check(!midiChecked && !controlChecked && oscChecked,
+              "The + menu checkmarks did not refresh from cell Auto Stop state");
+        Show reopened;
+        check(decodeShow(encodeShow(ui.show),reopened).wasOk() &&
+              !reopened.rows[0].cells[1].stopOnNext &&
+              !reopened.rows[0].cells[3].stopOnNext,
+              "Cell selections from + did not persist in JSON v10");
+
+        // A menu created before a row move must resolve stable IDs at click.
+        check(ui.moveCueRow(0,1),"Could not reorder cues for stale-menu test");
+        oscAction();
+        check(!ui.show.rows[1].cells[2].stopOnNext &&
+              ui.show.rows[0].cells[2].stopOnNext,
+              "Delayed + menu action edited a row index instead of its cue ID");
+    });
+
     test("N3.4 metric hover is visual only and restores when pointer exits",[] {
         using namespace cuelist;
         MainComponent ui(false);
