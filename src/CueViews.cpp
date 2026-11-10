@@ -435,10 +435,17 @@ void CueGrid::paint(juce::Graphics& g) {
                 label(g,cell.name.isNotEmpty()?cell.name:mapCaption,
                       {x+8,y+6,w-(cell.stopOnNext && !picking?16:67),18},
                       11,assigned?tone:palette::muted,true);
-                if (assigned || cell.name.isNotEmpty())
-                    label(g,cell.name.isNotEmpty()?mapCaption:
-                          (count>0 ? juce::String(count)+" mappings" : juce::String("Empty map")),
-                          {x+8,y+26,w-16,16},10,assigned?palette::text:palette::muted);
+                if (assigned || cell.name.isNotEmpty()) {
+                    // Preserve map identity AND binding count when a Control
+                    // cell receives its own independent operator label.
+                    const auto detail=cell.name.isNotEmpty() ?
+                        (assigned ? mapCaption+" ("+juce::String(count)+")" :
+                                    mapCaption) :
+                        (count>0 ? juce::String(count)+" mappings" :
+                                   juce::String("Empty map"));
+                    label(g,detail,{x+8,y+26,w-16,16},10,
+                          assigned?palette::text:palette::muted);
+                }
             } else if (loaded) {
                 auto playback=owner.engine.getCellPlayback(cell.id);
                 if (!owner.engine.connected.load())
