@@ -1993,6 +1993,7 @@ void MainComponent::toggleRowPlayPause(int row) {
     grid.repaint();repaint();
 }
 void MainComponent::goNext() {
+    cueMetrics.cancelAutoStopCellPicking();
     if(liveCuelist==show.activeCuelist) {
         if(nextCue<(int)show.rows.size()) triggerRow(nextCue);
         else { status="End of live sequence. Select a cue to restart."; repaint(); }
