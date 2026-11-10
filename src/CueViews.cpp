@@ -704,6 +704,8 @@ void CueGrid::mouseMove(const juce::MouseEvent& e) {
             "Auto Stop: click to include this cell (stops at the next GO).";
     }
     setTooltip(tooltip);
+    if (valid && owner.cueMetrics.isAutoStopCellPickingRow(row))
+        setMouseCursor(juce::MouseCursor::PointingHandCursor);
     if (hoverRow==nextRow && hoverColumn==nextColumn &&
         hoverCellAction==nextAction) return;
     const auto repaintCell=[this](int r,int c) {
