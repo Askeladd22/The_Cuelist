@@ -258,8 +258,12 @@ public:
     void paint(juce::Graphics&) override;
     void beginBpmEdit(int row);
     void syncBpmEditor();
-    // Production menu also exercised by native JUCE interaction tests.
-    juce::PopupMenu createAutoStopCellsMenu(int row);
+    // Transient row-scoped cell selection, not a PopupMenu or show-model field.
+    void toggleAutoStopCellPicking(int row);
+    void cancelAutoStopCellPicking();
+    bool isAutoStopCellPicking() const noexcept;
+    bool isAutoStopCellPickingRow(int row) const noexcept;
+    bool handleAutoStopCellClick(int row,int column);
     bool isBpmEditing() const { return editingRowId>0; }
     juce::TextEditor& bpmEditorForTests() { return bpmEditor; }
     void mouseDown(const juce::MouseEvent&) override;
@@ -274,16 +278,17 @@ public:
         return {0,rowTop,91,CueGridGeometry::rowHeight};
     }
     static juce::Rectangle<int> autoStopToggleBounds(int rowTop) {
-        return {102,rowTop+8,78,26};
+        return {111,rowTop+8,70,26};
     }
     static juce::Rectangle<int> autoStopCellsBounds(int rowTop) {
-        return {127,rowTop+38,28,20}; // + below the switch, within 62px cue row
+        return {135,rowTop+38,32,20}; // + below ON/OFF, distinct target
     }
 private:
     void finishBpmEdit(bool accept,bool forceClose=false);
     juce::TextEditor bpmEditor;
     int editingRowId=0;
     bool closingBpmEditor=false;
+    int autoStopPickerRowId=-1,autoStopPickerView=-1;
     enum class HoverTarget { none, bpm, autoStop, autoStopCells };
     int hoverRow=-1;
     HoverTarget hoverTarget=HoverTarget::none;
