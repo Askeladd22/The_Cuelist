@@ -250,7 +250,7 @@ bool MainComponent::setCuelistName(int index,const juce::String& proposed) {
     return true;
 }
 
-void MainComponent::beginInlineRename(InlineRenameKind kind,int index,bool pinned) {
+void MainComponent::beginInlineRename(InlineRenameKind kind,int index,bool pinned,int cellColumn) {
     if (kind==InlineRenameKind::none) return;
     if (inlineRenameKind!=InlineRenameKind::none && !commitInlineRename())
         cancelInlineRename();
@@ -263,6 +263,13 @@ void MainComponent::beginInlineRename(InlineRenameKind kind,int index,bool pinne
         if (index<0 || index>=(int)show.rows.size()) return;
         initial=show.rows[(size_t)index].name;
         modelId=show.rows[(size_t)index].id;
+    } else if (kind==InlineRenameKind::cell) {
+        if (index<0 || index>=(int)show.rows.size() ||
+            cellColumn<0 || cellColumn>=(int)show.columns.size() ||
+            show.columns[(size_t)cellColumn].collapsed) return;
+        const auto& cell=show.rows[(size_t)index].cells[(size_t)cellColumn];
+        initial=cell.name;
+        modelId=cell.id;
     } else {
         if (index<0 || index>=(int)show.columns.size() ||
             show.columns[(size_t)index].collapsed) return;
@@ -272,6 +279,7 @@ void MainComponent::beginInlineRename(InlineRenameKind kind,int index,bool pinne
     inlineRenameKind=kind;
     inlineRenameIndex=index;
     inlineRenameModelId=modelId;
+    inlineRenameViewIndex=show.activeCuelist;
     inlineRenamePinned=pinned;
     inlineNameEditor.setText(initial,juce::dontSendNotification);
     inlineNameEditor.setInputRestrictions(
@@ -323,6 +331,31 @@ void MainComponent::positionInlineNameEditor() {
             rect.getBottom()>cueHeaders.getBottom()) {
             cancelInlineRename();return;
         }
+    } else if (inlineRenameKind==InlineRenameKind::cell) {
+        if (show.activeCuelist!=inlineRenameViewIndex) {
+            cancelInlineRename();return;
+        }
+        int row=-1,column=-1;
+        for (int r=0;r<(int)show.rows.size();++r)
+            for (int c=0;c<(int)show.columns.size();++c)
+                if (show.rows[(size_t)r].cells[(size_t)c].id==inlineRenameModelId) {
+                    row=r;column=c;break;
+                }
+        if (row<0 || column<0 || show.columns[(size_t)column].collapsed) {
+            cancelInlineRename();return;
+        }
+        // Inline cell editing follows the viewport, not the pinned headers.
+        const int x=viewport.getX()+grid.columnX(column)-
+                    viewport.getViewPositionX()+8;
+        const int y=viewport.getY()+CueGridGeometry::rowTop(row)-
+                    viewport.getViewPositionY()+CueGrid::rowContentInset+6;
+        rect={x,y,grid.columnWidthAt(column)-16,27};
+        if (rect.getX()<viewport.getX() ||
+            rect.getRight()>viewport.getRight()-viewport.getScrollBarThickness() ||
+            rect.getY()<viewport.getY()+CueGrid::headerHeight ||
+            rect.getBottom()>viewport.getBottom()) {
+            cancelInlineRename();return;
+        }
     } else {
         auto it=std::find_if(show.columns.begin(),show.columns.end(),
             [this](const Column& col){return col.id==inlineRenameModelId;});
@@ -350,6 +383,7 @@ bool MainComponent::commitInlineRename() {
     if (inlineRenameKind==InlineRenameKind::none) return true;
     const auto kind=inlineRenameKind;
     const auto index=inlineRenameIndex,modelId=inlineRenameModelId;
+    const auto viewIndex=inlineRenameViewIndex;
     const auto name=inlineNameEditor.getText().trim();
 
     // Preserve the existing Cuelist uniqueness/length rules; do not show a
@@ -367,7 +401,7 @@ bool MainComponent::commitInlineRename() {
         }
     }
     inlineRenameKind=InlineRenameKind::none;inlineRenameIndex=-1;
-    inlineRenameModelId=-1;inlineRenamePinned=false;
+    inlineRenameModelId=-1;inlineRenameViewIndex=-1;inlineRenamePinned=false;
     inlineNameEditor.setVisible(false);
     if (kind==InlineRenameKind::cuelist)
         return setCuelistName(index,name);
@@ -376,6 +410,15 @@ bool MainComponent::commitInlineRename() {
             [modelId](const Row& row){return row.id==modelId;});
         if (it==show.rows.end()) return false;
         if (it->name!=name) {it->name=name;changed("Cue renamed.");}
+    } else if (kind==InlineRenameKind::cell) {
+        if (show.activeCuelist!=viewIndex) return false;
+        for (auto& row:show.rows) for (auto& cell:row.cells)
+            if (cell.id==modelId) {
+                if (cell.name!=name) {cell.name=name;changed("Cell renamed.");}
+                repaint();
+                return true;
+            }
+        return false;
     } else {
         const auto it=std::find_if(show.columns.begin(),show.columns.end(),
             [modelId](const Column& col){return col.id==modelId;});
@@ -390,6 +433,7 @@ void MainComponent::cancelInlineRename() {
     if (inlineRenameKind==InlineRenameKind::none) return;
     inlineRenameKind=InlineRenameKind::none;
     inlineRenameIndex=inlineRenameModelId=-1;
+    inlineRenameViewIndex=-1;
     inlineRenamePinned=false;
     inlineNameEditor.setVisible(false);
     repaint();
@@ -488,6 +532,17 @@ void MainComponent::editTempo() {
             auto valid=validateShow(candidate); if (valid.failed()) { safe->message(valid.getErrorMessage()); return; }
             safe->show=std::move(candidate); safe->changed("Tempo map saved for this cue. Playback stopped.");
         });
+}
+
+bool MainComponent::renameCell(int row,int column) {
+    if (row<0 || row>=(int)show.rows.size() ||
+        column<0 || column>=(int)show.columns.size() ||
+        show.columns[(size_t)column].collapsed ||
+        cueMetrics.isAutoStopCellPicking()) return false;
+    if (!applyInspector()) return false;
+    beginInlineRename(InlineRenameKind::cell,row,false,column);
+    return inlineRenameKind==InlineRenameKind::cell &&
+           inlineRenameModelId==show.rows[(size_t)row].cells[(size_t)column].id;
 }
 
 void MainComponent::renameTitle(bool column,int index) {
