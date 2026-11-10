@@ -429,14 +429,23 @@ void CueGrid::paint(juce::Graphics& g) {
                             set=&map.set;break;
                         }
                 const int count=set?(int)set->bindings.size():0;
-                label(g,column.controlLocked?"DEFAULT / LOCKED":
-                        mapTitle.isNotEmpty()?mapTitle:
-                        assigned?"CONTROL MAP":" + Control Map",
+                const auto mapCaption=column.controlLocked ? juce::String("DEFAULT / LOCKED") :
+                    mapTitle.isNotEmpty() ? mapTitle :
+                    assigned ? juce::String("CONTROL MAP") : juce::String(" + Control Map");
+                label(g,cell.name.isNotEmpty()?cell.name:mapCaption,
                       {x+8,y+6,w-(cell.stopOnNext && !picking?16:67),18},
                       11,assigned?tone:palette::muted,true);
-                if (assigned)
-                    label(g,count>0 ? juce::String(count)+" mappings" : "Empty map",
-                          {x+8,y+26,w-16,16},10, count>0?palette::text:palette::muted);
+                if (assigned || cell.name.isNotEmpty()) {
+                    // Preserve map identity AND binding count when a Control
+                    // cell receives its own independent operator label.
+                    const auto detail=cell.name.isNotEmpty() ?
+                        (assigned ? mapCaption+" ("+juce::String(count)+")" :
+                                    mapCaption) :
+                        (count>0 ? juce::String(count)+" mappings" :
+                                   juce::String("Empty map"));
+                    label(g,detail,{x+8,y+26,w-16,16},10,
+                          assigned?palette::text:palette::muted);
+                }
             } else if (loaded) {
                 auto playback=owner.engine.getCellPlayback(cell.id);
                 if (!owner.engine.connected.load())
@@ -465,11 +474,14 @@ void CueGrid::paint(juce::Graphics& g) {
                             playback.playing?palette::playing:tone);
                 g.fillRect((float)x+7,(float)y+45,(float)((w-14)*progress),3.f);
             } else label(g,missing?"MEDIA MISSING":
+                           cell.name.isNotEmpty()?cell.name:
                            column.type==ColumnType::audio?"+ WAV/MP3":
                            column.type==ColumnType::midi?"+ MIDI":
                            column.type==ColumnType::osc?"+ OSC":"+ CONTROL",
                            {x+8,y+11,w-(cell.stopOnNext && !picking?16:60),20},11,
-                           missing?palette::red:palette::muted.withAlpha(hovered?.96f:.78f),
+                           missing?palette::red:
+                           cell.name.isNotEmpty()?palette::text:
+                           palette::muted.withAlpha(hovered?.96f:.78f),
                            false,juce::Justification::centred);
             if(!cell.followsRow) {
                 g.setColour(palette::red);g.fillEllipse((float)x+7,(float)y+6,3.f,3.f);
@@ -523,17 +535,20 @@ void CueGrid::paint(juce::Graphics& g) {
     smallButton(g,"+",{nameWidth/2-18,headerHeight+(int)show.rows.size()*rowHeight+7,36,29},true);
 }
 
-void CueGrid::showCellMenu(int row,int column,juce::Point<int> screenPoint) {
-    if(row<0 || row>=(int)owner.show.rows.size() ||
-       column<0 || column>=(int)owner.show.columns.size() ||
-       owner.show.columns[(size_t)column].collapsed) return;
-    const auto& col=owner.show.columns[(size_t)column];
-    const bool locked=col.type==ColumnType::control && col.controlLocked;
-    const auto& cell=owner.show.rows[(size_t)row].cells[(size_t)column];
-    const int rowId=owner.show.rows[(size_t)row].id;
-    const int columnId=col.id;
+juce::PopupMenu CueGrid::createCellContextMenu(int row,int column) const {
     juce::PopupMenu menu;
+    if (row<0 || row>=(int)owner.show.rows.size() ||
+        column<0 || column>=(int)owner.show.columns.size() ||
+        owner.show.columns[(size_t)column].collapsed) return menu;
+    const auto& col=owner.show.columns[(size_t)column];
+    const auto& cell=owner.show.rows[(size_t)row].cells[(size_t)column];
+    const bool locked=col.type==ColumnType::control && col.controlLocked;
     menu.setLookAndFeel(&getLookAndFeel());
+    menu.addItem(9,"Rename cell  Ctrl+R");
+    if (col.type==ColumnType::audio)
+        menu.addItem(10,"Find in Explorer",
+                     owner.audioFileForExplorer(row,column)!=juce::File{});
+    menu.addSeparator();
     menu.addItem(1,"Delete cell  Backspace",!locked);
     menu.addItem(2,"Cut  Ctrl+X",!locked);
     menu.addItem(3,"Copy  Ctrl+C",!locked);
@@ -550,16 +565,33 @@ void CueGrid::showCellMenu(int row,int column,juce::Point<int> screenPoint) {
         menu.addSeparator();
         menu.addItem(8,"Generate LTC Track");
     }
+    return menu;
+}
+
+void CueGrid::showCellMenu(int row,int column,juce::Point<int> screenPoint) {
+    if(row<0 || row>=(int)owner.show.rows.size() ||
+       column<0 || column>=(int)owner.show.columns.size() ||
+       owner.show.columns[(size_t)column].collapsed) return;
+    const auto& col=owner.show.columns[(size_t)column];
+    const int rowId=owner.show.rows[(size_t)row].id;
+    const int columnId=col.id;
+    const int cellId=owner.show.rows[(size_t)row].cells[(size_t)column].id;
+    const int viewIndex=owner.show.activeCuelist;
+    auto menu=createCellContextMenu(row,column);
     auto safe=juce::Component::SafePointer<MainComponent>(&owner);
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetScreenArea(
-        {screenPoint.x,screenPoint.y,1,1}),[safe,rowId,columnId](int choice) {
-        if(!safe || choice==0) return;
+        {screenPoint.x,screenPoint.y,1,1}),[safe,rowId,columnId,cellId,viewIndex](int choice) {
+        if(!safe || choice==0 || safe->show.activeCuelist!=viewIndex) return;
         int r=-1,c=-1;
         for(int i=0;i<(int)safe->show.rows.size();++i)
             if(safe->show.rows[(size_t)i].id==rowId) r=i;
         for(int i=0;i<(int)safe->show.columns.size();++i)
             if(safe->show.columns[(size_t)i].id==columnId) c=i;
-        if(r<0 || c<0 || !safe->select(r,c)) return;
+        if(r<0 || c<0 || safe->show.rows[(size_t)r].cells[(size_t)c].id!=cellId) return;
+        // Read-only reveal and inline rename never arm NEXT or transfer LIVE.
+        if (choice==9) { (void)safe->renameCell(r,c); return; }
+        if (choice==10) { (void)safe->revealAudioCellInExplorer(r,c); return; }
+        if (!safe->select(r,c)) return;
         switch(choice) {
             case 1:safe->deleteSelectedCell();break;
             case 2:safe->cutSelectedCell();break;

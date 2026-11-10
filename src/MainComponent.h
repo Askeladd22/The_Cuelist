@@ -141,6 +141,7 @@ public:
     void mouseUp(const juce::MouseEvent&) override;
     void showRowMenu(int row,juce::Point<int> clickPosition,int cellColumn=-1);
     void showCellMenu(int row,int column,juce::Point<int> screenPosition);
+    juce::PopupMenu createCellContextMenu(int row,int column) const;
     int columnX(int index) const;
     int columnWidthAt(int index) const;
     int columnAt(int x) const;
@@ -494,6 +495,10 @@ public:
     bool setCuelistName(int index,const juce::String& name);
     void setCellAutoStop(int row,int column,bool enabled);
     void renameTitle(bool column,int index);
+    bool renameCell(int row,int column);
+    // Read-only source locator. Never opens or executes the audio file.
+    juce::File audioFileForExplorer(int row,int column) const;
+    bool revealAudioCellInExplorer(int row,int column);
     // Shared non-modal, in-place renaming for tabs, cues and columns.
     bool commitInlineRename();
     void cancelInlineRename();
@@ -564,12 +569,13 @@ private:
         const juce::Array<juce::MidiDeviceInfo>& inputs,
         const juce::Array<juce::MidiDeviceInfo>& outputs);
     juce::Label projectNameLabel;
-    enum class InlineRenameKind {none,cuelist,cue,column};
+    enum class InlineRenameKind {none,cuelist,cue,column,cell};
     InlineRenameKind inlineRenameKind=InlineRenameKind::none;
     int inlineRenameIndex=-1,inlineRenameModelId=-1;
+    int inlineRenameViewIndex=-1;
     bool inlineRenamePinned=false;
     juce::TextEditor inlineNameEditor;
-    void beginInlineRename(InlineRenameKind kind,int index,bool pinned=false);
+    void beginInlineRename(InlineRenameKind kind,int index,bool pinned=false,int cellColumn=-1);
     void positionInlineNameEditor();
     juce::TextButton preflightButton{"Preflight"},diagnosticsButton{"Diagnostics"};
     juce::TextButton goButton{"GO  /  SPACE"},panicButton{"PANIC  /  ESC"},deviceButton{"Audio devices"},controlButton{"Control Mapping"};

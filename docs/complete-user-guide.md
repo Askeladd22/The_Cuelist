@@ -212,10 +212,11 @@ Cuelists share column definitions, routing and the overall show settings. They d
 | **PANIC / Esc** | Stops active audio, MIDI and OSC playback. |
 | **Ctrl+C / Ctrl+V** | Copies/pastes compatible selected cells; row operations are also available through cue context menus. |
 | **Ctrl+X / Backspace** | Cuts or removes the selected cell where allowed, without intercepting normal text editing. |
+| **Ctrl+R** | Renames the selected cell inline. Enter saves, Escape cancels. Does not rename the underlying media file. |
 
 Space does not launch a cue while typing into a text input. Escape is intended to remain available for Panic even from the Inspector note editor; check the behavior with your connected devices.
 
-Click a cue to make it the next armed cue. Use the row menu to **Copy**, **Paste below**, **Duplicate** or **Delete** a whole cue. The cell context menu covers cell-specific copy, paste, cut, delete, loop and inclusion in Row GO. Duplicated rows and cells receive appropriate new identities; imported audio can share decoded PCM in memory when safe.
+Click a cue to make it the next armed cue. Use the row menu to **Copy**, **Paste below**, **Duplicate** or **Delete** a whole cue. The cell context menu covers cell-specific copy, paste, cut, delete, loop and inclusion in Row GO. **Rename cell** edits the cell label inline for Audio, MIDI, OSC and Control; the same operation is available with Ctrl+R on the selected cell. The name is saved with the show, not applied to the source file or the Control Map. For Audio cells only, **Find in Explorer** reveals the associated existing source file in Windows Explorer. It is disabled when no valid local file is available. Duplicated rows and cells receive appropriate new identities; imported audio can share decoded PCM in memory when safe.
 
 Use the **▲ / ▼** controls to reorder cue rows. These glyphs, the **◀ / ▶** column controls, **▶ / ⏸ / ⏹** transport icons and **⋯** row actions use **Noto Sans Symbols 2** explicitly where the embedded typeface provides them. A vector symbol is used when the exact glyph is unavailable; no operating-system emoji substitution occurs. The Delete cross remains vector geometry. See the [Unicode symbol audit](unicode-symbol-audit.md). Changes that affect the structure or timing may stop transport to preserve deterministic cue state.
 
