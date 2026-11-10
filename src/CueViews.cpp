@@ -568,7 +568,7 @@ void CueGrid::showCellMenu(int row,int column,juce::Point<int> screenPoint) {
     const auto& col=owner.show.columns[(size_t)column];
     const int rowId=owner.show.rows[(size_t)row].id;
     const int columnId=col.id;
-    const int cellId=cell.id;
+    const int cellId=owner.show.rows[(size_t)row].cells[(size_t)column].id;
     const int viewIndex=owner.show.activeCuelist;
     auto menu=createCellContextMenu(row,column);
     auto safe=juce::Component::SafePointer<MainComponent>(&owner);
