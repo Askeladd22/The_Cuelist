@@ -462,6 +462,10 @@ void cueGridN3VisualTests() {
         addColumn(ui.show,ColumnType::control,"Control Map");
         addRow(ui.show,"Second cue");
         ui.setSize(1440,900);
+        // Constructor already sets 1440x900; setSize alone need not call
+        // resized(). Rebuild the real grid geometry after adding columns,
+        // otherwise the fourth column can lie outside the snapshot bounds.
+        ui.refreshForTest();
         auto* metrics=cueViewFixtures::find<CueMetricsOverlay>(ui);
         auto* grid=cueViewFixtures::find<CueGrid>(ui);
         check(metrics && grid,"Auto Stop picker requires native grid and metrics");
@@ -474,6 +478,18 @@ void cueGridN3VisualTests() {
         check(metrics->isAutoStopCellPickingRow(0) &&
               encodeShow(ui.show)==before,
               "Clicking + should arm direct cell selection without mutating the show");
+        const auto marker=CueGrid::cellContinueBadgeBounds(
+            grid->columnX(3),grid->columnWidthAt(3),
+            y+CueGrid::rowContentInset);
+        check(marker.getX()>=0 && marker.getY()>=0 &&
+              marker.getRight()<=grid->getWidth() &&
+              marker.getBottom()<=grid->getHeight(),
+              "Auto Stop Control marker extends beyond the refreshed grid");
+        const auto includedBadge=grid->createComponentSnapshot(marker);
+        check(includedBadge.isValid() &&
+              includedBadge.getWidth()==marker.getWidth() &&
+              includedBadge.getHeight()==marker.getHeight(),
+              "Included AUTO badge is not rendered in the native grid");
         // A mode click must edit membership, not open Control Map, import,
         // trigger transport, change selected cell, or advance NEXT.
         const float cellY=(float)y+CueGrid::rowContentInset+22.f;
@@ -497,11 +513,21 @@ void cueGridN3VisualTests() {
               !ui.show.rows[0].cells[3].stopOnNext &&
               metrics->isAutoStopCellPickingRow(0),
               "Direct picking cannot reverse a single-cell Auto Stop choice");
-        const auto marker=CueGrid::cellContinueBadgeBounds(
-            grid->columnX(3),grid->columnWidthAt(3),
-            y+CueGrid::rowContentInset);
-        auto image=grid->createComponentSnapshot({marker.getX()+2,marker.getY()+8,1,1});
-        check(image.isValid(),"Direct picker cell marker is not rendered");
+        const auto excludedBadge=grid->createComponentSnapshot(marker);
+        check(excludedBadge.isValid() &&
+              excludedBadge.getWidth()==marker.getWidth() &&
+              excludedBadge.getHeight()==marker.getHeight(),
+              "Excluded CONT. badge is not rendered in the native grid");
+        if (includedBadge.isValid() && excludedBadge.isValid() &&
+            includedBadge.getBounds()==excludedBadge.getBounds()) {
+            int changedPixels=0;
+            for (int py=0;py<marker.getHeight();++py)
+                for (int px=0;px<marker.getWidth();++px)
+                    if (includedBadge.getPixelAt(px,py)!=
+                        excludedBadge.getPixelAt(px,py)) ++changedPixels;
+            check(changedPixels>0,
+                  "Direct picker did not repaint AUTO as CONT. immediately");
+        }
         Show reopened;
         check(decodeShow(encodeShow(ui.show),reopened).wasOk() &&
               reopened.rows[0].cells[1].stopOnNext &&

@@ -13,6 +13,19 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.42] - 2026-11-10
+
+**Stato:** hotfix del test grafico JUCE per la selezione Auto Stop inline, con rendering AUTO/CONT. verificato su area effettiva della Cue Grid. Nessuna modifica al runtime Audio/MIDI/OSC/LTC, VIEW/LIVE o allo schema JSON v10.
+
+### Corretto
+- Il fixture `N3.4+ picks individual Audio MIDI OSC Control cells without popup or transport` aggiunge quattro colonne dopo la costruzione di `MainComponent`. Invocare `setSize(1440,900)` su un componente già di quelle dimensioni non garantisce un ricalcolo layout: la posizione del marcatore della colonna Control può cadere fuori dalla dimensione precedente della griglia, rendendo lo snapshot JUCE non valido.
+- Ora il fixture chiama `refreshForTest()` per aggiornare geometria e viewport reali prima dei test. Verifica esplicitamente i limiti del componente e cattura badge di cella inclusa/esclusa, controllando un effettivo cambiamento dei pixel (AUTO → CONT.) dopo il clic.
+- Il log Windows 0.9.41 fornito dall'operatore mostra `The Cuelist.exe` e `CuelistTests.exe` compilati, ma CTest **FAIL**: 420.051 asserzioni, 1 test fallito (`Direct picker cell marker is not rendered`). Nessun esito verde rivendicato per questa versione.
+
+### QA e rollback
+- Candidato 0.9.42: compilazione Windows Release e CTest **ND**, in attesa del workflow; screenshot con DPI reali, prova operatori e hardware **ND**.
+- Rollback: revert della PR senza migrazione `.cuelist`; il flusso Auto Stop rimane intatto.
+
 ## [0.9.41] - 2026-11-10
 
 **Stato:** hotfix test Windows della modalità di selezione celle Auto Stop introdotta nella 0.9.40. Non modifica i componenti JUCE operativi, il motore, VIEW/LIVE o i file `.cuelist` JSON v10.
