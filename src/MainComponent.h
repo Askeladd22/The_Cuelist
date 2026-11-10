@@ -141,6 +141,7 @@ public:
     void mouseUp(const juce::MouseEvent&) override;
     void showRowMenu(int row,juce::Point<int> clickPosition,int cellColumn=-1);
     void showCellMenu(int row,int column,juce::Point<int> screenPosition);
+    juce::PopupMenu createCellContextMenu(int row,int column) const;
     int columnX(int index) const;
     int columnWidthAt(int index) const;
     int columnAt(int x) const;
