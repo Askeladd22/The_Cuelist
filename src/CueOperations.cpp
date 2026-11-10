@@ -66,6 +66,8 @@ void MainComponent::toggleColumnCollapsed(int column) {
 void MainComponent::activateCuelist(int index) {
     if (index<0 || index>=(int)show.cuelists.size() ||
         index==show.activeCuelist || !applyInspector()) return;
+    // Commit an in-place cell name in the old VIEW before changing Cuelists.
+    if (isInlineRenaming() && !commitInlineRename()) return;
     cueMetrics.cancelAutoStopCellPicking();
     checkpointHistory("Edit viewed Cuelist");
     // Browsing only changes the editor view. Never panic, republish a
@@ -287,6 +289,7 @@ void MainComponent::beginInlineRename(InlineRenameKind kind,int index,bool pinne
     inlineNameEditor.setTooltip("Rename in place: Enter to save, Esc to cancel.");
     inlineNameEditor.setVisible(true);
     positionInlineNameEditor();
+    if (!inlineNameEditor.isVisible()) return;
     inlineNameEditor.grabKeyboardFocus();
     inlineNameEditor.selectAll();
 }
