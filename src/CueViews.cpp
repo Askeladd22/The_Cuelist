@@ -1129,6 +1129,9 @@ bool CueMetricsOverlay::handleAutoStopCellClick(int row,int column) {
     const bool currentlyIncluded=owner.show.rows[(size_t)row]
                                       .cells[(size_t)column].stopOnNext;
     owner.setCellAutoStop(row,column,!currentlyIncluded);
+    owner.grid.setTooltip(currentlyIncluded ?
+        "Auto Stop: click to include this cell (stops at the next GO)." :
+        "Auto Stop: click to exclude this cell (continues after the next GO).");
     return true;
 }
 void CueMetricsOverlay::beginBpmEdit(int row) {
@@ -1284,7 +1287,7 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
         if (picking) {
             int included=0;
             for (const auto& cell:row.cells) if (cell.stopOnNext) ++included;
-            label(g,juce::String(included)+"/"+juce::String(row.cells.size()),
+            label(g,juce::String(included)+"/"+juce::String((int)row.cells.size()),
                   {101,y+38,32,20},10,palette::playing,true,
                   juce::Justification::centred);
         }
