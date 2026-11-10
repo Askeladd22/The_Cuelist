@@ -66,6 +66,7 @@ void MainComponent::toggleColumnCollapsed(int column) {
 void MainComponent::activateCuelist(int index) {
     if (index<0 || index>=(int)show.cuelists.size() ||
         index==show.activeCuelist || !applyInspector()) return;
+    cueMetrics.cancelAutoStopCellPicking();
     checkpointHistory("Edit viewed Cuelist");
     // Browsing only changes the editor view. Never panic, republish a
     // different Cuelist's voices or reset the current live mapping here.
