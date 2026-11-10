@@ -578,7 +578,7 @@ void cueGridN3VisualTests() {
               metrics->isAutoStopCellPickingRow(0),
               "Compressed cell cannot be included from direct picker");
         // GO and PANIC keys must keep their normal safety meaning.
-        ui.keyPressed(juce::KeyPress::escapeKey);
+        ui.keyPressed(juce::KeyPress{juce::KeyPress::escapeKey});
         check(!metrics->isAutoStopCellPicking(),
               "Escape should clear picking while preserving PANIC dispatch");
     });
