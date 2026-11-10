@@ -1,5 +1,7 @@
 # RQ-002 — Accesso diretto alle celle Auto Stop dalla fascia cue
 
+> **Nota storica — superata nella 0.9.40:** la soluzione 0.9.38 apriva un menu a tendina. Il nuovo design concordato seleziona direttamente le celle sulla griglia dopo un clic su **+**, senza menu: vedere [RQ-003](RQ-003-AUTOSTOP-INLINE-PICKER.md). La documentazione sotto descrive il prototipo precedente.
+
 **Data:** 2026-11-10  
 **Baseline verificata:** `main@57f9413e5790315fdc25aa283cd4dc023e6834f0`, `VERSION.txt=0.9.37`.  
 **Candidato:** `0.9.38`, branch `feat/autostop-cell-picker-plus-0938`.  
