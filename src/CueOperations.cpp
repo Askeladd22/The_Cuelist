@@ -438,7 +438,8 @@ void MainComponent::setCellAutoStop(int row,int column,bool enabled) {
     if (row==selectedRow && column==selectedColumn) cellAutoStop.setToggleState(enabled,juce::dontSendNotification);
     status=enabled ? "Cell included in cue Auto Stop." : "Cell excluded from Auto Stop: continues after the next GO.";
     checkpointHistory("Toggle cell Auto Stop");
-    grid.repaint(); repaint();
+    // The inline picker shows an immediate included/total count.
+    grid.repaint(); cueMetrics.repaint(); repaint();
 }
 
 void MainComponent::addCue() {
