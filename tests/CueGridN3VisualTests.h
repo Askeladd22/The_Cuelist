@@ -543,6 +543,46 @@ void cueGridN3VisualTests() {
               "Off-row click should exit picking without editing another cue");
     });
 
+    test("N3.4+ selection consumes clip transport and supports collapsed cells",[] {
+        using namespace cuelist;
+        MainComponent ui(false);
+        ui.setSize(1440,900);
+        auto* metrics=cueViewFixtures::find<CueMetricsOverlay>(ui);
+        auto* grid=cueViewFixtures::find<CueGrid>(ui);
+        check(metrics && grid,"Native Auto Stop selection surfaces missing");
+        auto clip=std::make_shared<AudioClip>();
+        clip->samples.setSize(1,48000);
+        clip->samples.clear();
+        ui.clips[ui.show.rows[0].cells[0].id]=clip;
+        const int next=ui.nextCueIndex();
+        const int selected=ui.selectedColumn;
+        const int y=CueGridGeometry::rowTop(0);
+        cueViewFixtures::click(*metrics,151.f,(float)y+48.f);
+        const float cellY=(float)y+CueGrid::rowContentInset+34.f;
+        const float playX=(float)grid->columnX(0)+grid->columnWidthAt(0)-53.f;
+        cueViewFixtures::click(*grid,playX,cellY);
+        check(!ui.show.rows[0].cells[0].stopOnNext &&
+              ui.selectedColumn==selected && ui.nextCueIndex()==next &&
+              metrics->isAutoStopCellPickingRow(0),
+              "Audio Play hit target escaped picker and triggered the clip");
+        // Double-click must not open a clip editor or reverse the first edit.
+        grid->mouseDoubleClick(cueViewFixtures::event(
+            *grid,{playX,cellY},{playX,cellY},2));
+        check(!ui.show.rows[0].cells[0].stopOnNext,
+              "Double-click in Auto Stop mode altered the cell again");
+        ui.show.columns[0].collapsed=true;
+        ui.refreshForTest();
+        const float collapsedX=(float)grid->columnX(0)+20.f;
+        cueViewFixtures::click(*grid,collapsedX,cellY);
+        check(ui.show.rows[0].cells[0].stopOnNext &&
+              metrics->isAutoStopCellPickingRow(0),
+              "Compressed cell cannot be included from direct picker");
+        // GO and PANIC keys must keep their normal safety meaning.
+        ui.keyPressed(juce::KeyPress::escapeKey);
+        check(!metrics->isAutoStopCellPicking(),
+              "Escape should clear picking while preserving PANIC dispatch");
+    });
+
     test("N3.4 metric hover is visual only and restores when pointer exits",[] {
         using namespace cuelist;
         MainComponent ui(false);
