@@ -13,6 +13,22 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.40] - 2026-11-10
+
+**Stato:** intervento UX richiesto dall'operatore: Auto Stop inline per cella, senza PopupMenu. Candidato non certificato per uso live; verificare Windows CI/CTest e screenshot nativi.
+
+### Interfaccia JUCE
+- Lo switch ON/OFF della fascia Auto Stop viene spostato verso destra, con hitbox aggiornata e separata dal tasto +.
+- **+** attiva/disattiva una modalità temporanea di selezione sulla cue (nessun menu a tendina). Le celle della cue si evidenziano immediatamente con marker `AUTO` per le incluse e `CONT.` per le escluse; è disponibile il contatore incluse/totali. Cliccare una cella alterna la partecipazione usando `setCellAutoStop`, poi si possono modificare altre celle senza riaprire un menu.
+- Durante la modalità i clic sulle celle non avviano Play/Stop, aprono Control Map, effettuano drag o cambiano NEXT/LIVE. Le celle collassate sono selezionabili. Un clic esterno termina la selezione senza attivare la cella diversa; + termina esplicitamente.
+- La modalità si disattiva cambiando VIEW/caricando un nuovo progetto o invocando GO/PANIC. Esc mantiene il comportamento PANIC. Restano accessibili il menu contestuale e l'Inspector.
+- Nessun cambiamento a schema JSON v10, motore Audio/MIDI/OSC/LTC, trasporto o Control Mapping.
+
+### Test e gate
+- Test nativi aggiornati per hitbox separate, click dalla griglia, isolamento celle, persistenza JSON v10, riordino con ID stabili, celle Control, clip Audio e colonne collassate, uscita da modalità e PANIC.
+- Compilazione Windows/CTest del candidato, screenshot 100/125/150% DPI e misure con hardware: **ND** in attesa di risultati verificabili. La sola CI non certifica il live.
+- Rollback: revert della PR; i flag `cell.stopOnNext` già salvati restano compatibili.
+
 ## [0.9.39] - 2026-11-10
 
 **Stato:** hotfix di compilazione e documentazione sintetica; nessun cambiamento ai motori o allo schema JSON v10.
