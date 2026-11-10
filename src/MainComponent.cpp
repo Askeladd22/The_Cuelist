@@ -2202,6 +2202,14 @@ bool MainComponent::keyPressed(const juce::KeyPress& key) {
         if (key.getKeyCode()==juce::KeyPress::downKey)
             return moveCueRow(selectedRow,selectedRow+1);
     }
+    // Ctrl+R renames only the selected cell. Do not steal text-editor shortcuts.
+    if (key.getModifiers().isCommandDown() &&
+        !key.getModifiers().isShiftDown() &&
+        !key.getModifiers().isAltDown() &&
+        !dynamic_cast<juce::TextEditor*>(
+            juce::Component::getCurrentlyFocusedComponent()) &&
+        (key.getKeyCode()=='R' || key.getKeyCode()=='r'))
+        return renameCell(selectedRow,selectedColumn);
     if (key.getModifiers().isCommandDown() && !dynamic_cast<juce::TextEditor*>(juce::Component::getCurrentlyFocusedComponent())) {
         if (key.getKeyCode()=='C' || key.getKeyCode()=='c') return copySelectedCell();
         if (key.getKeyCode()=='V' || key.getKeyCode()=='v') return pasteSelectedCell();
