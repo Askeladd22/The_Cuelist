@@ -78,7 +78,9 @@ void MainComponent::showControlCellMenu(int row,int column,
         show.columns[(size_t)column].controlLocked) return;
     const int rowId=show.rows[(size_t)row].id;
     const int columnId=show.columns[(size_t)column].id;
+    const int viewIndex=show.activeCuelist;
     const auto& selectedCell=show.rows[(size_t)row].cells[(size_t)column];
+    const int cellId=selectedCell.id;
     const bool present=hasControlMapAssignment(selectedCell);
     juce::PopupMenu menu;
     menu.addItem(1,present ?
@@ -95,20 +97,24 @@ void MainComponent::showControlCellMenu(int row,int column,
         menu.addItem(3,"Remove map assignment (inherit Default Map)");
     }
     menu.addSeparator();
+    menu.addItem(5,"Rename cell  Ctrl+R");
     menu.addItem(4,"Includi nell'Auto Stop",true,selectedCell.stopOnNext);
     auto safe=juce::Component::SafePointer<MainComponent>(this);
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetScreenArea(
         {screenPosition.x,screenPosition.y,1,1}),
-        [safe,rowId,columnId](int choice) {
-            if (!safe || choice<=0) return;
+        [safe,rowId,columnId,cellId,viewIndex](int choice) {
+            if (!safe || choice<=0 || safe->show.activeCuelist!=viewIndex) return;
             int r=-1,c=-1;
             for (int i=0;i<(int)safe->show.rows.size();++i)
                 if (safe->show.rows[(size_t)i].id==rowId) r=i;
             for (int i=0;i<(int)safe->show.columns.size();++i)
                 if (safe->show.columns[(size_t)i].id==columnId) c=i;
             if (r<0 || c<0 || safe->show.columns[(size_t)c].type!=ColumnType::control ||
-                safe->show.columns[(size_t)c].controlLocked) return;
-            if (choice==4) {
+                safe->show.columns[(size_t)c].controlLocked ||
+                safe->show.rows[(size_t)r].cells[(size_t)c].id!=cellId) return;
+            if (choice==5) {
+                (void)safe->renameCell(r,c);
+            } else if (choice==4) {
                 const auto enabled=safe->show.rows[(size_t)r].cells[(size_t)c].stopOnNext;
                 safe->setCellAutoStop(r,c,!enabled);
             } else if (choice==1) {
