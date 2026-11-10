@@ -130,6 +130,8 @@ bool MainComponent::commitPreparedProject(Show candidate,const juce::File& sourc
     // Decode and memory-budget checks have already completed transactionally.
     auto loaded=std::move(prepared.clips);
     auto issues=std::move(prepared.issues);
+    // A picker belongs to the old VIEW; never carry it into a loaded show.
+    cueMetrics.cancelAutoStopCellPicking();
     // Only after all memory checks pass do we stop the previous show.
     engine.panic();
     for(const auto& column:candidate.columns)
