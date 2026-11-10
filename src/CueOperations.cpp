@@ -354,7 +354,7 @@ void MainComponent::positionInlineNameEditor() {
                     viewport.getViewPositionY()+CueGrid::rowContentInset+6;
         rect={x,y,grid.columnWidthAt(column)-16,27};
         if (rect.getX()<viewport.getX() ||
-            rect.getRight()>viewport.getRight()-viewport.getScrollBarThickness() ||
+            rect.getRight()>viewport.getRight() ||
             rect.getY()<viewport.getY()+CueGrid::headerHeight ||
             rect.getBottom()>viewport.getBottom()) {
             cancelInlineRename();return;
@@ -543,6 +543,22 @@ bool MainComponent::renameCell(int row,int column) {
         show.columns[(size_t)column].collapsed ||
         cueMetrics.isAutoStopCellPicking()) return false;
     if (!applyInspector()) return false;
+    // Ctrl+R also works after keyboard selection when the target cell is
+    // outside the current viewport. Scroll before showing the editor.
+    const int left=grid.columnX(column)+8;
+    const int right=grid.columnX(column)+grid.columnWidthAt(column)-8;
+    const int top=CueGridGeometry::rowTop(row)+CueGrid::rowContentInset+6;
+    const int bottom=top+27;
+    int viewX=viewport.getViewPositionX();
+    int viewY=viewport.getViewPositionY();
+    if (left<viewX) viewX=left;
+    else if (right>viewX+viewport.getViewWidth())
+        viewX=right-viewport.getViewWidth();
+    if (top<viewY+CueGrid::headerHeight)
+        viewY=top-CueGrid::headerHeight;
+    else if (bottom>viewY+viewport.getViewHeight())
+        viewY=bottom-viewport.getViewHeight();
+    viewport.setViewPosition(std::max(0,viewX),std::max(0,viewY));
     beginInlineRename(InlineRenameKind::cell,row,false,column);
     return inlineRenameKind==InlineRenameKind::cell &&
            inlineRenameModelId==show.rows[(size_t)row].cells[(size_t)column].id;
