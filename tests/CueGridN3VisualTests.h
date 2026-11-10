@@ -388,8 +388,8 @@ void cueGridN3VisualTests() {
         const auto plus=CueMetricsOverlay::autoStopCellsBounds(0);
         check(CueMetricsOverlay::width==184 &&
               bpm==juce::Rectangle<int>(0,0,91,62) &&
-              toggle==juce::Rectangle<int>(102,8,78,26) &&
-              plus==juce::Rectangle<int>(127,38,28,20) &&
+              toggle==juce::Rectangle<int>(111,8,70,26) &&
+              plus==juce::Rectangle<int>(135,38,32,20) &&
               !bpm.intersects(toggle) && !bpm.intersects(plus) &&
               !toggle.intersects(plus) &&
               toggle.getRight()<=CueMetricsOverlay::width &&
@@ -448,13 +448,13 @@ void cueGridN3VisualTests() {
         cueViewFixtures::click(*metrics,169.0f,(float)y+46.0f);
         check(encodeShow(ui.show)==changed,
               "Blank metrics area still performs an accidental action");
-        const juce::Point<float> picker{141.f,(float)y+48.f};
+        const juce::Point<float> picker{150.f,(float)y+48.f};
         metrics->mouseMove(cueViewFixtures::event(*metrics,picker,picker));
         check(metrics->getTooltip().contains("celle"),
               "Restored + has no accessible cell-selection tooltip");
     });
 
-    test("N3.4+ cell picker lists Audio, MIDI, OSC and Control with live checks",[] {
+    test("N3.4+ picks individual Audio MIDI OSC Control cells without popup or transport",[] {
         using namespace cuelist;
         MainComponent ui(false);
         addColumn(ui.show,ColumnType::midi,"MIDI triggers");
@@ -463,56 +463,84 @@ void cueGridN3VisualTests() {
         addRow(ui.show,"Second cue");
         ui.setSize(1440,900);
         auto* metrics=cueViewFixtures::find<CueMetricsOverlay>(ui);
-        check(metrics!=nullptr,"Fixed Auto Stop + is missing");
-        const bool rowGate=ui.show.rows[0].stopOnNext;
-        const auto menu=metrics->createAutoStopCellsMenu(0);
-        std::function<void()> midiAction,controlAction,oscAction;
-        int actions=0;
-        for (juce::PopupMenu::MenuItemIterator it(menu);it.next();) {
-            const auto& item=it.getItem();
-            if (!item.action) continue; // Ignore the section header.
-            ++actions;
-            check(item.isTicked,"New cells should be checked in the + menu");
-            if (item.text.contains("MIDI triggers")) midiAction=item.action;
-            if (item.text.contains("OSC lights")) oscAction=item.action;
-            if (item.text.contains("Control Map")) controlAction=item.action;
-        }
-        check(actions==(int)ui.show.columns.size() &&
-              (bool)midiAction && (bool)oscAction && (bool)controlAction,
-              "The + menu omitted a column type or a selectable cell");
-        midiAction();
-        controlAction();
+        auto* grid=cueViewFixtures::find<CueGrid>(ui);
+        check(metrics && grid,"Auto Stop picker requires native grid and metrics");
+        const int y=CueGridGeometry::rowTop(0);
+        const bool gate=ui.show.rows[0].stopOnNext;
+        const int selectedRow=ui.selectedRow,selectedColumn=ui.selectedColumn;
+        const int next=ui.nextCueIndex();
+        const auto before=encodeShow(ui.show);
+        cueViewFixtures::click(*metrics,151.f,(float)y+48.f);
+        check(metrics->isAutoStopCellPickingRow(0) &&
+              encodeShow(ui.show)==before,
+              "Clicking + should arm direct cell selection without mutating the show");
+        // A mode click must edit membership, not open Control Map, import,
+        // trigger transport, change selected cell, or advance NEXT.
+        const float cellY=(float)y+CueGrid::rowContentInset+22.f;
+        cueViewFixtures::click(*grid,(float)grid->columnX(1)+20.f,cellY);
+        cueViewFixtures::click(*grid,(float)grid->columnX(3)+20.f,cellY);
         check(ui.show.rows[0].cells[0].stopOnNext &&
               !ui.show.rows[0].cells[1].stopOnNext &&
               ui.show.rows[0].cells[2].stopOnNext &&
               !ui.show.rows[0].cells[3].stopOnNext &&
-              ui.show.rows[0].stopOnNext==rowGate &&
-              ui.show.rows[1].cells[1].stopOnNext,
-              "The + menu changed unrelated cells, cue gate or adjacent row");
+              ui.show.rows[0].stopOnNext==gate &&
+              ui.show.rows[1].cells[1].stopOnNext &&
+              ui.selectedRow==selectedRow &&
+              ui.selectedColumn==selectedColumn &&
+              ui.nextCueIndex()==next &&
+              !ui.show.rows[0].cells[3].controlSet.has_value(),
+              "Direct picker changed a cue, editor, GO position or other cell");
 
-        const auto updated=metrics->createAutoStopCellsMenu(0);
-        bool midiChecked=true,controlChecked=true,oscChecked=false;
-        for (juce::PopupMenu::MenuItemIterator it(updated);it.next();) {
-            const auto& item=it.getItem();
-            if (!item.action) continue;
-            if (item.text.contains("MIDI triggers")) midiChecked=item.isTicked;
-            if (item.text.contains("Control Map")) controlChecked=item.isTicked;
-            if (item.text.contains("OSC lights")) oscChecked=item.isTicked;
-        }
-        check(!midiChecked && !controlChecked && oscChecked,
-              "The + menu checkmarks did not refresh from cell Auto Stop state");
+        // Selecting a cell again restores inclusion immediately.
+        cueViewFixtures::click(*grid,(float)grid->columnX(1)+20.f,cellY);
+        check(ui.show.rows[0].cells[1].stopOnNext &&
+              !ui.show.rows[0].cells[3].stopOnNext &&
+              metrics->isAutoStopCellPickingRow(0),
+              "Direct picking cannot reverse a single-cell Auto Stop choice");
+        const auto marker=CueGrid::cellContinueBadgeBounds(
+            grid->columnX(3),grid->columnWidthAt(3),
+            y+CueGrid::rowContentInset);
+        auto image=grid->createComponentSnapshot({marker.getX()+2,marker.getY()+8,1,1});
+        check(image.isValid(),"Direct picker cell marker is not rendered");
         Show reopened;
         check(decodeShow(encodeShow(ui.show),reopened).wasOk() &&
-              !reopened.rows[0].cells[1].stopOnNext &&
+              reopened.rows[0].cells[1].stopOnNext &&
               !reopened.rows[0].cells[3].stopOnNext,
-              "Cell selections from + did not persist in JSON v10");
+              "Direct picker changes were not saved in JSON v10");
 
-        // A menu created before a row move must resolve stable IDs at click.
-        check(ui.moveCueRow(0,1),"Could not reorder cues for stale-menu test");
-        oscAction();
-        check(!ui.show.rows[1].cells[2].stopOnNext &&
-              ui.show.rows[0].cells[2].stopOnNext,
-              "Delayed + menu action edited a row index instead of its cue ID");
+        cueViewFixtures::click(*metrics,151.f,(float)y+48.f);
+        check(!metrics->isAutoStopCellPicking(),
+              "Clicking + again should finish mode without a dropdown");
+        cueViewFixtures::click(*grid,(float)grid->columnX(3)+20.f,cellY);
+        check(!ui.show.rows[0].cells[3].stopOnNext,
+              "Normal grid click unexpectedly toggled Auto Stop after mode exit");
+    });
+
+    test("N3.4+ follows stable cue ID after reorder and never edits adjacent cue",[] {
+        using namespace cuelist;
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::midi,"MIDI");
+        addRow(ui.show,"Second cue");
+        ui.setSize(1440,900);
+        auto* metrics=cueViewFixtures::find<CueMetricsOverlay>(ui);
+        auto* grid=cueViewFixtures::find<CueGrid>(ui);
+        check(metrics && grid,"Native Auto Stop selection missing");
+        const int originalId=ui.show.rows[0].id;
+        const int y0=CueGridGeometry::rowTop(0);
+        cueViewFixtures::click(*metrics,151.f,(float)y0+48.f);
+        check(ui.moveCueRow(0,1),"Could not reorder cue during Auto Stop picking");
+        check(ui.show.rows[1].id==originalId && metrics->isAutoStopCellPickingRow(1),
+              "Auto Stop selection did not follow stable cue ID after reorder");
+        const float y1=(float)CueGridGeometry::rowTop(1)+CueGrid::rowContentInset+22.f;
+        cueViewFixtures::click(*grid,(float)grid->columnX(1)+20.f,y1);
+        check(!ui.show.rows[1].cells[1].stopOnNext &&
+              ui.show.rows[0].cells[1].stopOnNext,
+              "Reordered cue picker modified the previous row");
+        const float yOther=(float)CueGridGeometry::rowTop(0)+CueGrid::rowContentInset+22.f;
+        cueViewFixtures::click(*grid,(float)grid->columnX(1)+20.f,yOther);
+        check(!metrics->isAutoStopCellPicking() &&
+              ui.show.rows[0].cells[1].stopOnNext,
+              "Off-row click should exit picking without editing another cue");
     });
 
     test("N3.4 metric hover is visual only and restores when pointer exits",[] {
@@ -528,7 +556,7 @@ void cueGridN3VisualTests() {
         const auto sample=[&] {
             // Probe the toggle hover surface, away from rounded corners
             // and the painted switch itself (which must remain unchanged).
-            const auto image=metrics->createComponentSnapshot({104,y+20,1,1});
+            const auto image=metrics->createComponentSnapshot({112,y+20,1,1});
             check(image.isValid(),"Metrics hover paint failed");
             return image.getPixelAt(0,0);
         };
