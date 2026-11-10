@@ -528,18 +528,14 @@ void CueGrid::paint(juce::Graphics& g) {
     smallButton(g,"+",{nameWidth/2-18,headerHeight+(int)show.rows.size()*rowHeight+7,36,29},true);
 }
 
-void CueGrid::showCellMenu(int row,int column,juce::Point<int> screenPoint) {
-    if(row<0 || row>=(int)owner.show.rows.size() ||
-       column<0 || column>=(int)owner.show.columns.size() ||
-       owner.show.columns[(size_t)column].collapsed) return;
-    const auto& col=owner.show.columns[(size_t)column];
-    const bool locked=col.type==ColumnType::control && col.controlLocked;
-    const auto& cell=owner.show.rows[(size_t)row].cells[(size_t)column];
-    const int rowId=owner.show.rows[(size_t)row].id;
-    const int columnId=col.id;
-    const int cellId=cell.id;
-    const int viewIndex=owner.show.activeCuelist;
+juce::PopupMenu CueGrid::createCellContextMenu(int row,int column) const {
     juce::PopupMenu menu;
+    if (row<0 || row>=(int)owner.show.rows.size() ||
+        column<0 || column>=(int)owner.show.columns.size() ||
+        owner.show.columns[(size_t)column].collapsed) return menu;
+    const auto& col=owner.show.columns[(size_t)column];
+    const auto& cell=owner.show.rows[(size_t)row].cells[(size_t)column];
+    const bool locked=col.type==ColumnType::control && col.controlLocked;
     menu.setLookAndFeel(&getLookAndFeel());
     menu.addItem(9,"Rename cell  Ctrl+R");
     if (col.type==ColumnType::audio)
@@ -562,6 +558,19 @@ void CueGrid::showCellMenu(int row,int column,juce::Point<int> screenPoint) {
         menu.addSeparator();
         menu.addItem(8,"Generate LTC Track");
     }
+    return menu;
+}
+
+void CueGrid::showCellMenu(int row,int column,juce::Point<int> screenPoint) {
+    if(row<0 || row>=(int)owner.show.rows.size() ||
+       column<0 || column>=(int)owner.show.columns.size() ||
+       owner.show.columns[(size_t)column].collapsed) return;
+    const auto& col=owner.show.columns[(size_t)column];
+    const int rowId=owner.show.rows[(size_t)row].id;
+    const int columnId=col.id;
+    const int cellId=cell.id;
+    const int viewIndex=owner.show.activeCuelist;
+    auto menu=createCellContextMenu(row,column);
     auto safe=juce::Component::SafePointer<MainComponent>(&owner);
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetScreenArea(
         {screenPoint.x,screenPoint.y,1,1}),[safe,rowId,columnId,cellId,viewIndex](int choice) {
