@@ -251,7 +251,8 @@ public:
 private:
     MainComponent& owner;
 };
-class CueMetricsOverlay final : public juce::Component {
+class CueMetricsOverlay final : public juce::Component,
+                                public juce::SettableTooltipClient {
 public:
     explicit CueMetricsOverlay(MainComponent& parent);
     void paint(juce::Graphics&) override;
