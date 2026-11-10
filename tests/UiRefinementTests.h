@@ -70,6 +70,114 @@ void uiRefinementTests() {
         check(ui.show.rows[0].name=="Lighting cue" &&
               !editor->isVisible(),"Escape must restore the original cue name.");
     });
+    test("Cell Ctrl+R uses inline editor with undoable v10 name and no GO",[] {
+        MainComponent ui(false);
+        ui.show.rows[0].cells[0].name="Old name";
+        ui.refreshForTest();
+        const int initialNext=ui.nextCueIndex();
+        const int initialLive=ui.liveCuelistIndex();
+        auto* editor=dynamic_cast<juce::TextEditor*>(
+            controlsV3::named(ui,"inlineNameEditor"));
+        check(editor!=nullptr,"Shared native inline editor missing");
+        const juce::KeyPress shortcut('R',
+            juce::ModifierKeys(juce::ModifierKeys::commandModifier),'R');
+        check(ui.keyPressed(shortcut),"Ctrl+R was not handled for the active cell");
+        check(editor->isVisible() && editor->getText()=="Old name" &&
+              editor->getHighlightedRegion().getLength()==8,
+              "Ctrl+R must select only the current cell's name in place");
+        editor->setText("Music intro",juce::dontSendNotification);
+        editor->onReturnKey();
+        check(ui.show.rows[0].cells[0].name=="Music intro" &&
+              !editor->isVisible() && ui.nextCueIndex()==initialNext &&
+              ui.liveCuelistIndex()==initialLive,
+              "Cell rename altered NEXT, LIVE or failed to commit");
+        Show reloaded;
+        check(decodeShow(encodeShow(ui.show),reloaded).wasOk() &&
+              reloaded.rows[0].cells[0].name=="Music intro",
+              "Cell rename did not persist in .cuelist JSON v10");
+        check(ui.renameCell(0,0),"Could not reopen renamed cell");
+        editor->setText("Discard",juce::dontSendNotification);
+        editor->onEscapeKey();
+        check(ui.show.rows[0].cells[0].name=="Music intro" &&
+              !editor->isVisible(),"Escape did not cancel cell rename");
+    });
+    test("Cell name works for empty MIDI OSC and Control without replacing media",[] {
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::midi,"M");
+        addColumn(ui.show,ColumnType::osc,"O");
+        addColumn(ui.show,ColumnType::control,"C");
+        ui.refreshForTest();
+        auto* editor=dynamic_cast<juce::TextEditor*>(
+            controlsV3::named(ui,"inlineNameEditor"));
+        check(editor!=nullptr,"Shared inline cell editor missing");
+        for (int c=0;c<4;++c) {
+            const int id=ui.show.rows[0].cells[(size_t)c].id;
+            check(ui.renameCell(0,c),"Cell rename should work for all column types");
+            check(editor->isVisible(),"Cell editor did not open in native grid");
+            const auto renamed="Custom "+juce::String(c);
+            editor->setText(renamed,juce::dontSendNotification);
+            editor->onReturnKey();
+            const auto& cell=ui.show.rows[0].cells[(size_t)c];
+            check(cell.id==id && cell.name==renamed &&
+                  !cell.midi && !cell.osc && cell.file.isEmpty() &&
+                  !cell.controlSet.has_value(),
+                  "Cell rename changed content, identity or media");
+        }
+        // Existing inspector selection and LIVE transport are not redirected.
+        const int next=ui.nextCueIndex();
+        const int selected=ui.selectedColumn;
+        check(ui.renameCell(0,3),"Context-style rename failed for Control cell");
+        editor->setText("Lighting",juce::dontSendNotification);
+        editor->onReturnKey();
+        check(ui.nextCueIndex()==next && ui.selectedColumn==selected,
+              "Right-click-target rename should not re-arm NEXT or change selection");
+    });
+    test("Find in Explorer appears only for Audio and requires a real source",[] {
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::midi,"M");
+        addColumn(ui.show,ColumnType::osc,"O");
+        addColumn(ui.show,ColumnType::control,"C");
+        ui.refreshForTest();
+        auto* grid=cueViewFixtures::find<CueGrid>(ui);
+        check(grid!=nullptr,"Native CueGrid missing");
+        auto inspect=[&](int col,bool expectReveal,bool enabled) {
+            const auto menu=grid->createCellContextMenu(0,col);
+            bool rename=false,reveal=false,revealEnabled=false;
+            for (juce::PopupMenu::MenuItemIterator it(menu);it.next();) {
+                const auto& item=it.getItem();
+                if (item.itemID==9) rename=item.isEnabled;
+                if (item.itemID==10) {
+                    reveal=true;revealEnabled=item.isEnabled;
+                }
+            }
+            check(rename && reveal==expectReveal &&
+                  (!expectReveal || revealEnabled==enabled),
+                  "Cell menu exposes wrong rename/Explorer controls");
+        };
+        inspect(0,true,false);
+        inspect(1,false,false);
+        inspect(2,false,false);
+        inspect(3,false,false);
+        check(ui.audioFileForExplorer(0,1)==juce::File{},
+              "Non-Audio cell must not resolve a file for Explorer");
+
+        const auto file=juce::File::getSpecialLocation(
+            juce::File::tempDirectory).getNonexistentChildFile(
+            "cuelist-explorer-test",".wav",false);
+        check(file.replaceWithText("fixture"),
+              "Could not create temporary Audio source for Explorer menu");
+        ui.show.rows[0].cells[0].file=file.getFullPathName();
+        inspect(0,true,true);
+        check(ui.audioFileForExplorer(0,0)==file,
+              "Explorer must resolve the existing Audio file itself");
+        ui.show.rows[0].cells[0].file="relative-not-loaded.wav";
+        inspect(0,true,false);
+        check(ui.audioFileForExplorer(0,0)==juce::File{},
+              "Unresolved relative media must not open an unrelated file");
+        ui.show.rows[0].cells[0].file=file.getFullPathName();
+        check(file.deleteFile(),"Could not remove temporary test source");
+        inspect(0,true,false);
+    });
     test("Native Guide renders Markdown and supports section search",[] {
         GuideDocument document;
         document.setMarkdown("# The Cuelist\n\n## 1. Introduction\n"
