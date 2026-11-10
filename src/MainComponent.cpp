@@ -2182,6 +2182,7 @@ void MainComponent::setColumnOutput(int column,int outputIndex) {
     status="Column audio output updated."; utilities.refresh(); repaint();
 }
 void MainComponent::stopAll() {
+    cueMetrics.cancelAutoStopCellPicking(); // Esc remains PANIC, never just picker cancel.
     engine.panic(); controlOutput.clear(); resetActiveMapping();
     status="PANIC / audio, MIDI and OSC playback stopped."; repaint();
 }
