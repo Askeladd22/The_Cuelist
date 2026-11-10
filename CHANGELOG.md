@@ -13,6 +13,20 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.38] - 2026-11-10
+
+**Stato:** ripristino UX del selettore celle Auto Stop nella fascia fissa; PR da verificare con CI Windows/CTest e collaudo nativo, non certificata per show live.
+
+### Interfaccia nativa JUCE
+- Reintrodotto il pulsante **+ sotto il toggle Auto Stop** di ciascuna cue (184 px di fascia, riga 62 px). BPM, toggle ON/OFF e + hanno hitbox separate, anche con scorrimento.
+- Il + apre un menu nativo con tutte le celle/colonne Audio, MIDI, OSC e Control della cue e spunte che indicano quelle incluse nell'Auto Stop. La voce scelta usa lo stesso `setCellAutoStop` del menu destro e dell'Inspector; ogni cambio è reversibile con Undo.
+- Il popup usa gli ID stabili di cue, colonna e cella e verifica la VIEW prima di applicare una scelta differita. Rimangono invariati il toggle di riga, i marker CONT., il menu destro, la semantica LIVE e la persistenza JSON v10.
+
+### Test e limiti
+- Aggiunti/aggiornati test JUCE per geometrie non sovrapposte, tooltip del +, spunte del menu, esclusione per tipo di colonna, isolamento fra righe, persistenza, scelta dopo riordino e spazio inattivo.
+- Esecuzione locale Windows/CTest, screenshot DPI 100/125/150%, monitor ultrawide e prova Audio/MIDI/OSC/LTC con hardware esterno: **ND**. Il risultato CI della PR va verificato prima dell'integrazione.
+- Rollback: ripristinare la PR oppure togliere + e relativa voce di accesso senza migrare dati; `stopOnNext` per cella resta immutato.
+
 ## [0.9.37] - 2026-11-09
 
 **Stato:** RQ-001/T04, indagine reversibile sulla comprensibilità dei due comandi GO e sulla distinzione di Cuelist LIVE con nomi lunghi simili. Nessun merge automatico; non certificata per uno spettacolo live.
