@@ -118,10 +118,10 @@ void autoStopV7Tests() {
         auto* fixed=find<CueMetricsOverlay>(ui);
         check(fixed!=nullptr,"Fixed Auto Stop strip missing");
         const auto before=encodeShow(ui.show);
-        // The former disclosure region is inert, including after scroll.
-        click(*fixed,121.f,(float)CueGrid::headerHeight+46.f);
+        // Blank space alongside the restored + is inert.
+        click(*fixed,169.f,(float)CueGrid::headerHeight+46.f);
         check(encodeShow(ui.show)==before,
-              "A removed CELLS disclosure still mutated the show");
+              "The blank Auto Stop lane mutated the show");
         ui.setCellAutoStop(0,2,false);
         check(!ui.show.rows[0].cells[2].stopOnNext,
               "OSC cell Auto Stop exception was not applied");
