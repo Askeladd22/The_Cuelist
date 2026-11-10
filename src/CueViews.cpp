@@ -661,7 +661,7 @@ void CueGrid::mouseMove(const juce::MouseEvent& e) {
             juce::Rectangle<int>(x+w-12,y+26,12,21).contains(e.getPosition()) :
             cellContinueBadgeBounds(x,w,y).contains(e.getPosition());
         if (overMarker)
-            tooltip="Esclusa dall'Auto Stop: continua dopo il prossimo GO quando l'Auto Stop della cue è attivo. Tasto destro per includerla.";
+            tooltip="Esclusa dall'Auto Stop: continua dopo il prossimo GO quando l'Auto Stop della cue è attivo. Tasto destro oppure + sotto Auto Stop per includerla.";
     }
     CellAction nextAction=CellAction::none;
     if (valid && !collapsed &&
@@ -1042,6 +1042,43 @@ CueMetricsOverlay::CueMetricsOverlay(MainComponent& parent):owner(parent) {
         if (editingRowId>0 && !closingBpmEditor) finishBpmEdit(true);
     };
 }
+juce::PopupMenu CueMetricsOverlay::createAutoStopCellsMenu(int row) {
+    juce::PopupMenu menu;
+    if (row<0 || row>=(int)owner.show.rows.size()) return menu;
+    const auto& show=owner.show;
+    const int viewIndex=show.activeCuelist;
+    const int rowId=show.rows[(size_t)row].id;
+    menu.setLookAndFeel(&getLookAndFeel());
+    menu.addSectionHeader("Celle incluse nell'Auto Stop");
+    auto safe=juce::Component::SafePointer<CueMetricsOverlay>(this);
+    for (int c=0;c<(int)show.columns.size();++c) {
+        const auto& column=show.columns[(size_t)c];
+        const auto& cell=show.rows[(size_t)row].cells[(size_t)c];
+        const int columnId=column.id,cellId=cell.id;
+        // A checkmark means that this cell obeys the cue Auto Stop gate.
+        // Reuse the same setter as the Inspector and right-click cell menus.
+        const auto text=juce::String(c+1).paddedLeft('0',2)+"  "+
+            columnTypeName(column.type)+" · "+column.name;
+        menu.addItem(text,true,cell.stopOnNext,
+            [safe,viewIndex,rowId,columnId,cellId] {
+                if (!safe) return;
+                auto& host=safe->owner;
+                // An async menu must never edit a different VIEW, row or cell
+                // after tab switching, drag/reordering or project replacement.
+                if (host.show.activeCuelist!=viewIndex) return;
+                int r=-1,c=-1;
+                for (int i=0;i<(int)host.show.rows.size();++i)
+                    if (host.show.rows[(size_t)i].id==rowId) {r=i;break;}
+                for (int i=0;i<(int)host.show.columns.size();++i)
+                    if (host.show.columns[(size_t)i].id==columnId) {c=i;break;}
+                if (r<0 || c<0 ||
+                    host.show.rows[(size_t)r].cells[(size_t)c].id!=cellId) return;
+                const bool included=host.show.rows[(size_t)r].cells[(size_t)c].stopOnNext;
+                host.setCellAutoStop(r,c,!included);
+            });
+    }
+    return menu;
+}
 void CueMetricsOverlay::beginBpmEdit(int row) {
     if (row<0 || row>=(int)owner.show.rows.size()) return;
     if (editingRowId>0) {
@@ -1159,6 +1196,7 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
 
         const bool bpmHover=hoverRow==r && hoverTarget==HoverTarget::bpm;
         const bool toggleHover=hoverRow==r && hoverTarget==HoverTarget::autoStop;
+        const bool cellsHover=hoverRow==r && hoverTarget==HoverTarget::autoStopCells;
         if (bpmHover) {
             g.setColour(palette::raised.withAlpha(.26f));
             g.fillRoundedRectangle(juce::Rectangle<float>(13.f,(float)y+13.f,76.f,36.f),4.f);
@@ -1189,6 +1227,8 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
         label(g,row.stopOnNext?"ON":"OFF",
               {toggle.getX()+39,toggle.getY()+1,36,21},10,
               row.stopOnNext?palette::selection:palette::muted,true);
+        // Direct per-cell access without changing the cue-level gate.
+        smallButton(g,"+",autoStopCellsBounds(y),true,false,true,cellsHover);
 
         // The 94px separator corresponds to the same original two zones.
         g.setColour(palette::line.withAlpha(.28f));
@@ -1232,12 +1272,16 @@ void CueMetricsOverlay::mouseDown(const juce::MouseEvent& e) {
     }
     if (!e.mods.isLeftButtonDown()) return;
     const int localY=CueGridGeometry::rowLocalY(e.y+scroll);
-    // The fixed strip has only BPM and cue-level Auto Stop. Cell exceptions
-    // are edited in their own context menu, not an expansion mode.
+    // The + opens a native checkable cell picker; right-click still works.
     if (bpmEditBounds(0).contains(e.x,localY))
         owner.editRowBpm(row);
     else if (autoStopToggleBounds(0).contains(e.x,localY))
         owner.setAutoStop(row,!owner.show.rows[(size_t)row].stopOnNext);
+    else if (autoStopCellsBounds(0).contains(e.x,localY)) {
+        auto menu=createAutoStopCellsMenu(row);
+        menu.showMenuAsync(juce::PopupMenu::Options().withTargetScreenArea(
+            {e.getScreenX(),e.getScreenY(),1,1}));
+    }
     repaint();
 }
 void CueMetricsOverlay::mouseMove(const juce::MouseEvent& e) {
@@ -1251,6 +1295,8 @@ void CueMetricsOverlay::mouseMove(const juce::MouseEvent& e) {
             target=HoverTarget::bpm;
         else if (autoStopToggleBounds(0).contains(e.x,localY))
             target=HoverTarget::autoStop;
+        else if (autoStopCellsBounds(0).contains(e.x,localY))
+            target=HoverTarget::autoStopCells;
     }
     const int nextRow=target!=HoverTarget::none?row:-1;
     if (nextRow==hoverRow && target==hoverTarget) return;
@@ -1263,6 +1309,8 @@ void CueMetricsOverlay::mouseMove(const juce::MouseEvent& e) {
     hoverRow=nextRow;
     hoverTarget=target;
     repaintRow(hoverRow);
+    setTooltip(target==HoverTarget::autoStopCells ?
+               "Seleziona le celle che seguono l'Auto Stop della cue." : juce::String{});
     setMouseCursor(target==HoverTarget::none ?
         juce::MouseCursor::NormalCursor : juce::MouseCursor::PointingHandCursor);
 }
@@ -1273,6 +1321,7 @@ void CueMetricsOverlay::mouseExit(const juce::MouseEvent&) {
                 getWidth(),CueGrid::rowHeight);
     hoverRow=-1;
     hoverTarget=HoverTarget::none;
+    setTooltip({});
     setMouseCursor(juce::MouseCursor::NormalCursor);
 }
 void CueMetricsOverlay::mouseWheelMove(const juce::MouseEvent& e,const juce::MouseWheelDetails& wheel) {
