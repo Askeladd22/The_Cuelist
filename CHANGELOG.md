@@ -13,6 +13,22 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.39] - 2026-11-10
+
+**Stato:** hotfix di compilazione e documentazione sintetica; nessun cambiamento ai motori o allo schema JSON v10.
+
+### Corretto
+- CueMetricsOverlay implementa juce::SettableTooltipClient, coerentemente con CueGrid e le intestazioni fisse. Risolve gli errori MSVC C3861 di setTooltip in src/CueViews.cpp e C2039 di getTooltip nei test introdotti nella 0.9.38.
+
+### Documentazione
+- Riscritto README.md come panoramica professionale breve: obiettivo, funzioni reali, compilazione, progetti, documentazione e licenze.
+- Rimossi dettagli di versione obsoleti e l'affermazione errata che LTC non è implementato: rimane disponibile la **generazione di LTC audio**, non un lettore timecode generalizzato.
+
+### Verifiche e limiti
+- Input: build Windows dell'operatore su 0.9.38 **FALLITA** per C3861/C2039 (log 2026-11-10); questo commit corregge le dichiarazioni JUCE che causavano gli errori.
+- Candidato 0.9.39: compilazione Windows/CTest da verificare nella CI; test hardware Audio/MIDI/OSC/LTC e DPI reali **ND**.
+- Rollback: revert della PR; nessuna migrazione dei file .cuelist necessaria.
+
 ## [0.9.38] - 2026-11-10
 
 **Stato:** ripristino UX del selettore celle Auto Stop nella fascia fissa; PR da verificare con CI Windows/CTest e collaudo nativo, non certificata per show live.
