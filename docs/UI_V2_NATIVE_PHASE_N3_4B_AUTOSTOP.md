@@ -2,6 +2,8 @@
 
 > **Aggiornamento 0.9.38 (10 novembre 2026):** la decisione storica di eliminare ogni accesso in fascia è stata superata da una richiesta esplicita dell'operatore. È stato reintrodotto un piccolo pulsante **+ sotto ON/OFF** che apre il menu JUCE di inclusione cella. Non ripristina il vecchio `CELLS` espandibile né modifica i dati `stopOnNext` o il menu destro. La descrizione seguente documenta la decisione N3.4B del 2026; per la versione corrente vedere `docs/research/RQ-002-AUTOSTOP-PLUS.md`.
 
+> **Aggiornamento 0.9.40:** il menu introdotto nella 0.9.38 è stato sostituito dalla selezione diretta delle celle tramite clic su **+** e poi sulla griglia; rimangono i toggle per riga/cella. Vedere [RQ-003](research/RQ-003-AUTOSTOP-INLINE-PICKER.md).
+
 **Baseline:** `main` 0.9.0-beta.17 (PR #101, N3.4 integrata).  
 **Versione proposta:** `0.9.0-beta.18`.  
 **Branch:** `feat/native-autostop-exceptions-beta18`.

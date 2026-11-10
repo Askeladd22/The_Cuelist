@@ -1993,6 +1993,7 @@ void MainComponent::toggleRowPlayPause(int row) {
     grid.repaint();repaint();
 }
 void MainComponent::goNext() {
+    cueMetrics.cancelAutoStopCellPicking();
     if(liveCuelist==show.activeCuelist) {
         if(nextCue<(int)show.rows.size()) triggerRow(nextCue);
         else { status="End of live sequence. Select a cue to restart."; repaint(); }
@@ -2181,6 +2182,7 @@ void MainComponent::setColumnOutput(int column,int outputIndex) {
     status="Column audio output updated."; utilities.refresh(); repaint();
 }
 void MainComponent::stopAll() {
+    cueMetrics.cancelAutoStopCellPicking(); // Esc remains PANIC, never just picker cancel.
     engine.panic(); controlOutput.clear(); resetActiveMapping();
     status="PANIC / audio, MIDI and OSC playback stopped."; repaint();
 }

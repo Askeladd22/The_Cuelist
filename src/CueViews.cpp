@@ -359,6 +359,7 @@ void CueGrid::paint(juce::Graphics& g) {
             const bool missing=cell.file.isNotEmpty()&&!loaded;
             const auto tone=missing?palette::red:palette::type((int)column.type);
             const bool selectedCell=selected && c==owner.selectedColumn;
+            const bool picking=owner.cueMetrics.isAutoStopCellPickingRow(r);
             const bool hovered=hoverRow==r && hoverColumn==c;
             const auto hoveredAction=hovered ? hoverCellAction : CellAction::none;
             const bool drop=dragging && dropRow==r && dropColumn==c;
@@ -380,6 +381,11 @@ void CueGrid::paint(juce::Graphics& g) {
                 if (!cell.stopOnNext) {
                     g.setColour(palette::amber);
                     g.fillRoundedRectangle((float)x+w-8,(float)y+29,3.f,15.f,1.5f);
+                }
+                if (picking) {
+                    g.setColour(cell.stopOnNext?palette::playing:palette::amber);
+                    g.drawRoundedRectangle(juce::Rectangle<float>(
+                        (float)x+4,(float)y+4,(float)w-8,46.f),3.f,1.4f);
                 }
                 continue;
             }
@@ -426,7 +432,7 @@ void CueGrid::paint(juce::Graphics& g) {
                 label(g,column.controlLocked?"DEFAULT / LOCKED":
                         mapTitle.isNotEmpty()?mapTitle:
                         assigned?"CONTROL MAP":" + Control Map",
-                      {x+8,y+6,w-(cell.stopOnNext?16:67),18},
+                      {x+8,y+6,w-(cell.stopOnNext && !picking?16:67),18},
                       11,assigned?tone:palette::muted,true);
                 if (assigned)
                     label(g,count>0 ? juce::String(count)+" mappings" : "Empty map",
@@ -462,14 +468,14 @@ void CueGrid::paint(juce::Graphics& g) {
                            column.type==ColumnType::audio?"+ WAV/MP3":
                            column.type==ColumnType::midi?"+ MIDI":
                            column.type==ColumnType::osc?"+ OSC":"+ CONTROL",
-                           {x+8,y+11,w-(cell.stopOnNext?16:60),20},11,
+                           {x+8,y+11,w-(cell.stopOnNext && !picking?16:60),20},11,
                            missing?palette::red:palette::muted.withAlpha(hovered?.96f:.78f),
                            false,juce::Justification::centred);
             if(!cell.followsRow) {
                 g.setColour(palette::red);g.fillEllipse((float)x+7,(float)y+6,3.f,3.f);
             }
             if(cell.loop)
-                drawLoopIcon(g,{x+w-(cell.stopOnNext?19:72),y+5,15,15},palette::amber);
+                drawLoopIcon(g,{x+w-(cell.stopOnNext && !picking?19:72),y+5,15,15},palette::amber);
             if (!cell.stopOnNext) {
                 // Read-only exception: editing happens through the cell menu
                 // or the existing Inspector. The indicator must never act as
@@ -483,14 +489,26 @@ void CueGrid::paint(juce::Graphics& g) {
                       juce::Justification::centred);
             }
             if (column.type!=ColumnType::control && loaded) {
-                // Transport remains identical for usable clips. Disabled
-                // buttons are not painted over empty or missing-media slots.
+                // Ordinary transport is drawn but disabled by click routing
+                // while the operator is selecting Auto Stop membership.
                 transportButton(g,cellButtonVisualBounds(cellPlayBounds(x,w,y)),
                                 false,true,15.0f,
                                 hoveredAction==CellAction::play);
                 transportButton(g,cellButtonVisualBounds(cellStopBounds(x,w,y)),
                                 true,true,15.0f,
                                 hoveredAction==CellAction::stop);
+            }
+            if (picking) {
+                const auto selectInk=cell.stopOnNext?palette::playing:palette::amber;
+                g.setColour(selectInk.withAlpha(.82f));
+                g.drawRoundedRectangle(box.reduced(.6f),3.f,1.7f);
+                if (cell.stopOnNext) {
+                    const auto badge=cellContinueBadgeBounds(x,w,y);
+                    g.setColour(selectInk.withAlpha(.20f));
+                    g.fillRoundedRectangle(badge.toFloat(),3.f);
+                    label(g,"AUTO",badge,10,selectInk,true,
+                          juce::Justification::centred);
+                }
             }
         }
         g.restoreState();
@@ -677,7 +695,17 @@ void CueGrid::mouseMove(const juce::MouseEvent& e) {
                 ? "Play this "+columnTypeName(owner.show.columns[(size_t)column].type)+" clip"
                 : "Stop this "+columnTypeName(owner.show.columns[(size_t)column].type)+" clip";
     }
+    if (valid && owner.cueMetrics.isAutoStopCellPickingRow(row)) {
+        nextAction=CellAction::none;
+        const bool included=owner.show.rows[(size_t)row]
+                               .cells[(size_t)column].stopOnNext;
+        tooltip=included ?
+            "Auto Stop: click to exclude this cell (continues after the next GO)." :
+            "Auto Stop: click to include this cell (stops at the next GO).";
+    }
     setTooltip(tooltip);
+    if (valid && owner.cueMetrics.isAutoStopCellPickingRow(row))
+        setMouseCursor(juce::MouseCursor::PointingHandCursor);
     if (hoverRow==nextRow && hoverColumn==nextColumn &&
         hoverCellAction==nextAction) return;
     const auto repaintCell=[this](int r,int c) {
@@ -703,6 +731,14 @@ void CueGrid::mouseDown(const juce::MouseEvent& e) {
     dragRow=dragColumn=dropRow=dropColumn=-1;dragging=false;
     const int row=CueGridGeometry::rowAt(e.y);
     const int column=columnAt(e.x);
+    if (owner.cueMetrics.isAutoStopCellPicking()) {
+        if (e.mods.isLeftButtonDown() && e.getNumberOfClicks()==1)
+            owner.cueMetrics.handleAutoStopCellClick(row,column);
+        else if (e.mods.isPopupMenu())
+            owner.cueMetrics.cancelAutoStopCellPicking();
+        // Never dispatch cell transport, open Control Map, select NEXT or drag.
+        return;
+    }
     if (e.mods.isPopupMenu()) {
         if (row>=0 && row<(int)owner.show.rows.size()) {
             if (column>=0 && owner.show.columns[(size_t)column].type==ColumnType::control &&
@@ -780,6 +816,7 @@ void CueGrid::mouseUp(const juce::MouseEvent&) {
     setMouseCursor(juce::MouseCursor::NormalCursor);repaint();
 }
 void CueGrid::mouseDoubleClick(const juce::MouseEvent& e) {
+    if (owner.cueMetrics.isAutoStopCellPicking()) return;
     if (e.mods.isPopupMenu() || e.x<0 || e.y<0) return;
     const int column=columnAt(e.x);
     if (e.y<headerHeight) {
@@ -1042,42 +1079,60 @@ CueMetricsOverlay::CueMetricsOverlay(MainComponent& parent):owner(parent) {
         if (editingRowId>0 && !closingBpmEditor) finishBpmEdit(true);
     };
 }
-juce::PopupMenu CueMetricsOverlay::createAutoStopCellsMenu(int row) {
-    juce::PopupMenu menu;
-    if (row<0 || row>=(int)owner.show.rows.size()) return menu;
-    const auto& show=owner.show;
-    const int viewIndex=show.activeCuelist;
-    const int rowId=show.rows[(size_t)row].id;
-    menu.setLookAndFeel(&getLookAndFeel());
-    menu.addSectionHeader("Celle incluse nell'Auto Stop");
-    auto safe=juce::Component::SafePointer<CueMetricsOverlay>(this);
-    for (int c=0;c<(int)show.columns.size();++c) {
-        const auto& column=show.columns[(size_t)c];
-        const auto& cell=show.rows[(size_t)row].cells[(size_t)c];
-        const int columnId=column.id,cellId=cell.id;
-        // A checkmark means that this cell obeys the cue Auto Stop gate.
-        // Reuse the same setter as the Inspector and right-click cell menus.
-        const auto text=juce::String(c+1).paddedLeft('0',2)+"  "+
-            columnTypeName(column.type)+" · "+column.name;
-        menu.addItem(text,true,cell.stopOnNext,
-            [safe,viewIndex,rowId,columnId,cellId] {
-                if (!safe) return;
-                auto& host=safe->owner;
-                // An async menu must never edit a different VIEW, row or cell
-                // after tab switching, drag/reordering or project replacement.
-                if (host.show.activeCuelist!=viewIndex) return;
-                int r=-1,c=-1;
-                for (int i=0;i<(int)host.show.rows.size();++i)
-                    if (host.show.rows[(size_t)i].id==rowId) {r=i;break;}
-                for (int i=0;i<(int)host.show.columns.size();++i)
-                    if (host.show.columns[(size_t)i].id==columnId) {c=i;break;}
-                if (r<0 || c<0 ||
-                    host.show.rows[(size_t)r].cells[(size_t)c].id!=cellId) return;
-                const bool included=host.show.rows[(size_t)r].cells[(size_t)c].stopOnNext;
-                host.setCellAutoStop(r,c,!included);
-            });
+bool CueMetricsOverlay::isAutoStopCellPicking() const noexcept {
+    if (autoStopPickerRowId<=0 || autoStopPickerView!=owner.show.activeCuelist)
+        return false;
+    for (const auto& row:owner.show.rows)
+        if (row.id==autoStopPickerRowId) return true;
+    return false;
+}
+bool CueMetricsOverlay::isAutoStopCellPickingRow(int row) const noexcept {
+    return isAutoStopCellPicking() &&
+           row>=0 && row<(int)owner.show.rows.size() &&
+           owner.show.rows[(size_t)row].id==autoStopPickerRowId;
+}
+void CueMetricsOverlay::cancelAutoStopCellPicking() {
+    if (autoStopPickerRowId<=0) return;
+    autoStopPickerRowId=-1;
+    autoStopPickerView=-1;
+    owner.grid.setMouseCursor(juce::MouseCursor::NormalCursor);
+    owner.grid.repaint();
+    repaint();
+}
+void CueMetricsOverlay::toggleAutoStopCellPicking(int row) {
+    if (row<0 || row>=(int)owner.show.rows.size()) return;
+    if (isAutoStopCellPickingRow(row)) {
+        cancelAutoStopCellPicking();
+        owner.status="Auto Stop cell selection complete.";
+    } else {
+        autoStopPickerRowId=owner.show.rows[(size_t)row].id;
+        autoStopPickerView=owner.show.activeCuelist;
+        owner.status=owner.show.rows[(size_t)row].stopOnNext ?
+            "Auto Stop: click a cell to include/exclude it. Click + again to finish." :
+            "Auto Stop is OFF: choose cells now, then switch the cue to ON.";
+        owner.grid.repaint();
+        repaint();
     }
-    return menu;
+    owner.repaint();
+}
+bool CueMetricsOverlay::handleAutoStopCellClick(int row,int column) {
+    if (!isAutoStopCellPicking()) return false;
+    // A click outside the armed cue finishes editing, never starts another
+    // cell's transport, opens its editor or moves the NEXT/LIVE cursor.
+    if (!isAutoStopCellPickingRow(row) ||
+        column<0 || column>=(int)owner.show.columns.size()) {
+        cancelAutoStopCellPicking();
+        owner.status="Auto Stop cell selection complete.";
+        owner.repaint();
+        return true;
+    }
+    const bool currentlyIncluded=owner.show.rows[(size_t)row]
+                                      .cells[(size_t)column].stopOnNext;
+    owner.setCellAutoStop(row,column,!currentlyIncluded);
+    owner.grid.setTooltip(currentlyIncluded ?
+        "Auto Stop: click to include this cell (stops at the next GO)." :
+        "Auto Stop: click to exclude this cell (continues after the next GO).");
+    return true;
 }
 void CueMetricsOverlay::beginBpmEdit(int row) {
     if (row<0 || row>=(int)owner.show.rows.size()) return;
@@ -1216,19 +1271,32 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
             g.setColour(palette::raised.withAlpha(.48f));
             g.fillRoundedRectangle(toggle.toFloat(),4.f);
         }
-        // Preserve the original binary Auto Stop behavior and switch geometry.
+        // Align switch and ON/OFF to the right within the 90px Auto Stop lane.
         g.setColour(row.stopOnNext?palette::selection.withAlpha(.30f):
                    palette::muted.withAlpha(.20f));
-        g.fillRoundedRectangle((float)toggle.getX()+3.f,
-                               (float)toggle.getY()+2.f,31.f,19.f,9.f);
+        g.fillRoundedRectangle((float)toggle.getX()+4.f,
+                               (float)toggle.getY()+2.f,35.f,19.f,9.f);
         g.setColour(row.stopOnNext?palette::selection:palette::muted);
-        g.fillEllipse((float)toggle.getX()+(row.stopOnNext?19.f:6.f),
+        g.fillEllipse((float)toggle.getX()+(row.stopOnNext?25.f:8.f),
                       (float)toggle.getY()+5.f,13.f,13.f);
         label(g,row.stopOnNext?"ON":"OFF",
-              {toggle.getX()+39,toggle.getY()+1,36,21},10,
+              {toggle.getX()+44,toggle.getY()+1,25,21},10,
               row.stopOnNext?palette::selection:palette::muted,true);
-        // Direct per-cell access without changing the cue-level gate.
-        smallButton(g,"+",autoStopCellsBounds(y),true,false,true,cellsHover);
+        const bool picking=isAutoStopCellPickingRow(r);
+        const auto plus=autoStopCellsBounds(y);
+        if (picking) {
+            int included=0;
+            for (const auto& cell:row.cells) if (cell.stopOnNext) ++included;
+            label(g,juce::String(included)+"/"+juce::String((int)row.cells.size()),
+                  {101,y+38,32,20},10,palette::playing,true,
+                  juce::Justification::centred);
+        }
+        // A pressed + visibly arms the row; pressing it again ends picking.
+        smallButton(g,"+",plus,true,false,true,cellsHover || picking);
+        if (picking) {
+            g.setColour(palette::playing);
+            g.drawRoundedRectangle(plus.toFloat().reduced(1.f),3.f,1.35f);
+        }
 
         // The 94px separator corresponds to the same original two zones.
         g.setColour(palette::line.withAlpha(.28f));
@@ -1272,16 +1340,13 @@ void CueMetricsOverlay::mouseDown(const juce::MouseEvent& e) {
     }
     if (!e.mods.isLeftButtonDown()) return;
     const int localY=CueGridGeometry::rowLocalY(e.y+scroll);
-    // The + opens a native checkable cell picker; right-click still works.
+    // The + arms direct cell selection in the native Cue Grid; no popup.
     if (bpmEditBounds(0).contains(e.x,localY))
         owner.editRowBpm(row);
     else if (autoStopToggleBounds(0).contains(e.x,localY))
         owner.setAutoStop(row,!owner.show.rows[(size_t)row].stopOnNext);
-    else if (autoStopCellsBounds(0).contains(e.x,localY)) {
-        auto menu=createAutoStopCellsMenu(row);
-        menu.showMenuAsync(juce::PopupMenu::Options().withTargetScreenArea(
-            {e.getScreenX(),e.getScreenY(),1,1}));
-    }
+    else if (autoStopCellsBounds(0).contains(e.x,localY))
+        toggleAutoStopCellPicking(row);
     repaint();
 }
 void CueMetricsOverlay::mouseMove(const juce::MouseEvent& e) {
@@ -1310,7 +1375,10 @@ void CueMetricsOverlay::mouseMove(const juce::MouseEvent& e) {
     hoverTarget=target;
     repaintRow(hoverRow);
     setTooltip(target==HoverTarget::autoStopCells ?
-               "Seleziona le celle che seguono l'Auto Stop della cue." : juce::String{});
+               (isAutoStopCellPickingRow(row) ?
+                "Termina selezione Auto Stop: le modifiche alle celle sono gia applicate." :
+                "Attiva selezione Auto Stop: clicca direttamente le celle della cue.") :
+               juce::String{});
     setMouseCursor(target==HoverTarget::none ?
         juce::MouseCursor::NormalCursor : juce::MouseCursor::PointingHandCursor);
 }
