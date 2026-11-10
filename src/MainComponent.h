@@ -257,6 +257,8 @@ public:
     void paint(juce::Graphics&) override;
     void beginBpmEdit(int row);
     void syncBpmEditor();
+    // Production menu also exercised by native JUCE interaction tests.
+    juce::PopupMenu createAutoStopCellsMenu(int row);
     bool isBpmEditing() const { return editingRowId>0; }
     juce::TextEditor& bpmEditorForTests() { return bpmEditor; }
     void mouseDown(const juce::MouseEvent&) override;
@@ -273,12 +275,15 @@ public:
     static juce::Rectangle<int> autoStopToggleBounds(int rowTop) {
         return {102,rowTop+8,78,26};
     }
+    static juce::Rectangle<int> autoStopCellsBounds(int rowTop) {
+        return {127,rowTop+38,28,20}; // + below the switch, within 62px cue row
+    }
 private:
     void finishBpmEdit(bool accept,bool forceClose=false);
     juce::TextEditor bpmEditor;
     int editingRowId=0;
     bool closingBpmEditor=false;
-    enum class HoverTarget { none, bpm, autoStop };
+    enum class HoverTarget { none, bpm, autoStop, autoStopCells };
     int hoverRow=-1;
     HoverTarget hoverTarget=HoverTarget::none;
     MainComponent& owner;
