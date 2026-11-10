@@ -359,6 +359,7 @@ void CueGrid::paint(juce::Graphics& g) {
             const bool missing=cell.file.isNotEmpty()&&!loaded;
             const auto tone=missing?palette::red:palette::type((int)column.type);
             const bool selectedCell=selected && c==owner.selectedColumn;
+            const bool picking=owner.cueMetrics.isAutoStopCellPickingRow(r);
             const bool hovered=hoverRow==r && hoverColumn==c;
             const auto hoveredAction=hovered ? hoverCellAction : CellAction::none;
             const bool drop=dragging && dropRow==r && dropColumn==c;
@@ -380,6 +381,11 @@ void CueGrid::paint(juce::Graphics& g) {
                 if (!cell.stopOnNext) {
                     g.setColour(palette::amber);
                     g.fillRoundedRectangle((float)x+w-8,(float)y+29,3.f,15.f,1.5f);
+                }
+                if (picking) {
+                    g.setColour(cell.stopOnNext?palette::playing:palette::amber);
+                    g.drawRoundedRectangle(juce::Rectangle<float>(
+                        (float)x+4,(float)y+4,(float)w-8,46.f),3.f,1.4f);
                 }
                 continue;
             }
@@ -426,7 +432,7 @@ void CueGrid::paint(juce::Graphics& g) {
                 label(g,column.controlLocked?"DEFAULT / LOCKED":
                         mapTitle.isNotEmpty()?mapTitle:
                         assigned?"CONTROL MAP":" + Control Map",
-                      {x+8,y+6,w-(cell.stopOnNext?16:67),18},
+                      {x+8,y+6,w-(cell.stopOnNext && !picking?16:67),18},
                       11,assigned?tone:palette::muted,true);
                 if (assigned)
                     label(g,count>0 ? juce::String(count)+" mappings" : "Empty map",
@@ -462,14 +468,14 @@ void CueGrid::paint(juce::Graphics& g) {
                            column.type==ColumnType::audio?"+ WAV/MP3":
                            column.type==ColumnType::midi?"+ MIDI":
                            column.type==ColumnType::osc?"+ OSC":"+ CONTROL",
-                           {x+8,y+11,w-(cell.stopOnNext?16:60),20},11,
+                           {x+8,y+11,w-(cell.stopOnNext && !picking?16:60),20},11,
                            missing?palette::red:palette::muted.withAlpha(hovered?.96f:.78f),
                            false,juce::Justification::centred);
             if(!cell.followsRow) {
                 g.setColour(palette::red);g.fillEllipse((float)x+7,(float)y+6,3.f,3.f);
             }
             if(cell.loop)
-                drawLoopIcon(g,{x+w-(cell.stopOnNext?19:72),y+5,15,15},palette::amber);
+                drawLoopIcon(g,{x+w-(cell.stopOnNext && !picking?19:72),y+5,15,15},palette::amber);
             if (!cell.stopOnNext) {
                 // Read-only exception: editing happens through the cell menu
                 // or the existing Inspector. The indicator must never act as
@@ -483,14 +489,26 @@ void CueGrid::paint(juce::Graphics& g) {
                       juce::Justification::centred);
             }
             if (column.type!=ColumnType::control && loaded) {
-                // Transport remains identical for usable clips. Disabled
-                // buttons are not painted over empty or missing-media slots.
+                // Ordinary transport is drawn but disabled by click routing
+                // while the operator is selecting Auto Stop membership.
                 transportButton(g,cellButtonVisualBounds(cellPlayBounds(x,w,y)),
                                 false,true,15.0f,
                                 hoveredAction==CellAction::play);
                 transportButton(g,cellButtonVisualBounds(cellStopBounds(x,w,y)),
                                 true,true,15.0f,
                                 hoveredAction==CellAction::stop);
+            }
+            if (picking) {
+                const auto selectInk=cell.stopOnNext?palette::playing:palette::amber;
+                g.setColour(selectInk.withAlpha(.82f));
+                g.drawRoundedRectangle(box.reduced(.6f),3.f,1.7f);
+                if (cell.stopOnNext) {
+                    const auto badge=cellContinueBadgeBounds(x,w,y);
+                    g.setColour(selectInk.withAlpha(.20f));
+                    g.fillRoundedRectangle(badge.toFloat(),3.f);
+                    label(g,"AUTO",badge,10,selectInk,true,
+                          juce::Justification::centred);
+                }
             }
         }
         g.restoreState();
@@ -677,6 +695,14 @@ void CueGrid::mouseMove(const juce::MouseEvent& e) {
                 ? "Play this "+columnTypeName(owner.show.columns[(size_t)column].type)+" clip"
                 : "Stop this "+columnTypeName(owner.show.columns[(size_t)column].type)+" clip";
     }
+    if (valid && owner.cueMetrics.isAutoStopCellPickingRow(row)) {
+        nextAction=CellAction::none;
+        const bool included=owner.show.rows[(size_t)row]
+                               .cells[(size_t)column].stopOnNext;
+        tooltip=included ?
+            "Auto Stop: click to exclude this cell (continues after the next GO)." :
+            "Auto Stop: click to include this cell (stops at the next GO).";
+    }
     setTooltip(tooltip);
     if (hoverRow==nextRow && hoverColumn==nextColumn &&
         hoverCellAction==nextAction) return;
@@ -703,6 +729,14 @@ void CueGrid::mouseDown(const juce::MouseEvent& e) {
     dragRow=dragColumn=dropRow=dropColumn=-1;dragging=false;
     const int row=CueGridGeometry::rowAt(e.y);
     const int column=columnAt(e.x);
+    if (owner.cueMetrics.isAutoStopCellPicking()) {
+        if (e.mods.isLeftButtonDown() && e.getNumberOfClicks()==1)
+            owner.cueMetrics.handleAutoStopCellClick(row,column);
+        else if (e.mods.isPopupMenu())
+            owner.cueMetrics.cancelAutoStopCellPicking();
+        // Never dispatch cell transport, open Control Map, select NEXT or drag.
+        return;
+    }
     if (e.mods.isPopupMenu()) {
         if (row>=0 && row<(int)owner.show.rows.size()) {
             if (column>=0 && owner.show.columns[(size_t)column].type==ColumnType::control &&
@@ -780,6 +814,7 @@ void CueGrid::mouseUp(const juce::MouseEvent&) {
     setMouseCursor(juce::MouseCursor::NormalCursor);repaint();
 }
 void CueGrid::mouseDoubleClick(const juce::MouseEvent& e) {
+    if (owner.cueMetrics.isAutoStopCellPicking()) return;
     if (e.mods.isPopupMenu() || e.x<0 || e.y<0) return;
     const int column=columnAt(e.x);
     if (e.y<headerHeight) {
