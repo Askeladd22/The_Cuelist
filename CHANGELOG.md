@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.43] - 2026-11-10
+
+**Stato:** candidato UX e utility Windows per rinomina singola cella e individuazione della sorgente Audio. Schema progetti JSON v10 invariato; nessuna modifica al trasporto audio/MIDI/OSC/LTC.
+
+### Interfaccia JUCE
+- **Ctrl+R** rinomina direttamente la cella selezionata. L'azione **Rename cell** è disponibile dal menu destro delle celle Audio, MIDI, OSC e Control (compresi Control Map non bloccati), riutilizzando l'editor inline nativo di cue/colonne. Enter salva; Esc annulla. Il nome salvato è `cell.name` e non rinomina file o Control Map.
+- I nomi personalizzati sono visibili anche per le celle vuote e per le celle Control, mantenendo riconoscibile lo stato della mappa assegnata. L'editor segue gli ID stabili, rispetta il viewport e conserva NEXT/LIVE.
+- **Find in Explorer** compare soltanto nel menu destro Audio. È disabilitato se manca un file assoluto esistente. Usa `juce::File::revealToUser()`, senza avviare il contenuto, toccare la sorgente o alterare il routing. Il menu ricontrolla la sorgente al click.
+- Conservati le altre azioni contestuali, menu Control Mapping, Undo/Redo, GO/STOP/PANIC e selezione diretta Auto Stop.
+
+### Verifiche
+- Aggiunti test nativi per scorciatoia Ctrl+R, Enter/Esc, nomi Audio/MIDI/OSC/Control, identità e contenuto immutati, persistenza JSON v10, isolamento NEXT/LIVE, disponibilità contestuale di Find in Explorer e file mancanti/relativi.
+- Windows Release/CTest candidato: **ND** prima dell'esito CI; apertura effettiva di Explorer, test DPI e collaudo con hardware esterno: **ND**.
+- Rollback: revert della PR; nessuna migrazione dati richiesta.
+
 ## [0.9.42] - 2026-11-10
 
 **Stato:** hotfix del test grafico JUCE per la selezione Auto Stop inline, con rendering AUTO/CONT. verificato su area effettiva della Cue Grid. Nessuna modifica al runtime Audio/MIDI/OSC/LTC, VIEW/LIVE o allo schema JSON v10.
