@@ -1869,7 +1869,7 @@ void MainComponent::generateClickTrack(int row,int column) {
             const char* raw=duration.toRawUTF8();
             char* end=nullptr;
             const double seconds=std::strtod(raw,&end);
-            if(duration.isEmpty() || end==raw || *end!='\\0' ||
+            if(duration.isEmpty() || end==raw || *end!='\0' ||
                !std::isfinite(seconds) || seconds<0.1 || seconds>600) {
                 safe->message("Click duration must be a number from 0.1 to 600 seconds.");
                 return;
