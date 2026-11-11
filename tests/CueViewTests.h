@@ -51,7 +51,7 @@ void cueViewTests() {
         auto clip=std::make_shared<AudioClip>(); clip->samples.setSize(1,48000); clip->samples.clear();
         ui.clips[ui.show.rows[0].cells[0].id]=clip;
         auto* timeline=find<Timeline>(ui); check(timeline!=nullptr,"Timeline absent"); timeline->setSize(800,250);
-        const juce::Point<float> from{160,94}, to{224,94};
+        const juce::Point<float> from{160,118}, to{224,118};
         timeline->mouseDown(event(*timeline,from,from)); timeline->mouseDrag(event(*timeline,to,from,1,true)); timeline->mouseUp(event(*timeline,to,from,1,true));
         near(ui.show.rows[0].cells[0].startSeconds,1);
         const juce::Point<float> rulerFrom{268,60}, rulerTo{460,60};
