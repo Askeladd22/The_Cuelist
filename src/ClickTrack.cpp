@@ -13,8 +13,10 @@ std::vector<ClickEvent> makeClickEvents(const std::vector<TempoPoint>& tempo,
     // Max 600 s at 999 BPM x four subdivisions: less than 40,000 pulses.
     events.reserve((size_t)std::min(40000.0,
         config.durationSeconds*999.0/60.0*config.subdivision+1.0));
-    size_t segment=0,previousSegment=0;
+    size_t segment=0;
     int previousBar=-1;
+    int numerator=tempo.front().numerator,denominator=tempo.front().denominator;
+    double barAnchor=0;
     for (int i=0;i<40000;++i) {
         const double beat=(double)i/config.subdivision;
         const double second=secondsAtBeat(tempo,beat);
@@ -22,15 +24,19 @@ std::vector<ClickEvent> makeClickEvents(const std::vector<TempoPoint>& tempo,
         while (segment+1<tempo.size() && tempo[segment+1].beat<=beat+1e-10)
             ++segment;
         const auto& point=tempo[segment];
-        const double barLength=point.numerator*4.0/point.denominator;
-        // An off-grid meter change starts the next bar at the first grid beat.
-        const double anchor=std::ceil(point.beat-1e-10);
-        const int bar=beat>=anchor-1e-10 && barLength>0
-            ? (int)std::floor((beat-anchor+1e-10)/barLength) : -1;
-        const bool downbeat=i==0 || (bar>=0 &&
-            (segment!=previousSegment || bar!=previousBar));
+        if (point.numerator!=numerator || point.denominator!=denominator) {
+            // A meter change starts a new measure at its next integer beat.
+            // A BPM-only marker must NOT reset an existing bar's downbeat.
+            numerator=point.numerator;
+            denominator=point.denominator;
+            barAnchor=std::ceil(point.beat-1e-10);
+            previousBar=-1;
+        }
+        const double barLength=numerator*4.0/denominator;
+        const int bar=beat>=barAnchor-1e-10 && barLength>0
+            ? (int)std::floor((beat-barAnchor+1e-10)/barLength) : -1;
+        const bool downbeat=i==0 || (bar>=0 && bar!=previousBar);
         events.push_back({second,config.accent && downbeat});
-        previousSegment=segment;
         previousBar=bar;
     }
     return events;
