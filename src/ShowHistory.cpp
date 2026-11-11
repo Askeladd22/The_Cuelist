@@ -146,6 +146,12 @@ bool MainComponent::restoreHistorySnapshot(const HistorySnapshot& snapshot,
         engine.panic();
         resetActiveMapping();
     }
+    // Preserve the operator's VIEW focus on non-structural restores.
+    // A Tempo Marker undo should not unexpectedly jump to the first cue.
+    const int viewedRowId=selectedRow>=0 && selectedRow<(int)show.rows.size()
+        ? show.rows[(size_t)selectedRow].id : -1;
+    const int viewedColumnId=selectedColumn>=0 && selectedColumn<(int)show.columns.size()
+        ? show.columns[(size_t)selectedColumn].id : -1;
     closeMidiClip();closeOscClip();
     show=snapshot.model;
     clips=snapshot.media;
@@ -158,6 +164,16 @@ bool MainComponent::restoreHistorySnapshot(const HistorySnapshot& snapshot,
                 liveNextCue=n;break;
             }
     selectedRow=0;selectedColumn=0;
+    if(!liveAffected) {
+        for(size_t i=0;i<show.rows.size();++i)
+            if(show.rows[i].id==viewedRowId) {
+                selectedRow=(int)i;break;
+            }
+        for(size_t i=0;i<show.columns.size();++i)
+            if(show.columns[i].id==viewedColumnId) {
+                selectedColumn=(int)i;break;
+            }
+    }
     nextCue=show.activeCuelist==liveCuelist ? liveNextCue : 0;
     refreshControlSettings();
     engine.publish(makeLiveRenderState(),!liveAffected,markerOnlyRestore);
