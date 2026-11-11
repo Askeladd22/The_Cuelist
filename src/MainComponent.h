@@ -806,7 +806,8 @@ private:
 
     void refresh();
     void refreshInspector();
-    void changed(const juce::String&,bool stopPlayback=false);
+    void changed(const juce::String&,bool stopPlayback=false,
+                 bool retimeSchedule=false);
     bool applyInspector();
     bool inspectorDiffers() const;
     void openProject();
