@@ -20,7 +20,7 @@ This English guide covers the software currently implemented in this repository.
 
 ## 1. Concepts and project structure
 
-A **Show** contains shared output columns, device and mixer configuration, Control Mapping settings, and one to twelve **Cuelists**. Every Cuelist has its own ordered cue rows, clip contents and technical notes. Adding cues/columns, renaming cues/columns or reordering existing cues/columns does not intentionally interrupt LIVE playback. The next GO follows the stable cue ID even if its row is moved. Selecting or changing a MIDI Output likewise does not issue PANIC: already playing audio and transport clocks continue; pending MIDI messages from the old route are invalidated, and the selected device receives subsequent messages. If a MIDI Output is unplugged, its events are skipped; the exact configured port may reconnect without automatically substituting another. Deleting a currently live cue/column or changing its tempo map remains an intentionally safety-boundary operation until an explicit migration policy is approved.
+A **Show** contains shared output columns, device and mixer configuration, Control Mapping settings, and one to twelve **Cuelists**. Every Cuelist has its own ordered cue rows, clip contents and technical notes. Adding cues/columns, renaming cues/columns or reordering existing cues/columns does not intentionally interrupt LIVE playback. The next GO follows the stable cue ID even if its row is moved. Selecting or changing a MIDI Output likewise does not issue PANIC: already playing audio and transport clocks continue; pending MIDI messages from the old route are invalidated, and the selected device receives subsequent messages. If a MIDI Output is unplugged, its events are skipped; the exact configured port may reconnect without automatically substituting another. Deleting a currently live cue/column remains a structural safety-boundary operation. Editing cue-local Timeline Markers or tempo changes does not interrupt LIVE playback; an active MIDI/OSC clip continues at its current absolute-time position while upcoming events are rescheduled.
 
 Changing the viewed Cuelist does not stop the LIVE transport. A green dot on its tab identifies the LIVE sequence; GO continues there while other tabs are viewed. Explicit GO on a cue in another Cuelist intentionally takes over the live transport.
 
@@ -189,7 +189,7 @@ Deleting a Cuelist can be undone while its bounded edit history remains availabl
 
 **Double-click either the Cuelist tab or its name in the pinned cue-grid header** to edit the name directly on that label, without opening a dialog. The alternative **Preferences → Rename active Cuelist** uses the same inline editor. Double-clicking a cue title or a column name also edits directly where that name appears; the Workspace project name already behaves this way.
 
-The text is selected for immediate replacement: **Enter** confirms, **Escape** cancels without altering the show, and clicking elsewhere confirms a valid name. An invalid Cuelist name stays in the inline field for correction. Names still use the existing uniqueness/length constraints. If a Cuelist is hidden in the tab overflow, its inline editor appears beside the overflow control: renaming alone never activates another Cuelist or interrupts playback. Other configuration dialogs such as **Cue BPM** and **Cue tempo map** are unchanged.
+The text is selected for immediate replacement: **Enter** confirms, **Escape** cancels without altering the show, and clicking elsewhere confirms a valid name. An invalid Cuelist name stays in the inline field for correction. Names still use the existing uniqueness/length constraints. If a Cuelist is hidden in the tab overflow, its inline editor appears beside the overflow control: renaming alone never activates another Cuelist or interrupts playback. The cue's initial BPM remains editable inline. The old **Cue tempo map** dialog has been removed: tempo changes are edited only through Timeline Markers.
 
 The tab and the grid header are two views of the **same saved Cuelist name**. Renaming either updates both immediately, and the name persists when you save the `.cuelist` file. Names must be unique, nonempty and no longer than 64 characters.
 
@@ -234,7 +234,7 @@ A previously active cell is stopped by a later cue's GO only when both its row-l
 
 The right-side Inspector distinguishes **Cue properties** from **Cell properties**.
 
-**Cue:** name, initial BPM and tempo-map editor, cue-wide loop selection. **Cell:** name, compatible options for Audio/MIDI/OSC/Control, gain in dB for audio, inclusion in GO, playback loop, clip import or editor launch.
+**Cue:** name, initial BPM and cue-wide loop selection; tempo changes and generic markers are edited directly in the Timeline. **Cell:** name, compatible options for Audio/MIDI/OSC/Control, gain in dB for audio, inclusion in GO, playback loop, clip import or editor launch.
 
 The **Notes / Cue NN** multiline editor holds technical stage directions, reminders and other operational notes. They belong to the selected cue and are included in the project save; each Cuelist maintains its own notes. Moving to another cue or collapsing the Inspector commits valid pending changes. An invalid Inspector value can prevent the panel from closing until corrected.
 
@@ -343,16 +343,15 @@ before using a new mapping in a live show.
 
 ## 11. Tempo maps and Timeline
 
-Each cue contains a tempo map in quarter-note beats, with its first event at beat zero. The shared tempo editor has a multiline field labelled **Tempo changes** and a syntax reminder (**beat BPM**). A typical entry list is:
+The selected cue owns a dedicated Marker lane above its audio, MIDI and OSC tracks. Double-click an empty point in this lane to add a **Generic Marker** (a stage reference that never changes tempo), or double-click an existing marker to rename it inline. Drag a marker to move it. Both creation and movement follow the current magnetic Snap division; turn Snap off for a free, absolute-time position.
 
-```text
-0 120
-8 90
-```
+Right-click a marker to **Rename**, **Convert to Tempo Marker**, **Edit BPM**, **Convert to Generic Marker**, or **Delete**, according to its current type. A Tempo Marker changes the BPM instantly at its own timestamp and holds that value until the next Tempo Marker. The cue's existing inline BPM sets the initial speed; no separate Tempo Map button or Inspector dialog is used. Generic Markers do not change timing.
 
-These entries set 120 BPM at beat 0 and 90 BPM from beat 8. MIDI/OSC beat timing follows the tempo map; changing BPM does **not** change the natural playback rate of imported WAV/MP3 audio. Older projects may retain legacy time-signature fields.
+Marker timestamps are stored in **absolute cue seconds** (not in bars or beats), so an earlier BPM edit cannot displace a later marker. The audio, MIDI and OSC scheduling engine still uses its existing beat-to-second conversion; it rebuilds the internal Tempo Map from these absolute-time markers. Older v10 and pre-v10 tempo maps are imported with their original beat changes converted to the corresponding absolute timestamps. Saved projects remain JSON schema v10.
 
-The Timeline represents the selected cue's clip timing, provides zoom, grid visibility, snap and a horizontal scrollbar. Dragging/range edits are available for supported MIDI/OSC clips. Displaying grid lines and enabling snap are separate choices. The **Snap** button uses a compact, centred vector magnet: burnt-orange magnet for ON, graphite-grey magnet crossed by a red slash for OFF. The Unicode magnet emoji is not included in the bundled Noto Sans Symbols 2, so it is intentionally not rendered through an operating-system emoji font. The pinned row BPM and Auto Stop controls remain visible even when scrolling columns.
+**LIVE continuity:** creating, dragging, renaming, converting, editing BPM or deleting Timeline Markers must never call STOP/PANIC or restart a running cue. Editing the initial cue BPM has the same rule, including Undo/Redo. The audio cursor and cue clock continue. During a live tempo edit, the MIDI/OSC event schedule is updated from the unchanged absolute-time playback position; MIDI notes that remain active across the change are not re-attacked. Events that move to times already in the past are not replayed. This is not a guarantee of end-to-end timing or external hardware latency; verify those separately.
+
+The Timeline retains zoom, grid visibility, Snap, horizontal scrolling and independent control of clip dragging. The BPM grid reacts to each Tempo Marker without changing audio-file playback speed. The existing pinned BPM and Auto Stop controls remain visible in the cue matrix.
 
 ## 12. Files, backups and recovery
 
