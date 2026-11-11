@@ -427,7 +427,11 @@ void Timeline::mouseDown(const juce::MouseEvent& e) {
     if (!e.mods.isLeftButtonDown()) return;
     owner.grabKeyboardFocus(); dragColumn=-1; seeking=false; resizingClip=false;
     draggingMarkerId=-1;
-    if (getHeight()<completeTimelineHeight && e.y>=45) return;
+    // Compact layouts still expose the marker lane even if track editing
+    // is hidden; do not block its mouse target along with the media tracks.
+    const bool markerArea=getHeight()>=detailedToolbarHeight &&
+        e.y>=markerLaneTop && e.y<markerLaneBottom;
+    if (getHeight()<completeTimelineHeight && e.y>=45 && !markerArea) return;
     for (int i=0;i<3 && getHeight()>=detailedToolbarHeight;++i)
         if (zoomButton(getWidth(),i).contains(e.getPosition())) {
         if (i==2) { zoom=1; viewStart=0; syncViewport(); repaint(); }
@@ -481,7 +485,8 @@ void Timeline::mouseDoubleClick(const juce::MouseEvent& e) {
     if (!e.mods.isLeftButtonDown()) return;
     syncViewport();
     if (owner.selectedRow<0 || owner.selectedRow>=(int)owner.show.rows.size()
-        || e.x<timelineStart || e.x>getWidth()-20 || e.y<markerLaneTop || e.y>=getHeight()-48) return;
+        || e.x<timelineStart || e.x>getWidth()-20 || e.y<markerLaneTop) return;
+    if (e.y>=markerLaneBottom && e.y>=getHeight()-48) return;
     if (e.y<markerLaneBottom) {
         if (const int id=markerHit(e.x); id>0) {
             beginMarkerEdit(id,MarkerEdit::name);
