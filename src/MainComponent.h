@@ -380,6 +380,8 @@ public:
     void requestQuit();
     bool select(int row,int column);
     void importFile(const juce::File&);
+    bool canGenerateClickTrack(int row,int column) const;
+    void generateClickTrack(int row,int column);
     bool canGenerateLtcTrack(int row,int column) const;
     void generateLtcTrack(int row,int column);
     void importDialog();
