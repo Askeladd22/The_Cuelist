@@ -1,5 +1,6 @@
 #include "MainComponent.h"
 #include <cmath>
+#include <algorithm>
 
 namespace cuelist {
 namespace {
@@ -230,8 +231,8 @@ void Timeline::paint(juce::Graphics& g) {
             g.drawVerticalLine(x,(float)tracksTop,(float)bottom);
         }
     }
-    if (getHeight()<completeTimelineHeight) return;
-    // Dedicated marker lane; clip tracks start below it, never under the labels.
+    // Dedicated marker lane; visible even when the Timeline is too short
+    // to fit media tracks, so resizing cannot silently hide marker edits.
     g.setColour(palette::input);
     g.fillRect(timelineStart,markerLaneTop,area,markerLaneBottom-markerLaneTop);
     g.setColour(palette::line);
@@ -255,6 +256,7 @@ void Timeline::paint(juce::Graphics& g) {
               {x+8,markerLaneTop+4,170,17},11,palette::text);
     }
     g.restoreState();
+    if (getHeight()<completeTimelineHeight) return;
     // Musical grid follows secondsAtBeat across all tempo changes, but its
     // visibility/resolution never changes how clip dragging is quantized.
     if (gridVisible) {
