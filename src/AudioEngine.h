@@ -1,5 +1,6 @@
 #pragma once
 #include "ShowModel.h"
+#include "ClickTrack.h"
 #include <juce_audio_utils/juce_audio_utils.h>
 #include <array>
 #include <atomic>
@@ -40,6 +41,13 @@ struct Voice {
     int cellId = 0, rowId = 0, output = 0, columnIndex = -1, columnId = 0;
     std::shared_ptr<ColumnPeakTelemetry> columnMeter;
     std::shared_ptr<const AudioClip> clip;
+    // Click data are immutable during playback; generated before publishing a snapshot.
+    bool isClick=false;
+    double clickDuration=0;
+    std::vector<ClickEvent> clickEvents;
+    std::shared_ptr<const ClickPulseBank> clickPulse;
+    size_t clickCursor=0;
+    bool clickNeedsSync=true;
     struct NoteEvent { double seconds=0; int status=0, pitch=0, velocity=0; };
     std::vector<NoteEvent> midiEvents;
     bool isMidi=false, isOsc=false;
