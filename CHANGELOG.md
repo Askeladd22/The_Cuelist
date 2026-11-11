@@ -13,6 +13,20 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.48] - 2026-11-11
+
+**Stato:** correzione mirata dei test nativi della Timeline e della telemetria Click Track; nessun cambiamento al motore Audio, ai trasporti o al formato dei progetti (.cuelist JSON v10).
+
+### Correzioni dei tre test Windows
+- Il test di doppio clic sul **nome del Marker** individua il testo usando la larghezza reale della Timeline dopo `changed() → refresh() → resized()`; non presume più che rimanga a 800 px.
+- Il test di trascinamento **Snap OFF** individua il glyph del marker alle coordinate effettivamente ridisegnate e confronta lo spostamento in secondi con la scala corrente. La posizione della clip PCM deve rimanere invariata.
+- Il test **Click Track LIVE dopo un Tempo Marker** imposta `monitoredRowId` prima di interrogare `rowPlaying` e `playheadSeconds`: entrambi sono indicatori della cue monitorata, non stati globali delle voci Audio. Verifica anche l'avanzamento del clock dopo il retiming.
+
+### Evidenze e gate
+- **RED acquisito dal log locale dell'operatore:** MSBuild Release compilato, CTest fallito per 3 test su 420291 assert. Riproduzione e cause ricostruite nel sorgente.
+- **GREEN Windows/CTest:** ND fino a nuova esecuzione; misure di trasporto realtime, screenshot DPI e banco esterno: ND. La sola correzione dei test non certifica readiness LIVE.
+- **Rollback:** revert della PR. Nessun dato o file di progetto migrato.
+
 ## [0.9.47] - 2026-11-11
 
 **Stato:** hotfix candidato per la configurazione del Click Track. Schema JSON `.cuelist` v10 invariato.
