@@ -13,6 +13,24 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.44] - 2026-11-11
+
+**Stato:** candidato redesign nativo Timeline Markers e Tempo Map. Schema progetti JSON v10 invariato. Nessuna modifica deliberata a GO/STOP/PANIC, Control Map, routing o generazione LTC.
+
+### Timeline, modello e compatibilità
+- Eliminato il vecchio pulsante/editor Tempo Map dall'Inspector; BPM iniziale della cue mantenuto. Nuova corsia marker JUCE sopra le clip, con doppio clic per creare Generic Marker, rinomina inline, Snap e drag, menu contestuale per conversione Tempo Marker, cambio BPM, riconversione ed eliminazione.
+- Marker separati per cue: ID locali, nome, posizione assoluta in secondi, tipologia, BPM e metadati di indicazione di tempo. La Tempo Map a beat resta la struttura consumata dagli editor MIDI/OSC e dal playback, ricostruita dai marker. I vecchi punti tempo vengono importati senza spostare gli eventi.
+- Persistenza tramite campo opzionale `markers` nelle righe v10, con controlli di validazione, limiti e roundtrip; vecchi file senza campo mantenuti leggibili.
+
+### Continuità LIVE (requisito operatore)
+- **Nessun edit di marker/tempo interrompe LIVE**: niente stopAll/PANIC e nessun reset intenzionale del cursore Audio/MIDI/OSC. `publish(..., preservePlayback=true, retimeSchedule=true)` conserva la posizione; gli eventi MIDI/OSC futuri sono rischedulati e le note sostenute vengono riconciliate senza retrigger indiscriminato. Anche Undo/Redo di modifiche esclusivamente ai marker preserva il transport.
+- I cambi sono immediati; eventi il cui tempo viene retrodatato prima del playhead non vengono riprodotti una seconda volta. La riprogrammazione MIDI/OSC non implica certificazione di latenza a valle di hardware/UDP.
+
+### Verifiche e gate
+- Aggiunti test nativi per conversione legacy, persistenza v10, indipendenza delle cue, Snap/rename inline e continuità del trasporto Audio/MIDI/OSC; adeguati test UI alle nuove coordinate delle track.
+- Compilazione Windows Release e CTest: **ND** fino a esecuzione CI. Screenshot JUCE 100/125/150% DPI, stress realtime, sessione hardware MIDI/OSC/LTC e test operatori: **ND**.
+- Rollback: revert della PR; nessuna migrazione v11, rimuovendo il campo opzionale `markers` i vecchi reader v10 continuano a usare `tempo`.
+
 ## [0.9.43] - 2026-11-10
 
 **Stato:** candidato UX e utility Windows per rinomina singola cella e individuazione della sorgente Audio. Schema progetti JSON v10 invariato; nessuna modifica al trasporto audio/MIDI/OSC/LTC.
