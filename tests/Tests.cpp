@@ -22,6 +22,7 @@ void test(const char* name, const std::function<void()>& body) {
 #include "CueViewTests.h"
 #include "ModelV3Tests.h"
 #include "TimelineV3Tests.h"
+#include "TimelineMarkerTests.h"
 #include "ControlsV3Tests.h"
 #include "CuelistGuiMockupTests.h"
 #include "EngineV4Tests.h"
@@ -313,6 +314,7 @@ int main() {
     cueViewTests();
     modelV3Tests();
     timelineV3Tests();
+    timelineMarkerTests();
     controlsV3Tests();
     engineV4Tests();
     controlsV4Tests();
