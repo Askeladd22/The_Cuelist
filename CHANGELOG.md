@@ -13,6 +13,19 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.47] - 2026-11-11
+
+**Stato:** hotfix candidato per la configurazione del Click Track. Schema JSON `.cuelist` v10 invariato.
+
+### Correzione del rischio NEXT/LIVE
+- Il comando contestuale **Generate/Configure Click Track** non invoca più `select()`: aprire e confermare il dialog non arma un'altra cue in NEXT e non cambia la selezione VIEW.
+- Il salvataggio della configurazione passa per una transazione nativa separata: verifica la cella, applica prima eventuali modifiche pendenti dell'Inspector, convalida il modello, quindi pubblica un nuovo snapshot Audio con `preservePlayback=true`.
+- Test di regressione: modifica del Click Track in un'altra cue senza cambio di VIEW, NEXT, LIVE o stop di audio già in riproduzione. Verifica del rifiuto per una cella Audio occupata.
+
+### Gate residui
+- Build e CTest Windows, screenshot nativi a DPI multipli, stress audio, misura jitter e banco fisico Audio/MIDI/OSC/LTC: **ND** finché non verificati. Non usare su palco come build certificata.
+- Rollback: revert della PR, senza migrazione JSON; gli output CLICK persistiti richiedono comunque un eseguibile compatibile con il campo opzionale `click`.
+
 ## [0.9.46] - 2026-11-11
 
 **Stato:** implementazione candidata della generazione Click Track, senza merge automatico. Schema `.cuelist` JSON **v10** invariato.
