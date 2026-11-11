@@ -276,7 +276,7 @@ The source is generated in memory during playback. The project stores its synthe
 
 Use the **cell Gain**, **Audio track fader**, routing, Master and Mute to control level. There is no duplicate volume control in the generator. Existing normal Audio clips are unchanged. Projects containing procedural click cells must be opened in a version of The Cuelist that supports the optional `click` property; older v10 applications cannot reproduce them.
 
-### 7.4 Generate LTC Track (audio source only)
+### 7.5 Generate LTC Track (audio source only)
 
 Right-click an **empty Audio cell** and select **Generate LTC Track**. Enter duration (0.1–600 seconds), start timecode (HH:MM:SS:FF; use HH:MM:SS;FF for 29.97 drop-frame), and frame rate (24, 25, 29.97 drop-frame, 29.97 non-drop or 30 fps). The operation writes a real **mono 48 kHz / 16-bit PCM WAV** in `Documents/The Cuelist/Generated LTC`, then imports it as an ordinary Audio cell. Occupied cells cannot be overwritten through this command. Generated media must be preserved alongside the project when transferring shows.
 
