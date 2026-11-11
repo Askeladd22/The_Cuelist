@@ -60,7 +60,7 @@ juce_add_binary_data(CuelistAssets SOURCES
     "${THE_CUELIST_FONT_CACHE}/Hind-SemiBold.ttf"
     "${THE_CUELIST_FONT_CACHE}/NotoSansMath-Regular.ttf"
     "${THE_CUELIST_FONT_CACHE}/NotoSansSymbols2-Regular.ttf")
-add_library(CuelistCore STATIC src/MidiSessionPolicy.cpp src/ShowModel.cpp src/ControlDispatchPolicy.cpp src/ControlLayerBuilder.cpp src/ShowEditOperations.cpp src/ProjectSafety.cpp src/ProjectMediaLoader.cpp src/AudioEngine.cpp src/MidiClip.cpp src/MidiOutputRouter.cpp src/OscClip.cpp src/OscOutputRouter.cpp src/ControlOutputRouter.cpp)
+add_library(CuelistCore STATIC src/MidiSessionPolicy.cpp src/ShowModel.cpp src/ControlDispatchPolicy.cpp src/ControlLayerBuilder.cpp src/ShowEditOperations.cpp src/ProjectSafety.cpp src/ProjectMediaLoader.cpp src/AudioEngine.cpp src/ClickTrack.cpp src/MidiClip.cpp src/MidiOutputRouter.cpp src/OscClip.cpp src/OscOutputRouter.cpp src/ControlOutputRouter.cpp)
 target_include_directories(CuelistCore PUBLIC src vendor/JUCE/modules)
 target_compile_definitions(CuelistCore PUBLIC JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1 JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_MODAL_LOOPS_PERMITTED=0 JUCE_ASIO=0 JUCE_USE_MP3AUDIOFORMAT=1)
 target_link_libraries(CuelistCore PRIVATE juce::juce_audio_utils PUBLIC juce::juce_recommended_config_flags)
