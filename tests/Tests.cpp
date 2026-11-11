@@ -23,6 +23,7 @@ void test(const char* name, const std::function<void()>& body) {
 #include "ModelV3Tests.h"
 #include "TimelineV3Tests.h"
 #include "TimelineMarkerTests.h"
+#include "ClickTrackTests.h"
 #include "ControlsV3Tests.h"
 #include "CuelistGuiMockupTests.h"
 #include "EngineV4Tests.h"
@@ -315,6 +316,7 @@ int main() {
     modelV3Tests();
     timelineV3Tests();
     timelineMarkerTests();
+    clickTrackTests();
     controlsV3Tests();
     engineV4Tests();
     controlsV4Tests();
