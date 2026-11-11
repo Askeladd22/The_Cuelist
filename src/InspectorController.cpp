@@ -46,7 +46,7 @@ void MainComponent::refreshInspector() {
          &playCellButton,&stopCellButton,&clearButton,&applyButton})
         component->setVisible(false);
     for(juce::Component* component:std::initializer_list<juce::Component*>{
-         &rowName,&bpm,&tempoButton,&rowLoop,&cellName,&follow,&loop,&cueNotes})
+         &rowName,&bpm,&rowLoop,&cellName,&follow,&loop,&cueNotes})
         component->setVisible(true);
     const bool audio=col.type==ColumnType::audio;
     const bool midi=col.type==ColumnType::midi;
@@ -68,7 +68,7 @@ void MainComponent::refreshInspector() {
     // autosave, mapping changes). Never allow a refresh to reveal its fields.
     if (!inspectorVisible)
         for (juce::Component* component:std::initializer_list<juce::Component*>{
-             &rowName,&bpm,&tempoButton,&rowLoop,&cellName,&follow,&loop,
+             &rowName,&bpm,&rowLoop,&cellName,&follow,&loop,
              &cueNotes,&gainDb,&importButton,&midiEditButton,&oscEditButton})
             component->setVisible(false);
 }
@@ -95,7 +95,14 @@ bool MainComponent::applyInspector() {
     row.name=rowName.getText().trim();
     row.notes=cueNotes.getText();
     row.loop=rowLoop.getToggleState();
-    if (bpm.getText()!=juce::String(row.tempo.front().bpm,1)) row.tempo.front().bpm=bpm.getText().getDoubleValue();
+    if (bpm.getText()!=juce::String(row.tempo.front().bpm,1)) {
+        importLegacyTempoMarkers(row);
+        row.tempo.front().bpm=bpm.getText().getDoubleValue();
+        if (!rebuildTempoFromMarkers(row)) {
+            message("Cannot rebuild Tempo Map from the cue's markers.");
+            return false;
+        }
+    }
     if (!candidate.columns[(size_t)selectedColumn].collapsed) {
         cell.name=cellName.getText().trim();
         cell.followsRow=follow.getToggleState(); cell.loop=loop.getToggleState();
@@ -109,7 +116,10 @@ bool MainComponent::applyInspector() {
         }
     }
     auto result=validateShow(candidate); if (result.failed()) { message(result.getErrorMessage()); return false; }
-    show=std::move(candidate); changed("Settings applied. BPM does not change audio playback speed.");
+    const bool retime=std::abs(candidate.rows[(size_t)selectedRow].tempo.front().bpm
+        -show.rows[(size_t)selectedRow].tempo.front().bpm)>0.000001;
+    show=std::move(candidate);
+    changed("Settings applied. BPM does not change audio playback speed.",false,retime);
     return true;
 }
 

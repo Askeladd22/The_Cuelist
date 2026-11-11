@@ -56,8 +56,9 @@ void RenderState::inheritPlayback(const RenderState& previous) noexcept {
     // Copy only scalar runtime state. Shared media ownership stays entirely on the UI thread.
     for (auto& v:voices) for (const auto& old:previous.voices)
         if (v.cellId==old.cellId && v.clip.get()==old.clip.get() && v.isMidi==old.isMidi && v.isOsc==old.isOsc
-            && (!v.isMidi || v.midiHash==old.midiHash)
-            && (!v.isOsc || (v.oscHash==old.oscHash && v.oscColumnId==old.oscColumnId))) {
+            && (!v.isMidi || v.midiHash==old.midiHash || retimeSchedule)
+            && (!v.isOsc || (v.oscColumnId==old.oscColumnId &&
+                (v.oscHash==old.oscHash || retimeSchedule)))) {
             // The output port is routing, not the logical identity of the
             // MIDI clip. Preserve its cursor and cue clock when switching ports.
             const bool routeChanged=v.isMidi &&
@@ -65,12 +66,15 @@ void RenderState::inheritPlayback(const RenderState& previous) noexcept {
             v.position=old.position; v.playing=old.playing; v.paused=old.paused; v.delaySeconds=old.delaySeconds;
             v.rowMode=old.rowMode; v.pendingSeek=old.pendingSeek;
             v.midiCursor=old.midiCursor;
-            v.midiNeedsSync=routeChanged || old.midiNeedsSync;
+            v.midiNeedsSync=routeChanged || old.midiNeedsSync ||
+                (retimeSchedule && v.midiHash!=old.midiHash);
             if(!routeChanged) {
                 v.heldNotes=old.heldNotes;
                 v.heldVelocity=old.heldVelocity;
             } // On a different route, rescan at the same time, not beat zero.
-            v.oscCursor=old.oscCursor; v.oscNeedsSync=old.oscNeedsSync;
+            v.oscCursor=old.oscCursor;
+            v.oscNeedsSync=old.oscNeedsSync ||
+                (retimeSchedule && v.oscHash!=old.oscHash);
             if (v.rowMode && v.startSeconds!=old.startSeconds)
                 for (const auto& row:previous.rows) if (row.id==v.rowId) placeOnTimeline(v,row.seconds);
             break;
@@ -539,7 +543,8 @@ juce::String AudioEngine::initialise() {
     auto error=devices.initialiseWithDefaultDevices(0,2); devices.addAudioCallback(this); return error;
 }
 void AudioEngine::collectRetired() { delete retired.exchange(nullptr); }
-void AudioEngine::publish(std::unique_ptr<RenderState> state,bool preservePlayback) {
+void AudioEngine::publish(std::unique_ptr<RenderState> state,bool preservePlayback,
+                          bool retimeSchedule) {
     if (!state) return;
     std::map<int,std::shared_ptr<ColumnPeakTelemetry>> nextColumnPeaks;
     for (auto& meter:state->columnMeters) if (meter.second) {
@@ -574,6 +579,7 @@ void AudioEngine::publish(std::unique_ptr<RenderState> state,bool preservePlayba
     if (!preservePlayback) structuralRevision=revision;
     state->minimumCommandRevision=structuralRevision;
     state->preservePlayback=preservePlayback;
+    state->retimeSchedule=preservePlayback && retimeSchedule;
     // exchange gives sole ownership of the displaced pending snapshot to the UI.
     delete pending.exchange(state.release());
 }
@@ -654,11 +660,46 @@ void AudioEngine::processBlock(float* const* outputs,int channels,int frames,dou
                 for (auto& old:current->voices) if (old.isMidi) {
                     bool transferred=false;
                     if (next->preservePlayback && next->minimumCommandRevision==current->minimumCommandRevision)
-                        for (auto& v:next->voices) if (v.cellId==old.cellId && v.isMidi && v.midiHash==old.midiHash && v.midiOutputId==old.midiOutputId) {
+                        for (auto& v:next->voices) if (v.cellId==old.cellId && v.isMidi
+                            && (v.midiHash==old.midiHash || next->retimeSchedule)
+                            && v.midiOutputId==old.midiOutputId) {
                             transferred=true;
-                            if (v.startSeconds!=old.startSeconds || v.rowMuted!=old.rowMuted ||
-                                v.columnMuted!=old.columnMuted) {
-                                current->releaseMidi(old); v.heldNotes.fill(0); v.midiNeedsSync=true;
+                            if (next->retimeSchedule && v.midiHash!=old.midiHash) {
+                                // The transport clock continues. Invalidate queued
+                                // MIDI at old timestamps and reconcile only keys
+                                // whose sounding state actually changes.
+                                if (v.midiStream) v.midiStream->epoch.fetch_add(1);
+                                std::array<unsigned short,2048> expected{};
+                                std::array<unsigned char,2048> velocities{};
+                                size_t cursor=0;
+                                while (cursor<v.midiEvents.size() &&
+                                    v.midiEvents[cursor].seconds<v.position-1.0e-10) {
+                                    const auto& e=v.midiEvents[cursor++];
+                                    const auto key=(size_t)((e.status&15)*128+e.pitch);
+                                    if ((e.status&0xf0)==0x90) {
+                                        if (expected[key]<65535) ++expected[key];
+                                        velocities[key]=(unsigned char)e.velocity;
+                                    } else if (expected[key]) --expected[key];
+                                }
+                                if (v.midiSink) v.midiSink->selectStream(v.midiStream.get());
+                                for (size_t key=0;key<expected.size();++key) {
+                                    const bool sounding=old.heldNotes[key]>0;
+                                    const bool wanted=expected[key]>0 && v.playing && !v.paused &&
+                                        !v.rowMuted && !v.columnMuted;
+                                    if (sounding!=wanted && v.midiSink)
+                                        v.midiSink->emit(v.midiRoute,
+                                            (wanted ? 0x90 : 0x80)+(int)(key/128),
+                                            (int)(key%128),wanted ? velocities[key] : 0,0);
+                                }
+                                v.heldNotes=expected;
+                                v.heldVelocity=velocities;
+                                v.midiCursor=cursor;
+                                v.midiNeedsSync=false;
+                            } else if (v.startSeconds!=old.startSeconds ||
+                                       v.rowMuted!=old.rowMuted ||
+                                       v.columnMuted!=old.columnMuted) {
+                                current->releaseMidi(old);
+                                v.heldNotes.fill(0); v.midiNeedsSync=true;
                             }
                             break;
                         }
@@ -668,10 +709,21 @@ void AudioEngine::processBlock(float* const* outputs,int channels,int frames,dou
                     bool transferred=false;
                     if (next->preservePlayback && next->minimumCommandRevision==current->minimumCommandRevision)
                         for (auto& v:next->voices) if (v.cellId==old.cellId && v.isOsc
-                            && v.oscHash==old.oscHash && v.oscColumnId==old.oscColumnId) {
+                            && (v.oscHash==old.oscHash || next->retimeSchedule)
+                            && v.oscColumnId==old.oscColumnId) {
                             transferred=true;
-                            if (v.startSeconds!=old.startSeconds ||
-                                v.columnMuted!=old.columnMuted) current->releaseMidi(old);
+                            if (next->retimeSchedule && v.oscHash!=old.oscHash) {
+                                // Cancel queued OSC packets scheduled against
+                                // the old map. Do not replay events before now.
+                                if (v.oscStream) v.oscStream->epoch.fetch_add(1);
+                                v.oscCursor=0;
+                                while (v.oscCursor<v.oscEvents.size() &&
+                                       v.oscEvents[v.oscCursor].seconds<v.position-1.0e-10)
+                                    ++v.oscCursor;
+                                v.oscNeedsSync=false;
+                            } else if (v.startSeconds!=old.startSeconds ||
+                                       v.columnMuted!=old.columnMuted)
+                                current->releaseMidi(old);
                             break;
                         }
                     if (!transferred) current->releaseMidi(old);

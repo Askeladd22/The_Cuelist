@@ -113,6 +113,24 @@ bool MainComponent::restoreHistorySnapshot(const HistorySnapshot& snapshot,
     const auto newLive=liveModel(snapshot.model,targetLive);
     bool liveAffected=targetLive<0 ||
         encodeShow(oldLive)!=encodeShow(newLive);
+    bool markerOnlyRestore=false;
+    if(liveAffected && targetLive>=0 &&
+       oldLive.rows.size()==newLive.rows.size()) {
+        // A marker/tempo-only undo is not a structural edit: retime the
+        // running MIDI/OSC schedules and preserve every LIVE transport clock.
+        auto neutralized=oldLive;
+        bool sameIdentity=true;
+        for(size_t i=0;i<neutralized.rows.size();++i) {
+            if(neutralized.rows[i].id!=newLive.rows[i].id) {
+                sameIdentity=false;break;
+            }
+            neutralized.rows[i].tempo=newLive.rows[i].tempo;
+            neutralized.rows[i].markers=newLive.rows[i].markers;
+        }
+        markerOnlyRestore=sameIdentity &&
+            encodeShow(neutralized)==encodeShow(newLive);
+        if(markerOnlyRestore) liveAffected=false;
+    }
     if(!liveAffected) {
         for(const auto& row:oldLive.rows)
             for(const auto& cell:row.cells) {
@@ -142,7 +160,7 @@ bool MainComponent::restoreHistorySnapshot(const HistorySnapshot& snapshot,
     selectedRow=0;selectedColumn=0;
     nextCue=show.activeCuelist==liveCuelist ? liveNextCue : 0;
     refreshControlSettings();
-    engine.publish(makeLiveRenderState(),!liveAffected);
+    engine.publish(makeLiveRenderState(),!liveAffected,markerOnlyRestore);
     dirty=true;
     status=description+(liveAffected ?
            " LIVE transport stopped for a safe structural restore." :

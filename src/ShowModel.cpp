@@ -1,5 +1,6 @@
 #include "ShowModel.h"
 #include <cmath>
+#include <algorithm>
 #include <set>
 #include <stdexcept>
 #include <filesystem>
@@ -73,6 +74,39 @@ double secondsAtBeat(const std::vector<TempoPoint>& points, double beat) {
     }
     return seconds;
 }
+
+void importLegacyTempoMarkers(Row& row) {
+    if (!row.markers.empty() || row.tempo.size()<2) return;
+    for (size_t i=1; i<row.tempo.size(); ++i) {
+        const auto& p=row.tempo[i];
+        row.markers.push_back({(int)i,"Tempo "+juce::String((int)i),
+            secondsAtBeat(row.tempo,p.beat),true,p.bpm,p.numerator,p.denominator});
+    }
+}
+bool rebuildTempoFromMarkers(Row& row) {
+    if (row.tempo.empty()) return false;
+    std::vector<const TimelineMarker*> changes;
+    for (const auto& marker : row.markers) if (marker.changesTempo)
+        changes.push_back(&marker);
+    std::sort(changes.begin(),changes.end(),[](const auto* a,const auto* b) {
+        return a->seconds < b->seconds;
+    });
+    auto initial=row.tempo.front(); initial.beat=0;
+    if (!std::isfinite(initial.bpm) || initial.bpm<1 || initial.bpm>999) return false;
+    std::vector<TempoPoint> result{initial};
+    double previousSeconds=0, beat=0, previousBpm=initial.bpm;
+    for (const auto* marker : changes) {
+        if (!std::isfinite(marker->seconds) || marker->seconds<=previousSeconds
+            || marker->seconds>86400 || !std::isfinite(marker->bpm)
+            || marker->bpm<1 || marker->bpm>999) return false;
+        beat+=(marker->seconds-previousSeconds)*previousBpm/60.0;
+        if (!std::isfinite(beat) || beat<=result.back().beat) return false;
+        result.push_back({beat,marker->bpm,marker->numerator,marker->denominator});
+        previousSeconds=marker->seconds; previousBpm=marker->bpm;
+    }
+    row.tempo=std::move(result);
+    return true;
+}
 juce::Result validateShow(const Show& show) {
     const auto fail = [](const char* s) { return juce::Result::fail(s); };
     if (show.name.trim().isEmpty() || show.columns.empty() || show.rows.empty()) return fail("Missing name, rows or columns.");
@@ -107,6 +141,35 @@ juce::Result validateShow(const Show& show) {
                 || (p.denominator != 1 && p.denominator != 2 && p.denominator != 4 && p.denominator != 8 && p.denominator != 16 && p.denominator != 32))
                 return fail("Invalid tempo map: first point must be at beat 0, BPM 1–999, increasing positions.");
             previous = p.beat;
+        }
+        if (row.markers.size()>2048) return fail("Too many timeline markers in one cue.");
+        std::set<int> markerIds;
+        for (const auto& marker : row.markers) {
+            if (marker.id<=0 || !markerIds.insert(marker.id).second
+                || marker.name.trim().isEmpty() || marker.name.length()>80
+                || !std::isfinite(marker.seconds) || marker.seconds<0
+                || marker.seconds>86400 || !std::isfinite(marker.bpm)
+                || marker.bpm<1 || marker.bpm>999
+                || marker.numerator<1 || marker.numerator>32
+                || (marker.denominator!=1 && marker.denominator!=2 &&
+                    marker.denominator!=4 && marker.denominator!=8 &&
+                    marker.denominator!=16 && marker.denominator!=32))
+                return fail("Invalid timeline marker.");
+            if (marker.changesTempo && marker.seconds<=0)
+                return fail("Tempo Marker cannot override the cue's initial BPM at zero.");
+        }
+        // Never allow the persisted absolute times and the playback tempo map to diverge.
+        if (!row.markers.empty()) {
+            auto computed=row;
+            if (!rebuildTempoFromMarkers(computed) ||
+                computed.tempo.size()!=row.tempo.size())
+                return fail("Timeline markers and tempo map disagree.");
+            for (size_t i=0;i<row.tempo.size();++i)
+                if (std::abs(computed.tempo[i].beat-row.tempo[i].beat)>1e-6
+                    || std::abs(computed.tempo[i].bpm-row.tempo[i].bpm)>1e-6
+                    || computed.tempo[i].numerator!=row.tempo[i].numerator
+                    || computed.tempo[i].denominator!=row.tempo[i].denominator)
+                    return fail("Timeline markers and tempo map disagree.");
         }
         for (size_t i=0; i<row.cells.size(); ++i) {
             const auto& c = row.cells[i];
@@ -363,8 +426,11 @@ juce::String encodeShow(const Show& show) {
         {"controlDefaultSourceRowId",c.controlDefaultSourceRowId},
         {"controlDefaultSet",controlSetObject(c.controlDefaultSet)}}));
     for (const auto& r : show.rows) {
-        juce::Array<juce::var> tempo, cells;
+        juce::Array<juce::var> tempo, markers, cells;
         for (const auto& p : r.tempo) tempo.add(object({{"beat",p.beat},{"bpm",p.bpm},{"numerator",p.numerator},{"denominator",p.denominator}}));
+        for (const auto& m : r.markers) markers.add(object({{"id",m.id},{"name",m.name},
+            {"seconds",m.seconds},{"changesTempo",m.changesTempo},{"bpm",m.bpm},
+            {"numerator",m.numerator},{"denominator",m.denominator}}));
         for (const auto& c : r.cells) {
             juce::var midi;
             if (c.midi) {
@@ -411,7 +477,7 @@ juce::String encodeShow(const Show& show) {
                 {"controlSet",c.controlSet ? controlSetObject(*c.controlSet) : juce::var()},
                 {"assignedMapId",c.assignedMapId}}));
         }
-        rows.add(object({{"id",r.id},{"name",r.name},{"notes",r.notes},{"tempo",tempo},{"cells",cells},{"gain",r.gain},
+        rows.add(object({{"id",r.id},{"name",r.name},{"notes",r.notes},{"tempo",tempo},{"markers",markers},{"cells",cells},{"gain",r.gain},
             {"muted",r.muted},{"loop",r.loop},{"overrideBehaviour",r.overrideBehaviour},{"behaviour",(int)r.behaviour},{"stopOnNext",r.stopOnNext},
             {"mappingPresetId",r.mappingPresetId},{"colour",r.colour}}));
     }
@@ -576,6 +642,17 @@ juce::Result decodeShow(const juce::String& text, Show& destination) {
                 row.overrideBehaviour=boolean(r,"overrideBehaviour"); row.behaviour=activation(integer(r,"behaviour"));
             }
             for (auto& p : array(r,"tempo")) row.tempo.push_back({number(p,"beat"),number(p,"bpm"),integer(p,"numerator"),integer(p,"denominator")});
+            if (r.hasProperty("markers")) {
+                const auto items=array(r,"markers");
+                if (items.size()>2048) throw std::runtime_error("Too many timeline markers.");
+                for (const auto& m : items)
+                    row.markers.push_back({integer(m,"id"),string(m,"name"),
+                        number(m,"seconds"),boolean(m,"changesTempo"),
+                        number(m,"bpm"),integer(m,"numerator"),integer(m,"denominator")});
+            }
+            // Old v10 writers may contain beat tempo points but an empty
+            // optional marker array. Preserve these changes on import.
+            if (row.markers.empty()) importLegacyTempoMarkers(row);
             for (auto& c : array(r,"cells")) {
                 Cell cell; cell.id=integer(c,"id"); cell.name=string(c,"name"); cell.file=string(c,"file");
                 cell.followsRow=boolean(c,"followsRow"); cell.loop=boolean(c,"loop"); cell.gain=(float)number(c,"gain"); cell.behaviour=activation(integer(c,"behaviour"));

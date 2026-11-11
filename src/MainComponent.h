@@ -15,6 +15,7 @@
 #include "QuickLearnHotspot.h"
 #include "ControlDispatchPolicy.h"
 #include <set>
+#include <functional>
 #include "Theme.h"
 namespace cuelist {
 class MainComponent;
@@ -311,6 +312,19 @@ private:
     MainComponent& owner;
     int hoveredClipColumn=-1; // visual only; never affects clip selection
     int trackScroll=0, dragColumn=-1, dragRowId=-1, viewportRowId=-1;
+
+    // The marker lane is part of the native JUCE Timeline, not a separate dialog.
+    enum class MarkerEdit { none, name, tempo, conversion };
+    juce::TextEditor markerEditor;
+    MarkerEdit markerEdit=MarkerEdit::none;
+    int editingMarkerId=-1,editingMarkerRowId=-1;
+    int draggingMarkerId=-1,draggingMarkerRowId=-1;
+    double draggingMarkerSeconds=0,previewMarkerSeconds=0;
+    int markerHit(int x) const;
+    void beginMarkerEdit(int markerId,MarkerEdit kind);
+    void finishMarkerEdit(bool accept);
+    void showMarkerContextMenu(int markerId,const juce::Point<int>& screenPoint);
+    bool mutateMarkers(const std::function<bool(Row&)>& apply,bool changesTempo,const juce::String& status);
     bool seeking=false,resizingClip=false;
     double dragStartDuration=0;
     double dragStartSeconds=0, dragLength=10, dragViewStart=0, dragPixels=1;
@@ -621,7 +635,7 @@ private:
     juce::TextButton midiEditButton{"Create MIDI clip"};
     juce::TextButton oscEditButton{"Create OSC clip"};
     juce::TextButton cellTab{"Cell"},rowTab{"Entire cue"};
-    juce::TextButton tempoButton{"Tempo map"},applyButton{"Apply changes"};
+    juce::TextButton applyButton{"Apply changes"};
     juce::TextEditor rowName,cellName,bpm,cueNotes;
     juce::ComboBox behaviour;
     juce::ToggleButton follow{"Include in row GO"},loop{"Loop playback"};
@@ -793,13 +807,13 @@ private:
 
     void refresh();
     void refreshInspector();
-    void changed(const juce::String&,bool stopPlayback=false);
+    void changed(const juce::String&,bool stopPlayback=false,
+                 bool retimeSchedule=false);
     bool applyInspector();
     bool inspectorDiffers() const;
     void openProject();
     void saveProject();
     void withDiscardConfirmation(std::function<void()>);
-    void editTempo();
     void message(const juce::String&);
     bool send(int id,bool row,bool stop=false);
     void stopAll();

@@ -517,29 +517,6 @@ void MainComponent::showColumnMenu(juce::Point<int> screenPoint) {
     });
 }
 
-void MainComponent::editTempo() {
-    if (!applyInspector()) return;
-    stopAll();
-    const int rowId=show.rows[selectedRow].id; juce::String text;
-    for (const auto& p : show.rows[selectedRow].tempo) text+=juce::String(p.beat)+" "+juce::String(p.bpm)+"\n";
-    prompt(this,theme,"Cue tempo map",
-        "Each line contains beat and BPM. Beats count quarter notes from zero. Audio file playback speed is unchanged.",
-        "Tempo changes",text,true,
-        [safe=juce::Component::SafePointer<MainComponent>(this),rowId](juce::String input) {
-            if (!safe) return;
-            std::vector<TempoPoint> points;
-            for (const auto& line : juce::StringArray::fromLines(input)) {
-                if (line.trim().isEmpty()) continue;
-                std::istringstream stream(line.toStdString()); TempoPoint p; std::string extra;
-                if (!(stream>>p.beat>>p.bpm) || stream>>extra) { safe->message("Required format: 0 120. One line per tempo change."); return; }
-                points.push_back(p);
-            }
-            auto candidate=safe->show; for (auto& row : candidate.rows) if (row.id==rowId) row.tempo=points;
-            auto valid=validateShow(candidate); if (valid.failed()) { safe->message(valid.getErrorMessage()); return; }
-            safe->show=std::move(candidate); safe->changed("Tempo map saved for this cue. Playback stopped.");
-        });
-}
-
 bool MainComponent::renameCell(int row,int column) {
     if (row<0 || row>=(int)show.rows.size() ||
         column<0 || column>=(int)show.columns.size() ||
@@ -727,7 +704,9 @@ bool MainComponent::commitRowBpm(int rowId,const juce::String& text) {
     for (auto& row:candidate.rows) if (row.id==rowId) {
         if (row.tempo.empty()) return false;
         if (std::abs(row.tempo.front().bpm-bpmValue)<0.00001) return true;
+        importLegacyTempoMarkers(row);
         row.tempo.front().bpm=bpmValue;
+        if (!rebuildTempoFromMarkers(row)) return false;
         found=true;
         break;
     }
@@ -736,7 +715,7 @@ bool MainComponent::commitRowBpm(int rowId,const juce::String& text) {
         message(result.getErrorMessage()); return false;
     }
     show=std::move(candidate);
-    changed("Cue initial BPM updated.",true);
+    changed("Cue initial BPM updated. Playback continues.",false,true);
     return true;
 }
 
