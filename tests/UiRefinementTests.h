@@ -940,15 +940,15 @@ void uiRefinementTests() {
         ui.show.rows[0].cells[1].midi=MidiClip{4,{{0,1,60,100,1}}};
         OscClip osc; osc.length=4; osc.events.push_back({1,"/stage",{}});
         ui.show.rows[0].cells[2].osc=osc;
-        auto* timeline=find<Timeline>(ui); timeline->setSize(800,250);
-        const juce::Point<float> midiFrom{268,136}, midiTo{332,136};
+        auto* timeline=find<Timeline>(ui); timeline->setSize(800,300);
+        const juce::Point<float> midiFrom{268,160}, midiTo{332,160};
         timeline->mouseDown(event(*timeline,midiFrom,midiFrom));
         timeline->mouseDrag(event(*timeline,midiTo,midiFrom,1,true));
         timeline->mouseUp(event(*timeline,midiTo,midiFrom,1,true));
         near(ui.show.rows[0].cells[1].startSeconds,0);
         near(ui.show.rows[0].cells[1].midi->lengthBeats,6);
         // At 120 BPM, a 4-second OSC clip occupies 256 px of the 10-second view.
-        const juce::Point<float> oscFrom{396,178}, oscTo{460,178};
+        const juce::Point<float> oscFrom{396,202}, oscTo{460,202};
         timeline->mouseDown(event(*timeline,oscFrom,oscFrom));
         timeline->mouseDrag(event(*timeline,oscTo,oscFrom,1,true));
         timeline->mouseUp(event(*timeline,oscTo,oscFrom,1,true));
