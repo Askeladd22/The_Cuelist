@@ -1810,6 +1810,35 @@ bool MainComponent::canGenerateClickTrack(int row,int column) const {
            cell.file.isEmpty() && !cell.click && !cell.midi && !cell.osc &&
            !hasClip(row,column);
 }
+bool MainComponent::commitClickTrack(int row,int column,
+                                     const ClickTrackConfig& config) {
+    if (!applyInspector() || row<0 || row>=(int)show.rows.size() ||
+        column<0 || column>=(int)show.columns.size())
+        return false;
+    const auto& existing=show.rows[(size_t)row].cells[(size_t)column];
+    const bool editing=existing.click.has_value();
+    if (show.columns[(size_t)column].type!=ColumnType::audio ||
+        show.columns[(size_t)column].collapsed ||
+        (!editing && !canGenerateClickTrack(row,column)) ||
+        (editing && (existing.file.isNotEmpty() || existing.midi || existing.osc)))
+        return false;
+    // Build the validated candidate AFTER applying unsaved Inspector edits.
+    // Never call select(): selecting a cue changes NEXT in the LIVE tab.
+    auto candidate=show;
+    auto& target=candidate.rows[(size_t)row].cells[(size_t)column];
+    target.click=config;
+    if (target.name.trim().isEmpty()) target.name="Click Track";
+    const auto valid=validateShow(candidate);
+    if (valid.failed()) {
+        status=valid.getErrorMessage();
+        repaint();
+        return false;
+    }
+    show=std::move(candidate);
+    changed(editing ? "Click Track updated. LIVE continues." :
+        "Click Track generated. LIVE continues.",false,true);
+    return true;
+}
 void MainComponent::generateClickTrack(int row,int column) {
     if (row<0 || row>=(int)show.rows.size() ||
         column<0 || column>=(int)show.columns.size()) return;
@@ -1886,19 +1915,8 @@ void MainComponent::generateClickTrack(int row,int column) {
             }
             ClickTrackConfig config{(ClickSound)(sound->getSelectedId()-1),
                 accent->getSelectedId()==1,subdivision->getSelectedId(),seconds};
-            auto candidate=safe->show;
-            auto& target=candidate.rows[(size_t)r].cells[(size_t)c];
-            const bool updating=target.click.has_value();
-            target.click=config;
-            if (target.name.trim().isEmpty()) target.name="Click Track";
-            if (const auto verified=validateShow(candidate);verified.failed()) {
-                safe->message(verified.getErrorMessage());
-                return;
-            }
-            if (!safe->select(r,c)) return;
-            safe->show=std::move(candidate);
-            safe->changed(updating ? "Click Track updated. LIVE continues." :
-                "Click Track generated. LIVE continues.",false,true);
+            if (!safe->commitClickTrack(r,c,config))
+                safe->message("Click Track was not updated. Check the current cell and settings.");
         }),false); // async; no nested modal loop or audio callback dependency
 }
 bool MainComponent::canGenerateLtcTrack(int row,int column) const {
