@@ -555,7 +555,7 @@ void Timeline::mouseUp(const juce::MouseEvent&) {
             mutateMarkers([id,destination](Row& row) {
                 for (auto& m:row.markers) if (m.id==id) {m.seconds=destination; return true;}
                 return false;
-            },tempo,tempo ? "Tempo Marker moved. LIVE playback stopped." :
+            },tempo,tempo ? "Tempo Marker moved. Playback continues." :
                             "Generic Marker moved.");
     }
     dragColumn=-1; seeking=false; resizingClip=false;
@@ -590,7 +590,8 @@ bool Timeline::mutateMarkers(const std::function<bool(Row&)>& mutation,
         return false;
     }
     owner.show=std::move(candidate);
-    owner.changed(labelText,affectsTempo);
+    // A Tempo Marker edit must never stop or rewind the LIVE transport.
+    owner.changed(labelText,false,affectsTempo);
     return true;
 }
 void Timeline::beginMarkerEdit(int id,MarkerEdit kind) {
@@ -652,7 +653,7 @@ void Timeline::finishMarkerEdit(bool accept) {
                 return true;
             }
             return false;
-        },true,"Tempo Marker BPM updated. LIVE playback stopped.");
+        },true,"Tempo Marker BPM updated. Playback continues.");
     } else if (value.isNotEmpty() && value.length()<=80) {
         mutateMarkers([id,value](Row& row) {
             for (auto& marker:row.markers) if (marker.id==id) {
@@ -697,7 +698,7 @@ void Timeline::showMarkerContextMenu(int markerId,const juce::Point<int>& screen
                         marker.changesTempo=false; return true;
                     }
                     return false;
-                },true,"Tempo Marker converted to Generic. LIVE playback stopped.");
+                },true,"Tempo Marker converted to Generic. Playback continues.");
             else if (choice==5)
                 safe->mutateMarkers([markerId](Row& r) {
                     const auto it=std::remove_if(r.markers.begin(),r.markers.end(),
@@ -705,7 +706,7 @@ void Timeline::showMarkerContextMenu(int markerId,const juce::Point<int>& screen
                     if (it==r.markers.end()) return false;
                     r.markers.erase(it,r.markers.end());
                     return true;
-                },isTempo,isTempo ? "Tempo Marker deleted. LIVE playback stopped." :
+                },isTempo,isTempo ? "Tempo Marker deleted. Playback continues." :
                                   "Generic Marker deleted.");
         });
 }
