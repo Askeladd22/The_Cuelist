@@ -27,21 +27,21 @@ void timelineV3Tests() {
         // key is still distinct. The selected column keeps its type fill.
         const auto audioFill=palette::input.interpolatedWith(
             palette::type((int)ColumnType::audio),.46f);
-        check(preview.getPixelAt(141,110)!=preview.getPixelAt(152,110) &&
-              preview.getPixelAt(152,110)==audioFill &&
+        check(preview.getPixelAt(141,130)!=preview.getPixelAt(152,130) &&
+              preview.getPixelAt(152,130)==audioFill &&
               audioFill!=palette::input,
               "Loaded Audio clip lost its visible type-coloured body or type key");
         // Legacy must preserve the previous genuinely neutral body.
         ui.setAppearanceTheme(palette::Appearance::legacy);
         const auto previous=timeline->createComponentSnapshot(
             timeline->getLocalBounds());
-        check(previous.getPixelAt(152,110)==palette::input,
+        check(previous.getPixelAt(152,130)==palette::input,
               "Legacy Timeline no longer renders its historical neutral clip body");
         ui.setAppearanceTheme(palette::Appearance::industrialOrange);
         // Next row: Control configuration should no longer be one big
         // translucent pastel card, but remain an identifiable Control lane.
-        check(preview.getPixelAt(141,152)!=preview.getPixelAt(400,152) &&
-              preview.getPixelAt(400,152)==palette::input,
+        check(preview.getPixelAt(141,174)!=preview.getPixelAt(400,174) &&
+              preview.getPixelAt(400,174)==palette::input,
               "Control lane lost its technical surface or signal key");
         // Resolve children using the Timeline's own public component API.
         // This test must not rely on helpers defined in ControlsV3Tests.h,
@@ -87,7 +87,7 @@ void timelineV3Tests() {
         ui.setClipStart(0,3);
         auto* timeline=find<Timeline>(ui); timeline->setSize(800,250);
         click(*timeline,708,22);
-        const juce::Point<float> from{236,94}, to{300,94};
+        const juce::Point<float> from{236,118}, to{300,118};
         timeline->mouseDown(event(*timeline,from,from)); timeline->setSize(1000,250);
         timeline->mouseDrag(event(*timeline,to,from,1,true)); timeline->mouseUp(event(*timeline,to,from,1,true));
         near(ui.show.rows[0].cells[0].startSeconds,3.5);
@@ -100,7 +100,7 @@ void timelineV3Tests() {
         auto clip=std::make_shared<AudioClip>(); clip->samples.setSize(1,48000); clip->samples.clear();
         ui.clips[ui.show.rows[0].cells[0].id]=clip;
         auto* timeline=find<Timeline>(ui); timeline->setSize(800,250);
-        const juce::Point<float> from{160,94},to{195,94};
+        const juce::Point<float> from{160,118},to{195,118};
         timeline->mouseDown(event(*timeline,from,from));
         timeline->mouseDrag(event(*timeline,to,from,1,true));
         timeline->mouseUp(event(*timeline,to,from,1,true));
@@ -162,7 +162,7 @@ void timelineV3Tests() {
         check(visibility && division && magnet,"Snap controls absent");
         visibility->onClick(); // grid OFF, snap ON
         division->setSelectedId(1,juce::sendNotificationSync); // 1/4, 0.5 s at 120 BPM
-        const juce::Point<float> from{160,94},to{198,94};
+        const juce::Point<float> from{160,118},to{198,118};
         const auto drag=[&] {
             timeline->mouseDown(event(*timeline,from,from));
             timeline->mouseDrag(event(*timeline,to,from,1,true));
@@ -202,7 +202,7 @@ void timelineV3Tests() {
         MainComponent ui(false); addColumn(ui.show,ColumnType::midi,{});
         ui.show.rows[0].cells[1].midi=MidiClip{4,{{0,1,60,100,1}}};
         auto* timeline=find<Timeline>(ui); timeline->setSize(800,250);
-        const juce::Point<float> p{160,136};
+        const juce::Point<float> p{160,160};
         timeline->mouseDown(event(*timeline,p,p));
         check(cueViewFixtures::find<PianoRollEditor>(ui)!=nullptr,"Timeline click did not dock editor");
         check(ui.activeClipEditor()!=nullptr && !ui.isClipEditorFloating(),"Timeline editor not integrated");
