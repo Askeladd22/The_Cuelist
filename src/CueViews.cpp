@@ -565,6 +565,12 @@ juce::PopupMenu CueGrid::createCellContextMenu(int row,int column) const {
         menu.addSeparator();
         menu.addItem(8,"Generate LTC Track");
     }
+    if (col.type==ColumnType::audio &&
+        (owner.canGenerateClickTrack(row,column) || cell.click)) {
+        if (!owner.canGenerateLtcTrack(row,column)) menu.addSeparator();
+        menu.addItem(11,cell.click ? "Configure Click Track..." :
+                                    "Generate Click Track...");
+    }
     return menu;
 }
 
@@ -601,6 +607,7 @@ void CueGrid::showCellMenu(int row,int column,juce::Point<int> screenPoint) {
             case 6:safe->setCellFollowsRow(r,c,!safe->show.rows[(size_t)r].cells[(size_t)c].followsRow);break;
             case 7:safe->setCellAutoStop(r,c,!safe->show.rows[(size_t)r].cells[(size_t)c].stopOnNext);break;
             case 8:safe->generateLtcTrack(r,c);break;
+            case 11:safe->generateClickTrack(r,c);break;
         }
     });
 }

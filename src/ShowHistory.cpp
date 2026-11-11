@@ -131,6 +131,31 @@ bool MainComponent::restoreHistorySnapshot(const HistorySnapshot& snapshot,
             encodeShow(neutralized)==encodeShow(newLive);
         if(markerOnlyRestore) liveAffected=false;
     }
+    bool clickOnlyRestore=false;
+    if(liveAffected && targetLive>=0 && oldLive.rows.size()==newLive.rows.size()) {
+        // Undo/Redo of a procedural source or its label never silences unrelated
+        // LIVE voices. Compare every other model field before allowing retiming.
+        auto neutralized=oldLive;
+        bool sameIdentity=true;
+        for(size_t i=0;i<neutralized.rows.size();++i) {
+            if(neutralized.rows[i].id!=newLive.rows[i].id ||
+               neutralized.rows[i].cells.size()!=newLive.rows[i].cells.size()) {
+                sameIdentity=false;break;
+            }
+            for(size_t j=0;j<neutralized.rows[i].cells.size();++j) {
+                auto& before=neutralized.rows[i].cells[j];
+                const auto& after=newLive.rows[i].cells[j];
+                if(before.id!=after.id) {sameIdentity=false;break;}
+                if(before.click || after.click) {
+                    before.click=after.click;
+                    before.name=after.name;
+                }
+            }
+            if(!sameIdentity) break;
+        }
+        clickOnlyRestore=sameIdentity && encodeShow(neutralized)==encodeShow(newLive);
+        if(clickOnlyRestore) liveAffected=false;
+    }
     if(!liveAffected) {
         for(const auto& row:oldLive.rows)
             for(const auto& cell:row.cells) {
@@ -176,7 +201,8 @@ bool MainComponent::restoreHistorySnapshot(const HistorySnapshot& snapshot,
     }
     nextCue=show.activeCuelist==liveCuelist ? liveNextCue : 0;
     refreshControlSettings();
-    engine.publish(makeLiveRenderState(),!liveAffected,markerOnlyRestore);
+    engine.publish(makeLiveRenderState(),!liveAffected,
+                   markerOnlyRestore || clickOnlyRestore);
     dirty=true;
     status=description+(liveAffected ?
            " LIVE transport stopped for a safe structural restore." :

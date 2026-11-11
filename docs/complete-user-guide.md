@@ -268,7 +268,15 @@ The **Master Audio** strip provides Main Out routing, stereo gain/meter, pan, mu
 
 Master gain/mute/pan act on PCM audio, not MIDI notes or OSC commands. The output stage clamps device PCM samples, but that is not a substitute for physical gain staging and rehearsal.
 
-### 7.4 Generate LTC Track (audio source only)
+### 7.4 Generate Click Track (procedural Audio source)
+
+Right-click an **empty Audio cell** and choose **Generate Click Track...**. Choose **Classic Click**, **Woodblock**, **Electronic Beep** or **Rimshot**, turn bar-start **Accent** on or off, select subdivision **1 (quarter notes)**, **2 (eighth notes)**, **3 (triplets)** or **4 (sixteenth notes)**, and set **Duration** from 0.1 to 600 seconds. This duration is the clip's extent; it does not fill the cue automatically. Right-click a generated click clip to choose **Configure Click Track...**. You can also resize its duration in the Timeline.
+
+The source is generated in memory during playback. The project stores its synthesis parameters in an optional v10 cell field, **not** a WAV path. The click follows the cue's initial BPM and Tempo Markers, including BPM changes between beats. Event positions use the same beat-to-seconds conversion as Timeline, MIDI and OSC; changing the Tempo Map retimes future click pulses without rewinding LIVE. Accents follow the time-signature metadata of the tempo section. No MIDI device, imported sample or external sound file is needed.
+
+Use the **cell Gain**, **Audio track fader**, routing, Master and Mute to control level. There is no duplicate volume control in the generator. Existing normal Audio clips are unchanged. Projects containing procedural click cells must be opened in a version of The Cuelist that supports the optional `click` property; older v10 applications cannot reproduce them.
+
+### 7.5 Generate LTC Track (audio source only)
 
 Right-click an **empty Audio cell** and select **Generate LTC Track**. Enter duration (0.1–600 seconds), start timecode (HH:MM:SS:FF; use HH:MM:SS;FF for 29.97 drop-frame), and frame rate (24, 25, 29.97 drop-frame, 29.97 non-drop or 30 fps). The operation writes a real **mono 48 kHz / 16-bit PCM WAV** in `Documents/The Cuelist/Generated LTC`, then imports it as an ordinary Audio cell. Occupied cells cannot be overwritten through this command. Generated media must be preserved alongside the project when transferring shows.
 

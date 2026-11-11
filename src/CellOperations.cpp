@@ -155,6 +155,13 @@ void MainComponent::setClipDuration(int column,double seconds) {
         selectedRow<0 || selectedRow>=(int)show.rows.size() || !std::isfinite(seconds)) return;
     auto& row=show.rows[(size_t)selectedRow];
     auto& cell=row.cells[(size_t)column];
+    if (cell.click) {
+        const auto duration=juce::jlimit(0.1,600.0,seconds);
+        if(std::abs(cell.click->durationSeconds-duration)<0.0001) return;
+        cell.click->durationSeconds=duration;
+        changed("Click Track duration updated. LIVE continues.",false,true);
+        return;
+    }
     if (!cell.midi && !cell.osc) return;
     const auto& tempo=row.tempo;
     const auto beatAt=[&](double duration) {

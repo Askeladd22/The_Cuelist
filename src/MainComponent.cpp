@@ -529,7 +529,7 @@ MainComponent::MainComponent(bool startAudio) {
     playCellButton.onClick=[this] { triggerCell(); }; stopCellButton.onClick=[this] { send(show.rows[selectedRow].cells[selectedColumn].id,false,true); };
     clearButton.onClick=[this] {
         auto& c=show.rows[selectedRow].cells[selectedColumn];
-        clips.erase(c.id); c.file.clear(); c.name.clear(); c.midi.reset(); c.osc.reset();
+        clips.erase(c.id); c.file.clear(); c.name.clear(); c.midi.reset(); c.osc.reset(); c.click.reset();
         if (show.columns[(size_t)selectedColumn].type==ColumnType::control)
             c.controlSet.reset();
         closeOscClip();
@@ -1801,6 +1801,106 @@ void MainComponent::message(const juce::String& text) { status=text; repaint(); 
 bool MainComponent::memoryFits(const ClipMap& collection) const {
     return withinPcmBudget(collection);
 }
+bool MainComponent::canGenerateClickTrack(int row,int column) const {
+    if (row<0 || row>=(int)show.rows.size() ||
+        column<0 || column>=(int)show.columns.size()) return false;
+    const auto& col=show.columns[(size_t)column];
+    const auto& cell=show.rows[(size_t)row].cells[(size_t)column];
+    return col.type==ColumnType::audio && !col.collapsed &&
+           cell.file.isEmpty() && !cell.click && !cell.midi && !cell.osc &&
+           !hasClip(row,column);
+}
+void MainComponent::generateClickTrack(int row,int column) {
+    if (row<0 || row>=(int)show.rows.size() ||
+        column<0 || column>=(int)show.columns.size()) return;
+    const auto& cell=show.rows[(size_t)row].cells[(size_t)column];
+    if (!canGenerateClickTrack(row,column) &&
+        !(show.columns[(size_t)column].type==ColumnType::audio &&
+          !show.columns[(size_t)column].collapsed && cell.click)) return;
+    // Resolve stable identity after the non-modal dialog: rows, columns and VIEW
+    // may have moved while the operator was entering the configuration.
+    const int rowId=show.rows[(size_t)row].id;
+    const int columnId=show.columns[(size_t)column].id;
+    const int cellId=cell.id;
+    const int viewIndex=show.activeCuelist;
+    const bool editing=cell.click.has_value();
+    const auto current=cell.click.value_or(ClickTrackConfig{});
+    auto* dialog=new juce::AlertWindow(editing ? "Configure Click Track" :
+        "Generate Click Track",
+        "Procedural Audio source. Tempo Markers retime pulses without stopping LIVE. "
+        "Use cell gain and track fader for level.",
+        juce::MessageBoxIconType::NoIcon,this);
+    dialog->setLookAndFeel(&theme);
+    dialog->addComboBox("sound",{"Classic Click","Woodblock","Electronic Beep",
+                                  "Rimshot"},"Sound");
+    dialog->addComboBox("accent",{"On (first movement of each bar)","Off"},"Accent");
+    dialog->addComboBox("subdivision",{"1 - Quarter notes","2 - Eighth notes",
+                                       "3 - Triplets","4 - Sixteenth notes"},"Subdivision");
+    dialog->addTextEditor("duration",juce::String(current.durationSeconds,2),
+                          "Duration in seconds (0.1-600)");
+    dialog->getComboBoxComponent("sound")->setSelectedId((int)current.sound+1,
+                                                       juce::dontSendNotification);
+    dialog->getComboBoxComponent("accent")->setSelectedId(current.accent ? 1 : 2,
+                                                        juce::dontSendNotification);
+    dialog->getComboBoxComponent("subdivision")->setSelectedId(current.subdivision,
+                                                             juce::dontSendNotification);
+    dialog->addButton(editing ? "Update Click Track" : "Generate Click Track",1);
+    dialog->addButton("Cancel",0);
+    auto safe=juce::Component::SafePointer<MainComponent>(this);
+    dialog->enterModalState(true,juce::ModalCallbackFunction::create(
+        [safe,dialog,rowId,columnId,cellId,viewIndex](int result) {
+            std::unique_ptr<juce::AlertWindow> owned(dialog);
+            if (!safe || result!=1 || safe->show.activeCuelist!=viewIndex) return;
+            int r=-1,c=-1;
+            for (int i=0;i<(int)safe->show.rows.size();++i)
+                if (safe->show.rows[(size_t)i].id==rowId) {r=i;break;}
+            for (int i=0;i<(int)safe->show.columns.size();++i)
+                if (safe->show.columns[(size_t)i].id==columnId) {c=i;break;}
+            if (r<0 || c<0 ||
+                safe->show.rows[(size_t)r].cells[(size_t)c].id!=cellId) return;
+            const auto& source=safe->show.rows[(size_t)r].cells[(size_t)c];
+            if (!safe->canGenerateClickTrack(r,c) &&
+                !(safe->show.columns[(size_t)c].type==ColumnType::audio &&
+                  !safe->show.columns[(size_t)c].collapsed && source.click)) {
+                safe->message("Click Track cancelled: the target Audio cell has changed.");
+                return;
+            }
+            const auto duration=dialog->getTextEditorContents("duration").trim();
+            const char* raw=duration.toRawUTF8();
+            char* end=nullptr;
+            const double seconds=std::strtod(raw,&end);
+            if(duration.isEmpty() || end==raw || *end!='\0' ||
+               !std::isfinite(seconds) || seconds<0.1 || seconds>600) {
+                safe->message("Click duration must be a number from 0.1 to 600 seconds.");
+                return;
+            }
+            const auto* sound=dialog->getComboBoxComponent("sound");
+            const auto* accent=dialog->getComboBoxComponent("accent");
+            const auto* subdivision=dialog->getComboBoxComponent("subdivision");
+            if(!sound || !accent || !subdivision || sound->getSelectedId()<1 ||
+               sound->getSelectedId()>4 || accent->getSelectedId()<1 ||
+               accent->getSelectedId()>2 || subdivision->getSelectedId()<1 ||
+               subdivision->getSelectedId()>4) {
+                safe->message("Select sound, accent and subdivision.");
+                return;
+            }
+            ClickTrackConfig config{(ClickSound)(sound->getSelectedId()-1),
+                accent->getSelectedId()==1,subdivision->getSelectedId(),seconds};
+            auto candidate=safe->show;
+            auto& target=candidate.rows[(size_t)r].cells[(size_t)c];
+            const bool updating=target.click.has_value();
+            target.click=config;
+            if (target.name.trim().isEmpty()) target.name="Click Track";
+            if (const auto verified=validateShow(candidate);verified.failed()) {
+                safe->message(verified.getErrorMessage());
+                return;
+            }
+            if (!safe->select(r,c)) return;
+            safe->show=std::move(candidate);
+            safe->changed(updating ? "Click Track updated. LIVE continues." :
+                "Click Track generated. LIVE continues.",false,true);
+        }),false); // async; no nested modal loop or audio callback dependency
+}
 bool MainComponent::canGenerateLtcTrack(int row,int column) const {
     if (row<0 || row>=(int)show.rows.size() ||
         column<0 || column>=(int)show.columns.size()) return false;
@@ -1913,7 +2013,7 @@ void MainComponent::importFile(const juce::File& file) {
         MidiClip imported; juce::String warning;
         auto result=loadMidiClip(file,imported,warning);
         if (result.failed()) { message(result.getErrorMessage()); return; }
-        auto& cell=show.rows[selectedRow].cells[selectedColumn]; cell.midi=std::move(imported);
+        auto& cell=show.rows[selectedRow].cells[selectedColumn]; cell.midi=std::move(imported); cell.click.reset();
         cell.file.clear(); cell.name=file.getFileNameWithoutExtension();
         changed("MIDI clip imported. Double-click to open the piano roll.",true);
         if (warning.isNotEmpty()) message(warning);
@@ -1927,7 +2027,7 @@ void MainComponent::importFile(const juce::File& file) {
     if (!memoryFits(updated)) { message("Preload limit reached: 512 MB PCM per show. The file was not added."); return; }
     // Invalid imports no longer stop an ongoing performance; a successful
     // import still uses changed(...), preserving its original transport policy.
-    clips=std::move(updated); c.file=file.getFullPathName(); c.name=file.getFileNameWithoutExtension();
+    clips=std::move(updated); c.click.reset(); c.file=file.getFullPathName(); c.name=file.getFileNameWithoutExtension();
     changed("Imported "+file.getFileName()+". Double-click the cell to play.");
 }
 bool MainComponent::send(int id,bool row,bool stop) {

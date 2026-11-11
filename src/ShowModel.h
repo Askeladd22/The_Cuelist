@@ -10,6 +10,14 @@ namespace cuelist {
 enum class ColumnType { audio, midi, osc, control };
 enum class Behaviour { retrigger, pauseRestart, pauseResume, continuePlaying, stop };
 struct TempoPoint { double beat = 0, bpm = 120; int numerator = 4, denominator = 4; };
+// Procedural source: no WAV path or PCM buffer persisted in the project.
+enum class ClickSound { classicClick, woodblock, electronicBeep, rimshot };
+struct ClickTrackConfig {
+    ClickSound sound = ClickSound::classicClick;
+    bool accent = true;
+    int subdivision = 1; // impulses per quarter-note beat: 1, 2, 3, 4
+    double durationSeconds = 10.0;
+};
 // Cue-local identity; the absolute timestamp does not change with earlier BPM edits.
 struct TimelineMarker {
     int id = 0;
@@ -50,6 +58,7 @@ struct Cell {
     std::optional<OscClip> osc;
     std::optional<ControlSet> controlSet;
     int assignedMapId=0; // 0 = local/none; otherwise a reusable Control Map in controls.templates
+    std::optional<ClickTrackConfig> click; // Audio only, mutually exclusive with file/MIDI/OSC
 };
 inline bool hasControlMapAssignment(const Cell& cell) noexcept {
     return cell.assignedMapId>0 || cell.controlSet.has_value();

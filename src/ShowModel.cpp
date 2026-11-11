@@ -173,6 +173,15 @@ juce::Result validateShow(const Show& show) {
         }
         for (size_t i=0; i<row.cells.size(); ++i) {
             const auto& c = row.cells[i];
+            if (c.click) {
+                const auto& click=*c.click;
+                if (show.columns[i].type!=ColumnType::audio || c.file.isNotEmpty() ||
+                    c.midi || c.osc || (int)click.sound<0 || (int)click.sound>3 ||
+                    click.subdivision<1 || click.subdivision>4 ||
+                    !std::isfinite(click.durationSeconds) || click.durationSeconds<0.1 ||
+                    click.durationSeconds>600.0)
+                    return fail("Invalid Click Track: use Audio, a valid sound, subdivision 1–4 and duration 0.1–600 s.");
+            }
             if (c.midi) {
                 if (show.columns[i].type!=ColumnType::midi || c.file.isNotEmpty() || c.osc) return fail("MIDI clip in a non-MIDI column.");
                 auto result=validateMidiClip(*c.midi); if (result.failed()) return result;
@@ -472,7 +481,11 @@ juce::String encodeShow(const Show& show) {
                 osc=object({{"useBeats",c.osc->useBeats},{"length",c.osc->length},
                     {"events",events},{"automations",automations},{"tracks",tracks}});
             }
-            cells.add(object({{"id",c.id},{"name",c.name},{"file",c.file},{"followsRow",c.followsRow},
+            juce::var click;
+            if (c.click) click=object({{"sound",(int)c.click->sound},
+                {"accent",c.click->accent},{"subdivision",c.click->subdivision},
+                {"durationSeconds",c.click->durationSeconds}});
+            cells.add(object({{"id",c.id},{"name",c.name},{"file",c.file},{"click",click},{"followsRow",c.followsRow},
                 {"loop",c.loop},{"stopOnNext",c.stopOnNext},{"gain",c.gain},{"startSeconds",c.startSeconds},{"behaviour",(int)c.behaviour},{"midi",midi},{"osc",osc},
                 {"controlSet",c.controlSet ? controlSetObject(*c.controlSet) : juce::var()},
                 {"assignedMapId",c.assignedMapId}}));
@@ -655,6 +668,12 @@ juce::Result decodeShow(const juce::String& text, Show& destination) {
             if (row.markers.empty()) importLegacyTempoMarkers(row);
             for (auto& c : array(r,"cells")) {
                 Cell cell; cell.id=integer(c,"id"); cell.name=string(c,"name"); cell.file=string(c,"file");
+                if (c.hasProperty("click") && !c.getProperty("click",{}).isVoid()) {
+                    const auto config=required(c,"click");
+                    cell.click=ClickTrackConfig{(ClickSound)integer(config,"sound"),
+                        boolean(config,"accent"),integer(config,"subdivision"),
+                        number(config,"durationSeconds")};
+                }
                 cell.followsRow=boolean(c,"followsRow"); cell.loop=boolean(c,"loop"); cell.gain=(float)number(c,"gain"); cell.behaviour=activation(integer(c,"behaviour"));
                 if (version >= 2) cell.startSeconds=number(c,"startSeconds");
                 if (auto* obj=c.getDynamicObject())
