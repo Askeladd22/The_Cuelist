@@ -103,6 +103,9 @@ struct RenderState {
     uint64_t revision = 0;
     uint64_t minimumCommandRevision = 0;
     bool preservePlayback = true;
+    // Only true for cue tempo edits: retime existing MIDI/OSC schedules without
+    // resetting active voices or touching PCM playback.
+    bool retimeSchedule = false;
     void trigger(int id, bool row, bool stop = false) noexcept;
     void toggleRowPause(int rowId) noexcept;
     void seekRow(int rowId, double seconds) noexcept;
@@ -121,7 +124,8 @@ public:
     AudioEngine();
     ~AudioEngine() override;
     juce::String initialise();
-    void publish(std::unique_ptr<RenderState>, bool preservePlayback = true);
+    void publish(std::unique_ptr<RenderState>, bool preservePlayback = true,
+                 bool retimeSchedule = false);
     void collectRetired();
     bool send(int id, bool row, bool stop = false) noexcept;
     bool sendRowPauseToggle(int rowId) noexcept;
