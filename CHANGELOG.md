@@ -13,6 +13,23 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.46] - 2026-11-11
+
+**Stato:** implementazione candidata della generazione Click Track, senza merge automatico. Schema `.cuelist` JSON **v10** invariato.
+
+### Click Track procedurale
+- Menu contestuale di una cella Audio vuota: **Generate Click Track...**; su clip già generata: **Configure Click Track...**.
+- Dialog JUCE nativo: Classic Click, Woodblock, Electronic Beep, Rimshot; accento attivabile per primo movimento di battuta; subdivision 1/2/3/4; durata indipendente 0,1–600 secondi.
+- Traccia sintetizzata direttamente nel motore come eventi musicali e one-shot preparati prima della callback. Nessun WAV o MIDI esterno, nessun nuovo fader nel dialog.
+- Impulsi calcolati con la stessa funzione `secondsAtBeat` della Timeline, compresi marker BPM in tempi assoluti non allineati al beat. Metriche della Tempo Map usate per gli accenti.
+- Parametri opzionali della sorgente Audio salvati/ripristinati nel JSON v10; normale routing cell/track/Master/Direct Out, mute, pan, gain, offset e loop invariati.
+- Modifiche BPM e Tempo Marker ricostruiscono lo schedule di click preservando il cursore LIVE; Undo/Redo dei soli parametri click non invia PANIC. Clip dimensionabile anche dalla Timeline.
+
+### Verifiche e limiti
+- Test aggiunti: validazione e round-trip v10; suddivisioni e accenti; marker frazionario; uscita PCM; continuità LIVE dopo retiming.
+- Windows Build/CTest, screenshot nativi DPI, misure di jitter e hardware Audio/MIDI/OSC/LTC: **ND** finché non verificati. CI verde non certifica idoneità LIVE.
+- Rollback: revert della PR, riaprendo i progetti v10 senza sorgenti click solo dopo aver rimosso o convertito le clip procedurali. I vecchi writer v10 non conoscono il campo opzionale `click`.
+
 ## [0.9.45] - 2026-11-11
 
 **Stato:** hotfix candidato della Timeline Markers integrata in 0.9.44; mantiene lo schema JSON v10 e la semantica di trasporto LIVE senza STOP/PANIC per i cambi di marker/BPM.
