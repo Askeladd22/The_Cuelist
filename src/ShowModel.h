@@ -10,6 +10,15 @@ namespace cuelist {
 enum class ColumnType { audio, midi, osc, control };
 enum class Behaviour { retrigger, pauseRestart, pauseResume, continuePlaying, stop };
 struct TempoPoint { double beat = 0, bpm = 120; int numerator = 4, denominator = 4; };
+// Cue-local identity; the absolute timestamp does not change with earlier BPM edits.
+struct TimelineMarker {
+    int id = 0;
+    juce::String name;
+    double seconds = 0;
+    bool changesTempo = false;
+    double bpm = 120;
+    int numerator = 4, denominator = 4; // Retains legacy tempo-map meter metadata.
+};
 struct Column {
     int id = 0; juce::String name; ColumnType type = ColumnType::audio; int output = 0;
     float gain = 1.0f, pan = 0.0f;
@@ -46,7 +55,7 @@ inline bool hasControlMapAssignment(const Cell& cell) noexcept {
     return cell.assignedMapId>0 || cell.controlSet.has_value();
 }
 struct Row {
-    int id = 0; juce::String name; juce::String notes; std::vector<TempoPoint> tempo {{}}; std::vector<Cell> cells;
+    int id = 0; juce::String name; juce::String notes; std::vector<TempoPoint> tempo {{}}; std::vector<TimelineMarker> markers; std::vector<Cell> cells;
     float gain = 1.0f;
     int mappingPresetId=0;
     int colour=0; // 0=automatic; 1..7 are operator cue colours
@@ -76,6 +85,11 @@ Show makeShow();
 void addRow(Show&, const juce::String&);
 void addColumn(Show&, ColumnType, const juce::String&);
 double secondsAtBeat(const std::vector<TempoPoint>&, double beat);
+// Legacy v10 tempo points are converted to absolute-time markers on import.
+void importLegacyTempoMarkers(Row&);
+// Rebuilds the same beat-based tempo map consumed by the audio/MIDI/OSC engine.
+// Returns false without modifying tempo if markers are invalid.
+bool rebuildTempoFromMarkers(Row&);
 juce::Result validateShow(const Show&);
 juce::String encodeShow(const Show&);
 juce::Result decodeShow(const juce::String&, Show&);
