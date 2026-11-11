@@ -1739,12 +1739,13 @@ Show MainComponent::liveShowSnapshot() const {
 std::unique_ptr<RenderState> MainComponent::makeLiveRenderState() const {
     return makeRenderState(liveShowSnapshot(),clips);
 }
-void MainComponent::changed(const juce::String& text,bool stopPlayback) {
+void MainComponent::changed(const juce::String& text,bool stopPlayback,
+                            bool retimeSchedule) {
     if (projectLoader) projectLoader->cancel(); // never overwrite newer edits
     checkpointHistory(text);
     const bool stopLive=stopPlayback && liveCuelist==show.activeCuelist;
     if (stopLive) { engine.panic(); resetActiveMapping(); }
-    engine.publish(makeLiveRenderState(),!stopLive);
+    engine.publish(makeLiveRenderState(),!stopLive,retimeSchedule);
     dirty=true; status=text; refresh();
 }
 void MainComponent::openUserGuide() {
