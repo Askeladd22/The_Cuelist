@@ -22,9 +22,9 @@ void CellPlaybackTelemetry::write(CellPlaybackInfo value) noexcept {
 }
 void RenderState::updateTelemetry() noexcept {
     for (const auto& v:voices) if (v.telemetry) {
-        const double rate=(v.isMidi || v.isOsc) ? 1 : (v.clip ? v.clip->sampleRate : 0);
+        const double rate=(v.isMidi || v.isOsc || v.isClick) ? 1 : (v.clip ? v.clip->sampleRate : 0);
         v.telemetry->write({rate>0 ? v.position/rate : 0,
-            v.isMidi ? v.midiDuration : v.isOsc ? v.oscDuration : (rate>0 ? v.clip->samples.getNumSamples()/rate : 0),
+            v.isMidi ? v.midiDuration : v.isOsc ? v.oscDuration : v.isClick ? v.clickDuration : (rate>0 ? v.clip->samples.getNumSamples()/rate : 0),
             v.playing, v.playing && v.rowMode && v.delaySeconds>1.0e-12, v.paused});
     }
 }
@@ -32,6 +32,13 @@ namespace {
 void placeOnTimeline(Voice& v, double seconds) noexcept {
     v.delaySeconds=std::max(0.0,v.startSeconds-seconds);
     v.position=0;
+    if (v.isClick) {
+        const double elapsed=std::max(0.0,seconds-v.startSeconds);
+        v.position=(v.loop || v.rowLoop)
+            ? std::fmod(elapsed,v.clickDuration) : std::min(elapsed,v.clickDuration);
+        v.clickNeedsSync=true;
+        return;
+    }
     if (v.isOsc) {
         const double elapsed=std::max(0.0,seconds-v.startSeconds);
         v.position=(v.loop || v.rowLoop) ? std::fmod(elapsed,v.oscDuration) : std::min(elapsed,v.oscDuration);
@@ -55,7 +62,7 @@ void RenderState::inheritPlayback(const RenderState& previous) noexcept {
     limiterGain=previous.limiterGain;
     // Copy only scalar runtime state. Shared media ownership stays entirely on the UI thread.
     for (auto& v:voices) for (const auto& old:previous.voices)
-        if (v.cellId==old.cellId && v.clip.get()==old.clip.get() && v.isMidi==old.isMidi && v.isOsc==old.isOsc
+        if (v.cellId==old.cellId && (v.isClick || v.clip.get()==old.clip.get()) && v.isClick==old.isClick && v.isMidi==old.isMidi && v.isOsc==old.isOsc
             && (!v.isMidi || v.midiHash==old.midiHash || retimeSchedule)
             && (!v.isOsc || (v.oscColumnId==old.oscColumnId &&
                 (v.oscHash==old.oscHash || retimeSchedule)))) {
@@ -64,6 +71,8 @@ void RenderState::inheritPlayback(const RenderState& previous) noexcept {
             const bool routeChanged=v.isMidi &&
                 (v.midiOutputId!=old.midiOutputId || v.midiRoute!=old.midiRoute);
             v.position=old.position; v.playing=old.playing; v.paused=old.paused; v.delaySeconds=old.delaySeconds;
+            // A new Tempo Map changes event times, never the running cue clock.
+            v.clickNeedsSync=true;
             v.rowMode=old.rowMode; v.pendingSeek=old.pendingSeek;
             v.midiCursor=old.midiCursor;
             v.midiNeedsSync=routeChanged || old.midiNeedsSync ||
@@ -144,7 +153,7 @@ void RenderState::trigger(int id,bool row,bool stop) noexcept {
             v.playing=false; v.paused=false; v.position=0; v.delaySeconds=0; v.pendingSeek=false; v.rowMode=false;
             stopClock=true; continue;
         }
-        if (!v.isMidi && !v.isOsc && (!v.clip || v.clip->samples.getNumSamples()==0)) continue;
+        if (!v.isMidi && !v.isOsc && !v.isClick && (!v.clip || v.clip->samples.getNumSamples()==0)) continue;
         if (!row) { v.delaySeconds=0; v.pendingSeek=false; }
         const bool wasRowMode=v.rowMode; v.rowMode=row;
         switch (behaviour) {
@@ -219,6 +228,37 @@ void RenderState::releaseMidi(Voice& v,int offset,bool cancelPending) noexcept {
     }
     v.midiNeedsSync=true;
 }
+namespace {
+float sampleClick(Voice& voice) noexcept {
+    if (!voice.clickPulse) return 0.0f;
+    const auto& events=voice.clickEvents;
+    if (voice.clickNeedsSync) {
+        voice.clickCursor=(size_t)std::distance(events.begin(),
+            std::upper_bound(events.begin(),events.end(),voice.position,
+                [](double seconds,const ClickEvent& e) { return seconds<e.seconds; }));
+        voice.clickNeedsSync=false;
+    }
+    while (voice.clickCursor<events.size() &&
+           events[voice.clickCursor].seconds<=voice.position+1.0e-10)
+        ++voice.clickCursor;
+    float mixed=0.0f;
+    const double tail=voice.clickPulse->lengthSeconds();
+    for (size_t cursor=voice.clickCursor;cursor>0;) {
+        const auto& event=events[--cursor];
+        const double age=voice.position-event.seconds;
+        if (age<0) continue;
+        if (age>=tail) break;
+        const auto& pulse=event.accent ? voice.clickPulse->accented :
+                                         voice.clickPulse->normal;
+        const double index=age*ClickPulseBank::sampleRate;
+        const size_t first=(size_t)index;
+        if (first>=pulse.size()) continue;
+        const size_t second=std::min(first+1,pulse.size()-1);
+        mixed+=pulse[first]+(pulse[second]-pulse[first])*(float)(index-first);
+    }
+    return juce::jlimit(-1.0f,1.0f,mixed);
+}
+} // namespace
 void RenderState::render(float* const* outputs,int channels,int frames,double sampleRate) noexcept {
     for (int ch=0;ch<channels;++ch) if (outputs[ch]) juce::FloatVectorOperations::clear(outputs[ch],frames);
     preLimiterPeakLeft=preLimiterPeakRight=0;
@@ -316,12 +356,17 @@ void RenderState::render(float* const* outputs,int channels,int frames,double sa
             }
             continue;
         }
-        if (!v.playing || !v.clip) continue;
-        const auto& audio=v.clip->samples;
-        const int length=audio.getNumSamples();
-        if (length==0 || audio.getNumChannels()==0) { v.playing=false; v.paused=false; continue; }
+        if (!v.playing || (!v.clip && !v.isClick)) continue;
+        const auto* audio=v.clip ? &v.clip->samples : nullptr;
+        const int length=audio ? audio->getNumSamples() : 0;
+        if (v.isClick ? (!v.clickPulse || v.clickDuration<=0) :
+            (length==0 || audio->getNumChannels()==0)) {
+            v.playing=false; v.paused=false; continue;
+        }
         const bool looping=v.loop || v.rowLoop;
-        const double step=v.clip->sampleRate/sampleRate;
+        // PCM voices count source samples; procedural voices count absolute seconds.
+        const double end=v.isClick ? v.clickDuration : (double)length;
+        const double step=v.isClick ? 1.0/sampleRate : v.clip->sampleRate/sampleRate;
         // PRE direct out bypasses only the column fader. It retains clip/row
         // gain, strip pan, polarity and mute. Master Send is always POST.
         const float base=(v.rowMuted || v.columnMuted) ? 0
@@ -337,15 +382,21 @@ void RenderState::render(float* const* outputs,int channels,int frames,double sa
         for (int i=0;i<frames && v.playing;++i) {
             if (v.rowMode && v.delaySeconds>1.0e-12) { v.delaySeconds=std::max(0.0,v.delaySeconds-1.0/sampleRate); continue; }
             v.delaySeconds=0;
-            if (v.position>=length) {
-                if (looping) v.position=std::fmod(v.position,(double)length);
-                else { v.position=0; v.playing=false; break; }
+            if (v.position>=end) {
+                if (looping) {
+                    v.position=std::fmod(v.position,end);
+                    v.clickNeedsSync=true;
+                } else { v.position=0; v.playing=false; break; }
             }
-            const int a=(int)v.position, b=a+1<length ? a+1 : (looping ? 0 : a);
-            const float fraction=(float)(v.position-a);
+            const float procedural=v.isClick ? sampleClick(v) : 0.0f;
+            const int a=v.isClick ? 0 : (int)v.position;
+            const int b=v.isClick ? 0 : (a+1<length ? a+1 : (looping ? 0 : a));
+            const float fraction=v.isClick ? 0.0f : (float)(v.position-a);
             for (int side=0;side<2;++side) {
-                const float* data=audio.getReadPointer(std::min(side,audio.getNumChannels()-1));
-                const float sample=data[a]+fraction*(data[b]-data[a]);
+                const float* data=v.isClick ? nullptr :
+                    audio->getReadPointer(std::min(side,audio->getNumChannels()-1));
+                const float sample=v.isClick ? procedural :
+                    data[a]+fraction*(data[b]-data[a]);
                 const float post=sample*postGain[side];
                 if (v.masterSend && (size_t)i<busSamples)
                     masterMix[(size_t)side][(size_t)i]+=post;
@@ -364,9 +415,11 @@ void RenderState::render(float* const* outputs,int channels,int frames,double sa
                 }
             }
             v.position+=step;
-            if (v.position>=length) {
-                if (looping) v.position=std::fmod(v.position,(double)length);
-                else { v.position=0; v.playing=false; }
+            if (v.position>=end) {
+                if (looping) {
+                    v.position=std::fmod(v.position,end);
+                    v.clickNeedsSync=true;
+                } else { v.position=0; v.playing=false; }
             }
         }
     }
@@ -508,7 +561,17 @@ std::unique_ptr<RenderState> makeRenderState(const Show& show,const ClipMap& cli
             }
             v.oscHash=hash;
         } else if (show.columns[i].type==ColumnType::audio) {
-            const auto it=clips.find(c.id); if (it==clips.end()) continue; v.clip=it->second;
+            if (c.click) {
+                v.isClick=true;
+                v.clickDuration=c.click->durationSeconds;
+                v.clickEvents=makeClickEvents(row.tempo,*c.click);
+                v.clickPulse=makeClickPulseBank(c.click->sound);
+                if (!v.clickPulse) continue;
+            } else {
+                const auto it=clips.find(c.id);
+                if (it==clips.end()) continue;
+                v.clip=it->second;
+            }
         } else continue;
         v.telemetry=std::make_shared<CellPlaybackTelemetry>();
         v.gain=c.gain; v.loop=c.loop; v.followsRow=c.followsRow; v.behaviour=c.behaviour;
