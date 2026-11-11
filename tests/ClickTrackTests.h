@@ -114,6 +114,38 @@ void clickTrackTests() {
         cell.file="C:/existing.wav";
         check(validateShow(show).failed(),"Click Track overlaid existing file");
     });
+    test("Click Track configuration in another cue keeps VIEW, NEXT and LIVE intact", [] {
+        MainComponent ui(false);
+        addRow(ui.show,{});
+        const int originalRow=ui.show.rows[0].id;
+        const int originalCell=ui.show.rows[0].cells[0].id;
+        auto pcm=std::make_shared<AudioClip>();
+        pcm->sampleRate=48000;
+        pcm->samples.setSize(1,48000);
+        pcm->samples.clear();
+        ui.clips[originalCell]=pcm;
+        ui.engine.publish(ui.makeLiveRenderState());
+        check(ui.engine.send(originalRow,true),"Failed to arm source LIVE transport");
+        juce::AudioBuffer<float> output(2,256);
+        ui.engine.processBlock(output.getArrayOfWritePointers(),2,256,48000);
+        check(ui.engine.getCellPlayback(originalCell).playing,
+              "Source audio not running before Click Track configuration");
+        const int selectedBefore=ui.selectedRow;
+        const int nextBefore=ui.nextCueIndex();
+        const int liveBefore=ui.liveCuelistIndex();
+        const ClickTrackConfig click{ClickSound::woodblock,true,3,8.0};
+        check(ui.commitClickTrack(1,0,click),"Valid Click Track configuration rejected");
+        check(ui.show.rows[1].cells[0].click.has_value(),
+              "Click Track was not committed to the requested cell");
+        check(ui.selectedRow==selectedBefore && ui.nextCueIndex()==nextBefore &&
+              ui.liveCuelistIndex()==liveBefore,
+              "Configuring another cue changed VIEW, NEXT or LIVE");
+        ui.engine.processBlock(output.getArrayOfWritePointers(),2,256,48000);
+        check(ui.engine.getCellPlayback(originalCell).playing && ui.engine.rowPlaying.load(),
+              "Click Track configuration stopped unrelated LIVE audio");
+        check(!ui.commitClickTrack(0,0,click),
+              "Click Track overwrote an already occupied Audio cell");
+    });
     test("Click Track Audio engine follows tempo edits without restarting LIVE", [] {
         auto show=makeShow();
         auto& row=show.rows[0];
