@@ -116,7 +116,10 @@ bool MainComponent::applyInspector() {
         }
     }
     auto result=validateShow(candidate); if (result.failed()) { message(result.getErrorMessage()); return false; }
-    show=std::move(candidate); changed("Settings applied. BPM does not change audio playback speed.");
+    const bool retime=std::abs(candidate.rows[(size_t)selectedRow].tempo.front().bpm
+        -show.rows[(size_t)selectedRow].tempo.front().bpm)>0.000001;
+    show=std::move(candidate);
+    changed("Settings applied. BPM does not change audio playback speed.",false,retime);
     return true;
 }
 
