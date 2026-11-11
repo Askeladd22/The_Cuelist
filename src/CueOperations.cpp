@@ -704,8 +704,8 @@ bool MainComponent::commitRowBpm(int rowId,const juce::String& text) {
     for (auto& row:candidate.rows) if (row.id==rowId) {
         if (row.tempo.empty()) return false;
         if (std::abs(row.tempo.front().bpm-bpmValue)<0.00001) return true;
-        row.tempo.front().bpm=bpmValue;
         importLegacyTempoMarkers(row);
+        row.tempo.front().bpm=bpmValue;
         if (!rebuildTempoFromMarkers(row)) return false;
         found=true;
         break;
@@ -715,7 +715,7 @@ bool MainComponent::commitRowBpm(int rowId,const juce::String& text) {
         message(result.getErrorMessage()); return false;
     }
     show=std::move(candidate);
-    changed("Cue initial BPM updated.",true);
+    changed("Cue initial BPM updated. Playback continues.",false,true);
     return true;
 }
 
