@@ -572,14 +572,28 @@ void Timeline::mouseUp(const juce::MouseEvent&) {
 int Timeline::markerHit(int x) const {
     if (owner.selectedRow<0 || owner.selectedRow>=(int)owner.show.rows.size()) return -1;
     const int area=std::max(1,getWidth()-timelineStart-20);
+    const auto& markers=owner.show.rows[(size_t)owner.selectedRow].markers;
+    // Prefer the glyph over any text; clicking the visible marker *name*
+    // must also select it instead of unexpectedly creating a new marker.
     int result=-1, best=11;
-    for (const auto& marker:owner.show.rows[(size_t)owner.selectedRow].markers) {
+    for (const auto& marker:markers) {
         const int markerX=timelineStart+(int)std::round(
             area*(marker.seconds-viewStart)/visibleLength());
         const int distance=std::abs(markerX-x);
         if (distance<best) { best=distance; result=marker.id; }
     }
-    return result;
+    if (result>0) return result;
+    for (const auto& marker:markers) {
+        const int markerX=timelineStart+(int)std::round(
+            area*(marker.seconds-viewStart)/visibleLength());
+        const int letters=(int)marker.name.length()+
+            (marker.changesTempo ? 11 : 0);
+        const int labelWidth=std::min(170,7*letters+5);
+        if (x>=markerX+8 && x<markerX+8+labelWidth &&
+            markerX>=timelineStart && markerX<=timelineStart+area)
+            return marker.id;
+    }
+    return -1;
 }
 bool Timeline::mutateMarkers(const std::function<bool(Row&)>& mutation,
                              bool affectsTempo,const juce::String& labelText) {
