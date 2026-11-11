@@ -597,6 +597,8 @@ void CueGrid::showCellMenu(int row,int column,juce::Point<int> screenPoint) {
         // Read-only reveal and inline rename never arm NEXT or transfer LIVE.
         if (choice==9) { (void)safe->renameCell(r,c); return; }
         if (choice==10) { (void)safe->revealAudioCellInExplorer(r,c); return; }
+        // Audio source configuration is not a GO-arming selection operation.
+        if (choice==11) { safe->generateClickTrack(r,c); return; }
         if (!safe->select(r,c)) return;
         switch(choice) {
             case 1:safe->deleteSelectedCell();break;
@@ -607,7 +609,7 @@ void CueGrid::showCellMenu(int row,int column,juce::Point<int> screenPoint) {
             case 6:safe->setCellFollowsRow(r,c,!safe->show.rows[(size_t)r].cells[(size_t)c].followsRow);break;
             case 7:safe->setCellAutoStop(r,c,!safe->show.rows[(size_t)r].cells[(size_t)c].stopOnNext);break;
             case 8:safe->generateLtcTrack(r,c);break;
-            case 11:safe->generateClickTrack(r,c);break;
+
         }
     });
 }
