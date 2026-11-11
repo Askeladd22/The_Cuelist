@@ -141,6 +141,25 @@ void timelineMarkerTests() {
         near(ui.show.rows[0].markers[0].seconds,4.28125);
         near(ui.show.rows[0].cells[0].startSeconds,0);
     });
+    test("marker lane remains interactive at compact Timeline height", [] {
+        MainComponent ui(false);
+        auto* timeline=find<Timeline>(ui);
+        check(timeline!=nullptr,"Timeline missing");
+        timeline->setSize(800,150);
+        timeline->mouseDoubleClick(event(*timeline,{350.0f,90.0f},
+                                             {350.0f,90.0f},2));
+        check(ui.show.rows[0].markers.size()==1,
+              "Compact Timeline did not permit marker creation");
+        auto before=timeline->createComponentSnapshot(timeline->getLocalBounds());
+        check(before.isValid(),"Compact Timeline snapshot failed");
+        auto* editor=find<juce::TextEditor>(*timeline);
+        check(editor && editor->isVisible(),
+              "Compact Timeline did not expose inline marker name");
+        editor->setText("Compact marker",false);
+        editor->onReturnKey();
+        check(ui.show.rows[0].markers[0].name=="Compact marker",
+              "Compact marker rename failed");
+    });
     test("tempo-map republish never stops active PCM MIDI OSC voices", [] {
         auto show=makeShow();
         addColumn(show,ColumnType::midi,"MIDI");
