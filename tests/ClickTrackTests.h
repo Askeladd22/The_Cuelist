@@ -48,6 +48,36 @@ void clickTrackTests() {
                 check(!event.accent,"Accent OFF emitted an accented pulse");
         }
     });
+    test("Click Track has four distinct accents and timbres", [] {
+        for (int sound=0;sound<4;++sound) {
+            const auto pulse=makeClickPulseBank((ClickSound)sound);
+            check(pulse && pulse->normal.size()==pulse->accented.size() &&
+                  pulse->normal.size()>2000,"Pulse bank was not prepared");
+            double energy=0,accent=0;
+            for(size_t i=0;i<pulse->normal.size();++i) {
+                energy+=std::abs(pulse->normal[i]);
+                accent+=std::abs(pulse->accented[i]);
+            }
+            check(energy>1 && accent>energy*1.1,
+                  "Generated accent is not stronger than the normal beat");
+            if(sound) {
+                const auto classic=makeClickPulseBank(ClickSound::classicClick);
+                check(std::abs(pulse->normal[120]-classic->normal[120])>1.0e-6f,
+                      "Click presets are not audibly distinct");
+            }
+        }
+    });
+    test("Click Track presents as a loaded Audio cell without a WAV path", [] {
+        MainComponent ui(false);
+        check(ui.canGenerateClickTrack(0,0),"Empty Audio cell cannot generate Click Track");
+        auto& cell=ui.show.rows[0].cells[0];
+        cell.click=ClickTrackConfig{ClickSound::classicClick,true,1,12.5};
+        check(ui.hasClip(0,0),"Click Track not visible as a clip");
+        near(ui.clipDuration(0,0),12.5);
+        check(!ui.canGenerateClickTrack(0,0),"Click Track cell offered overwrite action");
+        check(ui.audioFileForExplorer(0,0)==juce::File{},
+              "Procedural clip incorrectly reveals external audio");
+    });
     test("Click Track validates sources and finite bounded configuration", [] {
         auto show=makeShow();
         auto& cell=show.rows[0].cells[0];
