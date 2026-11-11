@@ -33,6 +33,29 @@ void clickTrackTests() {
         for(size_t i=1;i<events.size();++i)
             check(events[i].seconds>events[i-1].seconds,"Click clock not strictly increasing");
     });
+    test("A BPM-only marker never restarts the current bar's accent", [] {
+        const std::vector<TempoPoint> tempo{{0,120,4,4},{2.5,60,4,4}};
+        const ClickTrackConfig config{ClickSound::classicClick,true,1,5.0};
+        const auto events=makeClickEvents(tempo,config);
+        check(events.size()==7,"BPM marker altered expected beat count");
+        int accents=0;
+        for(size_t i=0;i<events.size();++i) {
+            const bool expected=i==0 || i==4; // same 4/4 meter across BPM marker
+            check(events[i].accent==expected,
+                  "Tempo-only BPM edit incorrectly moved the downbeat accent");
+            accents+=(int)events[i].accent;
+        }
+        check(accents==2,"Expected two bar-start accents across tempo marker");
+    });
+    test("Meter change reanchors the accent at next whole beat", [] {
+        const std::vector<TempoPoint> tempo{{0,120,4,4},{2.5,60,3,4}};
+        const ClickTrackConfig config{ClickSound::woodblock,true,1,5.0};
+        const auto events=makeClickEvents(tempo,config);
+        check(events.size()==7,"Meter change event count mismatch");
+        check(events[0].accent && !events[1].accent && !events[2].accent &&
+              events[3].accent && !events[4].accent && !events[5].accent &&
+              events[6].accent,"Meter change downbeat anchor is incorrect");
+    });
     test("Click Track subdivisions and meter accents follow the musical grid", [] {
         const std::vector<TempoPoint> tempo{{0,120,3,4}};
         for(int subdivision=1;subdivision<=4;++subdivision) {
