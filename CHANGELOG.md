@@ -13,6 +13,22 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.45] - 2026-11-11
+
+**Stato:** hotfix candidato della Timeline Markers integrata in 0.9.44; mantiene lo schema JSON v10 e la semantica di trasporto LIVE senza STOP/PANIC per i cambi di marker/BPM.
+
+### Correzioni native e regression test
+- La corsia marker e i relativi target di doppio clic/drag restano accessibili anche nelle dimensioni compatte della Timeline (altezza 120–169 px); le corsie media rimangono nascoste quando non c'è spazio per mostrarle senza overlap.
+- Doppio clic, menu e trascinamento riconoscono anche la porzione di **nome visibile** del marker, dando precedenza al glyph se più marker sono vicini. Evitata la creazione accidentale di marker duplicati quando si tenta di rinominarne uno.
+- Adeguato un test storico del drag MIDI alle coordinate delle nuove track, dopo l'introduzione della corsia marker. I restanti controlli di Snap, GRID, cue e clip restano nativi JUCE.
+- Undo/Redo di modifiche non strutturali conserva la selezione VIEW di cue e colonna quando gli ID originari esistono ancora.
+- Nuovi test di regressione per marker compatti, doppio clic sul nome, movimento con Snap OFF e invariabilità dell'offset Audio.
+
+### Verifica
+- Versione 0.9.44 già integrata in `main` attraverso PR #165. Sul commit della PR l'azione Windows Release and all tests ha riportato **failure**; dettaglio del log remoto: **ND (download non riuscito)**. Nessuna certificazione di CI verde.
+- Build/CTest Windows della presente PR: **ND** fino all'esito; screenshot multi-DPI, misure realtime e banco esterno MIDI/OSC/LTC: **ND**.
+- Rollback: revert della presente PR (solo geometrie/hit target, test e focus VIEW); compatibilità dei dati invariata.
+
 ## [0.9.44] - 2026-11-11
 
 **Stato:** candidato redesign nativo Timeline Markers e Tempo Map. Schema progetti JSON v10 invariato. Nessuna modifica deliberata a GO/STOP/PANIC, Control Map, routing o generazione LTC.

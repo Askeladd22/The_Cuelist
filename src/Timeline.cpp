@@ -1,5 +1,6 @@
 #include "MainComponent.h"
 #include <cmath>
+#include <algorithm>
 
 namespace cuelist {
 namespace {
@@ -230,8 +231,8 @@ void Timeline::paint(juce::Graphics& g) {
             g.drawVerticalLine(x,(float)tracksTop,(float)bottom);
         }
     }
-    if (getHeight()<completeTimelineHeight) return;
-    // Dedicated marker lane; clip tracks start below it, never under the labels.
+    // Dedicated marker lane; visible even when the Timeline is too short
+    // to fit media tracks, so resizing cannot silently hide marker edits.
     g.setColour(palette::input);
     g.fillRect(timelineStart,markerLaneTop,area,markerLaneBottom-markerLaneTop);
     g.setColour(palette::line);
@@ -255,6 +256,7 @@ void Timeline::paint(juce::Graphics& g) {
               {x+8,markerLaneTop+4,170,17},11,palette::text);
     }
     g.restoreState();
+    if (getHeight()<completeTimelineHeight) return;
     // Musical grid follows secondsAtBeat across all tempo changes, but its
     // visibility/resolution never changes how clip dragging is quantized.
     if (gridVisible) {
@@ -425,7 +427,11 @@ void Timeline::mouseDown(const juce::MouseEvent& e) {
     if (!e.mods.isLeftButtonDown()) return;
     owner.grabKeyboardFocus(); dragColumn=-1; seeking=false; resizingClip=false;
     draggingMarkerId=-1;
-    if (getHeight()<completeTimelineHeight && e.y>=45) return;
+    // Compact layouts still expose the marker lane even if track editing
+    // is hidden; do not block its mouse target along with the media tracks.
+    const bool markerArea=getHeight()>=detailedToolbarHeight &&
+        e.y>=markerLaneTop && e.y<markerLaneBottom;
+    if (getHeight()<completeTimelineHeight && e.y>=45 && !markerArea) return;
     for (int i=0;i<3 && getHeight()>=detailedToolbarHeight;++i)
         if (zoomButton(getWidth(),i).contains(e.getPosition())) {
         if (i==2) { zoom=1; viewStart=0; syncViewport(); repaint(); }
@@ -479,7 +485,8 @@ void Timeline::mouseDoubleClick(const juce::MouseEvent& e) {
     if (!e.mods.isLeftButtonDown()) return;
     syncViewport();
     if (owner.selectedRow<0 || owner.selectedRow>=(int)owner.show.rows.size()
-        || e.x<timelineStart || e.x>getWidth()-20 || e.y<markerLaneTop || e.y>=getHeight()-48) return;
+        || e.x<timelineStart || e.x>getWidth()-20 || e.y<markerLaneTop) return;
+    if (e.y>=markerLaneBottom && e.y>=getHeight()-48) return;
     if (e.y<markerLaneBottom) {
         if (const int id=markerHit(e.x); id>0) {
             beginMarkerEdit(id,MarkerEdit::name);
@@ -565,14 +572,28 @@ void Timeline::mouseUp(const juce::MouseEvent&) {
 int Timeline::markerHit(int x) const {
     if (owner.selectedRow<0 || owner.selectedRow>=(int)owner.show.rows.size()) return -1;
     const int area=std::max(1,getWidth()-timelineStart-20);
+    const auto& markers=owner.show.rows[(size_t)owner.selectedRow].markers;
+    // Prefer the glyph over any text; clicking the visible marker *name*
+    // must also select it instead of unexpectedly creating a new marker.
     int result=-1, best=11;
-    for (const auto& marker:owner.show.rows[(size_t)owner.selectedRow].markers) {
+    for (const auto& marker:markers) {
         const int markerX=timelineStart+(int)std::round(
             area*(marker.seconds-viewStart)/visibleLength());
         const int distance=std::abs(markerX-x);
         if (distance<best) { best=distance; result=marker.id; }
     }
-    return result;
+    if (result>0) return result;
+    for (const auto& marker:markers) {
+        const int markerX=timelineStart+(int)std::round(
+            area*(marker.seconds-viewStart)/visibleLength());
+        const int letters=(int)marker.name.length()+
+            (marker.changesTempo ? 11 : 0);
+        const int labelWidth=std::min(170,7*letters+5);
+        if (x>=markerX+8 && x<markerX+8+labelWidth &&
+            markerX>=timelineStart && markerX<=timelineStart+area)
+            return marker.id;
+    }
+    return -1;
 }
 bool Timeline::mutateMarkers(const std::function<bool(Row&)>& mutation,
                              bool affectsTempo,const juce::String& labelText) {

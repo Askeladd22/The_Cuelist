@@ -214,7 +214,7 @@ inline void pianoRollTests() {
         const int id=ui.show.rows[0].cells[1].id; ui.select(0,1); ui.moveClip(0,1,1,1);
         check(ui.show.rows[1].cells[1].id==id && ui.hasClip(1,1),"MIDI clip identity lost");
         auto* timeline=cueViewFixtures::find<Timeline>(ui); timeline->setSize(800,300);
-        const juce::Point<float> from{160,136},to{224,136};
+        const juce::Point<float> from{160,160},to{224,160};
         timeline->mouseDown(cueViewFixtures::event(*timeline,from,from));
         timeline->mouseDrag(cueViewFixtures::event(*timeline,to,from,1,true)); timeline->mouseUp(cueViewFixtures::event(*timeline,to,from,1,true));
         near(ui.show.rows[1].cells[1].startSeconds,1); near(ui.clipDuration(1,1),2);

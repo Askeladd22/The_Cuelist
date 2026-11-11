@@ -343,7 +343,7 @@ before using a new mapping in a live show.
 
 ## 11. Tempo maps and Timeline
 
-The selected cue owns a dedicated Marker lane above its audio, MIDI and OSC tracks. Double-click an empty point in this lane to add a **Generic Marker** (a stage reference that never changes tempo), or double-click an existing marker to rename it inline. Drag a marker to move it. Both creation and movement follow the current magnetic Snap division; turn Snap off for a free, absolute-time position.
+The selected cue owns a dedicated Marker lane above its audio, MIDI and OSC tracks. The lane remains visible and editable when the Timeline is resized to a compact height (120 px or taller); media tracks hide if the panel is too small. Double-click an empty point in this lane to add a **Generic Marker** (a stage reference that never changes tempo), or double-click an existing marker to rename it inline. Drag a marker to move it. Both creation and movement follow the current magnetic Snap division; turn Snap off for a free, absolute-time position.
 
 Right-click a marker to **Rename**, **Convert to Tempo Marker**, **Edit BPM**, **Convert to Generic Marker**, or **Delete**, according to its current type. A Tempo Marker changes the BPM instantly at its own timestamp and holds that value until the next Tempo Marker. The cue's existing inline BPM sets the initial speed; no separate Tempo Map button or Inspector dialog is used. Generic Markers do not change timing.
 
