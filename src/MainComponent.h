@@ -15,6 +15,7 @@
 #include "QuickLearnHotspot.h"
 #include "ControlDispatchPolicy.h"
 #include <set>
+#include <functional>
 #include "Theme.h"
 namespace cuelist {
 class MainComponent;
