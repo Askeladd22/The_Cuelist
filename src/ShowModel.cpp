@@ -649,7 +649,10 @@ juce::Result decodeShow(const juce::String& text, Show& destination) {
                     row.markers.push_back({integer(m,"id"),string(m,"name"),
                         number(m,"seconds"),boolean(m,"changesTempo"),
                         number(m,"bpm"),integer(m,"numerator"),integer(m,"denominator")});
-            } else importLegacyTempoMarkers(row);
+            }
+            // Old v10 writers may contain beat tempo points but an empty
+            // optional marker array. Preserve these changes on import.
+            if (row.markers.empty()) importLegacyTempoMarkers(row);
             for (auto& c : array(r,"cells")) {
                 Cell cell; cell.id=integer(c,"id"); cell.name=string(c,"name"); cell.file=string(c,"file");
                 cell.followsRow=boolean(c,"followsRow"); cell.loop=boolean(c,"loop"); cell.gain=(float)number(c,"gain"); cell.behaviour=activation(integer(c,"behaviour"));
