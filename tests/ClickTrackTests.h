@@ -151,6 +151,9 @@ void clickTrackTests() {
         auto& row=show.rows[0];
         row.cells[0].click=ClickTrackConfig{ClickSound::rimshot,true,4,4.0};
         AudioEngine engine;
+        // rowPlaying/playheadSeconds report only the monitored row. A
+        // running Audio voice does not implicitly select that monitor.
+        engine.monitoredRowId.store(row.id);
         engine.publish(makeRenderState(show,{}));
         check(engine.send(row.id,true),"Click Track row GO rejected");
         juce::AudioBuffer<float> output(2,1024);
@@ -159,6 +162,9 @@ void clickTrackTests() {
         float peak=output.getMagnitude(0,1024);
         check(peak>0.001f,"Click Track produced no Audio");
         const auto before=engine.getCellPlayback(row.cells[0].id).positionSeconds;
+        const auto playheadBefore=engine.playheadSeconds.load();
+        check(playheadBefore>0 && engine.rowPlaying.load(),
+              "Monitored Click Track row was not active before Tempo edit");
         row.markers.push_back({1,"Tempo",0.011,true,76,4,4});
         check(rebuildTempoFromMarkers(row),"Tempo update rejected");
         engine.publish(makeRenderState(show,{}),true,true);
@@ -166,5 +172,7 @@ void clickTrackTests() {
         const auto after=engine.getCellPlayback(row.cells[0].id);
         check(after.playing && engine.rowPlaying.load(),"Tempo edit stopped Click Track LIVE");
         check(after.positionSeconds>before,"Tempo edit rewound Click Track LIVE");
+        check(engine.playheadSeconds.load()>playheadBefore,
+              "Tempo edit rewound the monitored LIVE cue clock");
     });
 }

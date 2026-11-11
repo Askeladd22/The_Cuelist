@@ -110,7 +110,15 @@ void timelineMarkerTests() {
         check(editor && editor->isVisible(),"New marker did not enter inline editing");
         editor->setText("Scene end",false);
         editor->onReturnKey();
-        const juce::Point<float> onLabel{380,90};
+        // The marker commit refreshes MainComponent and restores the real
+        // workspace bounds. Locate the painted label at the CURRENT width,
+        // not the artificial 800 px test size used before the edit.
+        constexpr int rulerLeft=140, rulerRightInset=20;
+        const int pixels=timeline->getWidth()-rulerLeft-rulerRightInset;
+        check(pixels>0,"Timeline viewport disappeared after marker rename");
+        const float markerX=(float)rulerLeft+
+            (float)(pixels*ui.show.rows[0].markers[0].seconds/10.0);
+        const juce::Point<float> onLabel{markerX+20.0f,90};
         timeline->mouseDoubleClick(event(*timeline,onLabel,onLabel,2));
         check(ui.show.rows[0].markers.size()==1,
               "Double-click on visible marker label created a duplicate");
@@ -134,11 +142,18 @@ void timelineMarkerTests() {
         auto* editor=find<juce::TextEditor>(*timeline);
         check(editor!=nullptr,"Marker editor missing");
         editor->onReturnKey();
-        const juce::Point<float> down{350,90},up{414,90};
+        // After changed()/refresh(), the Timeline returns to the parent
+        // workspace width. Hit the marker's CURRENT glyph position.
+        constexpr int rulerLeft=140, rulerRightInset=20;
+        const int pixels=timeline->getWidth()-rulerLeft-rulerRightInset;
+        check(pixels>0,"Timeline viewport disappeared after marker creation");
+        const double initial=ui.show.rows[0].markers[0].seconds;
+        const float markerX=(float)rulerLeft+(float)(pixels*initial/10.0);
+        const juce::Point<float> down{markerX,90},up{markerX+64.0f,90};
         timeline->mouseDown(event(*timeline,down,down));
         timeline->mouseDrag(event(*timeline,up,down,1,true));
         timeline->mouseUp(event(*timeline,up,down,1,true));
-        near(ui.show.rows[0].markers[0].seconds,4.28125);
+        near(ui.show.rows[0].markers[0].seconds,initial+640.0/pixels);
         near(ui.show.rows[0].cells[0].startSeconds,0);
     });
     test("marker lane remains interactive at compact Timeline height", [] {
