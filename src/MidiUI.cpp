@@ -58,13 +58,15 @@ bool MainComponent::hasClip(int row,int column) const {
             cell.controlSet.has_value() && !cell.controlSet->bindings.empty();
     }
     return type==ColumnType::midi ? cell.midi.has_value()
-        : type==ColumnType::osc ? cell.osc.has_value() : clips.count(cell.id)>0;
+        : type==ColumnType::osc ? cell.osc.has_value() :
+            cell.click.has_value() || clips.count(cell.id)>0;
 }
 double MainComponent::clipDuration(int row,int column) const {
     if (!hasClip(row,column)) return 0;
     const auto& cue=show.rows[(size_t)row]; const auto& cell=cue.cells[(size_t)column];
     if (cell.midi) return secondsAtBeat(cue.tempo,cell.midi->lengthBeats);
     if (cell.osc) return cell.osc->useBeats ? secondsAtBeat(cue.tempo,cell.osc->length) : cell.osc->length;
+    if (cell.click) return cell.click->durationSeconds;
     const auto clip=clips.find(cell.id);
     return clip!=clips.end() && clip->second->sampleRate>0 ? clip->second->samples.getNumSamples()/clip->second->sampleRate : 0;
 }
