@@ -86,6 +86,61 @@ void timelineMarkerTests() {
         check(ui.show.rows[0].markers[0].name=="Blackout","Marker rename failed");
         check(ui.show.rows[0].tempo.size()==1,"Generic marker changed playback tempo");
     });
+    test("compact native Timeline still exposes editable cue Markers", [] {
+        MainComponent ui(false);
+        auto* timeline=find<Timeline>(ui);
+        check(timeline!=nullptr,"Timeline missing");
+        timeline->setSize(800,140);
+        const auto preview=timeline->createComponentSnapshot(timeline->getLocalBounds());
+        check(preview.isValid(),"Compact marker lane snapshot invalid");
+        const juce::Point<float> at{350,90};
+        timeline->mouseDoubleClick(event(*timeline,at,at,2));
+        check(ui.show.rows[0].markers.size()==1,
+              "Compact Timeline made marker lane non-interactive");
+        check(ui.show.rows[0].markers[0].name.isNotEmpty(),
+              "Compact marker creation did not produce a usable marker");
+    });
+    test("clicking a marker label edits the marker instead of creating another", [] {
+        MainComponent ui(false);
+        auto* timeline=find<Timeline>(ui);check(timeline!=nullptr,"Timeline missing");
+        timeline->setSize(800,260);
+        const juce::Point<float> at{350,90};
+        timeline->mouseDoubleClick(event(*timeline,at,at,2));
+        auto* editor=find<juce::TextEditor>(*timeline);
+        check(editor && editor->isVisible(),"New marker did not enter inline editing");
+        editor->setText("Scene end",false);
+        editor->onReturnKey();
+        const juce::Point<float> onLabel{380,90};
+        timeline->mouseDoubleClick(event(*timeline,onLabel,onLabel,2));
+        check(ui.show.rows[0].markers.size()==1,
+              "Double-click on visible marker label created a duplicate");
+        check(editor->isVisible(),"Double-click on marker label did not rename inline");
+        editor->onEscapeKey();
+    });
+    test("free Snap-off marker movement does not alter PCM offsets", [] {
+        MainComponent ui(false);
+        auto* timeline=find<Timeline>(ui);check(timeline!=nullptr,"Timeline missing");
+        timeline->setSize(800,260);
+        juce::TextButton* magnet=nullptr;
+        for(auto* child:timeline->getChildren())
+            if(child->getName()=="timelineSnapToggle")
+                magnet=dynamic_cast<juce::TextButton*>(child);
+        check(magnet && magnet->getToggleState(),"Snap default missing");
+        magnet->onClick();
+        check(!magnet->getToggleState(),"Snap OFF did not activate");
+        const juce::Point<float> clickAt{350,90};
+        timeline->mouseDoubleClick(event(*timeline,clickAt,clickAt,2));
+        near(ui.show.rows[0].markers[0].seconds,3.28125);
+        auto* editor=find<juce::TextEditor>(*timeline);
+        check(editor!=nullptr,"Marker editor missing");
+        editor->onReturnKey();
+        const juce::Point<float> down{350,90},up{414,90};
+        timeline->mouseDown(event(*timeline,down,down));
+        timeline->mouseDrag(event(*timeline,up,down,1,true));
+        timeline->mouseUp(event(*timeline,up,down,1,true));
+        near(ui.show.rows[0].markers[0].seconds,4.28125);
+        near(ui.show.rows[0].cells[0].startSeconds,0);
+    });
     test("tempo-map republish never stops active PCM MIDI OSC voices", [] {
         auto show=makeShow();
         addColumn(show,ColumnType::midi,"MIDI");
