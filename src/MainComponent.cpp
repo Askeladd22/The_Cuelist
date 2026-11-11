@@ -36,12 +36,12 @@ MainComponent::MainComponent(bool startAudio) {
     setLookAndFeel(&theme); setWantsKeyboardFocus(true); setSize(1440,900);
     for (juce::Component* c : std::initializer_list<juce::Component*>{&openButton,&saveButton,&newButton,&addRowButton,&addColumnButton,
          &goButton,&panicButton,&deviceButton,&controlButton,&collapseAllButton,&inspectorSideTab,
-         &cuelistOverflowButton,&addCuelistButton,&cuelistMoveLeft,&cuelistMoveRight,&undoButton,&redoButton,&globalMidiLearn,&globalOscLearn,&quickControlTargets,&quickLearnMapSelector,&cancelQuickLearn,&goLearnHotspot,&panicLearnHotspot,&helpButton,&dockResize,&timelineResize,&importButton,&midiEditButton,&oscEditButton,&playCellButton,&stopCellButton,&clearButton,&tempoButton,&applyButton,
+         &cuelistOverflowButton,&addCuelistButton,&cuelistMoveLeft,&cuelistMoveRight,&undoButton,&redoButton,&globalMidiLearn,&globalOscLearn,&quickControlTargets,&quickLearnMapSelector,&cancelQuickLearn,&goLearnHotspot,&panicLearnHotspot,&helpButton,&dockResize,&timelineResize,&importButton,&midiEditButton,&oscEditButton,&playCellButton,&stopCellButton,&clearButton,&applyButton,
          &cellTab,&rowTab,&rowGain,&rowBehaviour,&rowMute,&rowLoop,&rowName,&cellName,&bpm,&cueNotes,&behaviour,&follow,&loop,&cellAutoStop,&gainDb,&viewport,&timeline,&timelineCollapseButton,&utilities,
          &clipCollapseButton,&clipCloseButton,&editorDivider,&cueHeaders,&columnHeaders,&cueMetrics,&preflightButton,&diagnosticsButton,&preferencesButton,&projectNameLabel,&inlineNameEditor}) addAndMakeVisible(c);
     for (juce::TextButton* b : std::initializer_list<juce::TextButton*>{&openButton,&saveButton,&newButton,&addRowButton,&addColumnButton,&goButton,&panicButton,&deviceButton,&controlButton,&collapseAllButton,&inspectorSideTab,
                     &cuelistOverflowButton,&addCuelistButton,&cuelistMoveLeft,&cuelistMoveRight,&undoButton,&redoButton,&globalMidiLearn,&globalOscLearn,&helpButton,
-                    &importButton,&midiEditButton,&oscEditButton,&playCellButton,&stopCellButton,&clearButton,&tempoButton,&applyButton,
+                    &importButton,&midiEditButton,&oscEditButton,&playCellButton,&stopCellButton,&clearButton,&applyButton,
                     &preflightButton,&diagnosticsButton,&preferencesButton}) b->setWantsKeyboardFocus(false);
     // Native V2 menus reuse the original operator handlers and shortcuts.
     for (int i=0;i<=OperatorNavigationLayout::overflowIndex;++i) {
@@ -541,7 +541,7 @@ MainComponent::MainComponent(bool startAudio) {
             editControlSet(selectedRow,selectedColumn);
         else editOscClip();
     };
-    applyButton.onClick=[this] { applyInspector(); }; tempoButton.onClick=[this] { editTempo(); };
+    applyButton.onClick=[this] { applyInspector(); };
     importButton.setTooltip("Mono/stereo WAV and MP3. Importing stops all playback.");
     applyButton.setTooltip("Apply parameters without stopping playback. Enter confirms names.");
     addColumnButton.setTooltip("Add a column.");
@@ -1607,7 +1607,6 @@ void MainComponent::resized() {
     playCellButton.setVisible(false);stopCellButton.setVisible(false);
     rowName.setBounds(x,225,inner,33);
     bpm.setBounds(x,293,inner,32);
-    tempoButton.setBounds(x,331,inner,29);
     rowLoop.setBounds(x-3,374,inner,25);
     cellName.setBounds(x,475,inner,31);
     gainDb.setBounds(x+57,528,99,27);
@@ -1624,7 +1623,7 @@ void MainComponent::resized() {
         std::max(38,geometry.inspectorPanel.getBottom()-notesTop-38));
     // Compact inspector on smaller displays, keeping all actions reachable.
     {
-        for (juce::Component* c : std::initializer_list<juce::Component*>{&rowLoop,&rowName,&bpm,&tempoButton,&cellName,&follow,&loop,&gainDb,&importButton,&midiEditButton,&oscEditButton})
+        for (juce::Component* c : std::initializer_list<juce::Component*>{&rowLoop,&rowName,&bpm,&cellName,&follow,&loop,&gainDb,&importButton,&midiEditButton,&oscEditButton})
             c->setBounds(geometry.scaleInspectorControl(c->getBounds()));
     }
     goButton.setBounds(14,h-282,152,48);
@@ -1676,7 +1675,7 @@ void MainComponent::resized() {
     if (learnVisible) {
         // Learning temporarily replaces Inspector content; no extra window.
         for (juce::Component* c:std::initializer_list<juce::Component*>{
-                 &rowName,&bpm,&tempoButton,&rowLoop,&cellName,&gainDb,&follow,
+                 &rowName,&bpm,&rowLoop,&cellName,&gainDb,&follow,
                  &loop,&midiEditButton,&oscEditButton,&importButton,&cueNotes,
                  &cellAutoStop,&rowMute,&rowGain,&rowBehaviour,&behaviour})
             c->setVisible(false);
