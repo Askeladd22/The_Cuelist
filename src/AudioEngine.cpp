@@ -1,5 +1,7 @@
 #include "AudioEngine.h"
 #include <cmath>
+#include <algorithm>
+#include <iterator>
 namespace cuelist {
 static_assert(std::atomic<double>::is_always_lock_free && std::atomic<uint64_t>::is_always_lock_free
               && std::atomic<unsigned>::is_always_lock_free, "Playback telemetry requires lock-free atomics");
