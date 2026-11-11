@@ -3,7 +3,8 @@
 
 namespace cuelist {
 namespace {
-constexpr int timelineStart=140, tracksTop=82, trackHeight=42;
+constexpr int timelineStart=140, tracksTop=106, trackHeight=42;
+constexpr int markerLaneTop=79, markerLaneBottom=105;
 // The small Timeline cannot fit its toolbar, ruler, tracks and footer at
 // once. These visibility thresholds match the actual content's space budget.
 constexpr int detailedToolbarHeight=120;
@@ -64,6 +65,21 @@ void Timeline::MagnetToggle::paintButton(juce::Graphics& g,bool hovered,bool pre
 
 Timeline::Timeline(MainComponent& p) : owner(p) {
     addAndMakeVisible(horizontalScroll);
+    addChildComponent(markerEditor);
+    markerEditor.setName("timelineMarkerInlineEditor");
+    markerEditor.setMultiLine(false);
+    markerEditor.setReturnKeyStartsNewLine(false);
+    markerEditor.setEscapeAndReturnKeysConsumed(true);
+    markerEditor.setSelectAllWhenFocused(true);
+    markerEditor.setFont(font(12.0f));
+    markerEditor.setColour(juce::TextEditor::backgroundColourId,palette::input);
+    markerEditor.setColour(juce::TextEditor::textColourId,palette::text);
+    markerEditor.setColour(juce::TextEditor::focusedOutlineColourId,palette::teal);
+    markerEditor.onReturnKey=[this] { finishMarkerEdit(true); };
+    markerEditor.onEscapeKey=[this] { finishMarkerEdit(false); };
+    markerEditor.onFocusLost=[this] {
+        if (markerEdit!=MarkerEdit::none) finishMarkerEdit(true);
+    };
     horizontalScroll.setAutoHide(false);
     horizontalScroll.addListener(this);
     for (juce::Component* item : std::initializer_list<juce::Component*>{
@@ -138,6 +154,8 @@ double Timeline::fullLength() const {
     const auto& row=owner.show.rows[owner.selectedRow];
     for (int c=0;c<(int)row.cells.size();++c) if (owner.hasClip(owner.selectedRow,c))
         length=std::max(length,(row.cells[c].startSeconds+owner.clipDuration(owner.selectedRow,c))*1.1);
+    for (const auto& marker : row.markers)
+        length=std::max(length,marker.seconds*1.1);
     return length;
 }
 double Timeline::visibleLength() const { return dragColumn>=0 || seeking ? dragLength : fullLength()/zoom; }
@@ -145,6 +163,8 @@ void Timeline::syncViewport() {
     const int id=owner.selectedRow>=0 && owner.selectedRow<(int)owner.show.rows.size() ? owner.show.rows[owner.selectedRow].id : -1;
     if (id!=viewportRowId) {
         viewportRowId=id; zoom=1; viewStart=0; trackScroll=0; dragColumn=-1; seeking=false;
+        draggingMarkerId=-1; markerEdit=MarkerEdit::none; editingMarkerId=-1;
+        markerEditor.setVisible(false);
         setMouseCursor(juce::MouseCursor::NormalCursor);
     }
     const double length=visibleLength();
@@ -207,10 +227,34 @@ void Timeline::paint(juce::Graphics& g) {
         // negative-height vertical line on 120-124px Timeline windows.
         if (bottom>76) {
             g.setColour(palette::line.withAlpha(.8f));
-            g.drawVerticalLine(x,76,(float)bottom);
+            g.drawVerticalLine(x,(float)tracksTop,(float)bottom);
         }
     }
     if (getHeight()<completeTimelineHeight) return;
+    // Dedicated marker lane; clip tracks start below it, never under the labels.
+    g.setColour(palette::input);
+    g.fillRect(timelineStart,markerLaneTop,area,markerLaneBottom-markerLaneTop);
+    g.setColour(palette::line);
+    g.drawHorizontalLine(markerLaneBottom,0,(float)getWidth());
+    label(g,"MARKERS",{16,markerLaneTop+3,115,18},11,palette::muted,true);
+    g.saveState();
+    g.reduceClipRegion(timelineStart,markerLaneTop,area,markerLaneBottom-markerLaneTop);
+    for (const auto& m : row.markers) {
+        const double pos=(m.id==draggingMarkerId && row.id==draggingMarkerRowId)
+            ? previewMarkerSeconds : m.seconds;
+        const int x=timelineStart+(int)std::round(area*(pos-viewStart)/length);
+        if (x<timelineStart-10 || x>timelineStart+area+10) continue;
+        const auto ink=m.changesTempo ? palette::teal : palette::selection;
+        g.setColour(ink);
+        if (m.changesTempo) {
+            juce::Path triangle;
+            triangle.addTriangle((float)x-5,83.0f,(float)x+5,83.0f,(float)x,92.0f);
+            g.fillPath(triangle);
+        } else g.fillEllipse((float)x-4,84.0f,8.0f,8.0f);
+        label(g,m.name+(m.changesTempo ? "  "+juce::String(m.bpm,1)+" BPM" : ""),
+              {x+8,markerLaneTop+4,170,17},11,palette::text);
+    }
+    g.restoreState();
     // Musical grid follows secondsAtBeat across all tempo changes, but its
     // visibility/resolution never changes how clip dragging is quantized.
     if (gridVisible) {
@@ -222,7 +266,7 @@ void Timeline::paint(juce::Graphics& g) {
         const int firstGrid=std::max(0,(int)std::ceil(startBeat/renderStep));
         const int lastGrid=(int)std::floor(endBeat/renderStep);
         g.saveState();
-        g.reduceClipRegion(timelineStart,76,area,std::max(0,bottom-76));
+        g.reduceClipRegion(timelineStart,tracksTop,area,std::max(0,bottom-tracksTop));
         for (int i=firstGrid;i<=lastGrid && i<firstGrid+260;++i) {
             const double beat=i*renderStep;
             const double seconds=secondsAtBeat(row.tempo,beat);
@@ -234,7 +278,7 @@ void Timeline::paint(juce::Graphics& g) {
             // stand out, including at 125–150% Windows DPI.
             g.setColour(palette::muted.withAlpha(bar ? .26f :
                                                  quarter ? .16f : .075f));
-            g.drawVerticalLine(x,76,(float)bottom);
+            g.drawVerticalLine(x,(float)tracksTop,(float)bottom);
         }
         g.restoreState();
     }
@@ -349,7 +393,7 @@ void Timeline::paint(juce::Graphics& g) {
     g.restoreState();
     if (loaded==0)
         label(g,"Import audio or create a MIDI clip to see it here.",
-              {timelineStart,83,getWidth()-160,32},13,palette::muted);
+              {timelineStart,tracksTop+1,getWidth()-160,32},13,palette::muted);
     if (owner.engine.monitoredRowId.load()==row.id) {
         const auto seconds=owner.engine.playheadSeconds.load(); const auto x=(float)(timelineStart+area*(seconds-viewStart)/length);
         if (x>=timelineStart && x<=getWidth()-20) {
@@ -371,9 +415,16 @@ void Timeline::paint(juce::Graphics& g) {
     }
 }
 void Timeline::mouseDown(const juce::MouseEvent& e) {
-    if (!e.mods.isLeftButtonDown()) return;
     syncViewport();
+    if (e.mods.isRightButtonDown() && e.y>=markerLaneTop &&
+        e.y<markerLaneBottom && e.x>=timelineStart && e.x<getWidth()-20) {
+        if (const int id=markerHit(e.x); id>0)
+            showMarkerContextMenu(id,e.getScreenPosition());
+        return;
+    }
+    if (!e.mods.isLeftButtonDown()) return;
     owner.grabKeyboardFocus(); dragColumn=-1; seeking=false; resizingClip=false;
+    draggingMarkerId=-1;
     if (getHeight()<completeTimelineHeight && e.y>=45) return;
     for (int i=0;i<3 && getHeight()>=detailedToolbarHeight;++i)
         if (zoomButton(getWidth(),i).contains(e.getPosition())) {
@@ -384,7 +435,20 @@ void Timeline::mouseDown(const juce::MouseEvent& e) {
     if (owner.selectedRow<0 || owner.selectedRow>=(int)owner.show.rows.size() || e.x<timelineStart || e.x>getWidth()-20) return;
     const int area=std::max(1,getWidth()-timelineStart-20);
     dragLength=visibleLength(); dragViewStart=viewStart; dragPixels=area; dragRowId=owner.show.rows[owner.selectedRow].id;
-    if (e.y>=46 && e.y<tracksTop) {
+    if (e.y>=markerLaneTop && e.y<markerLaneBottom) {
+        draggingMarkerId=markerHit(e.x);
+        if (draggingMarkerId>0) {
+            draggingMarkerRowId=dragRowId;
+            const auto& markers=owner.show.rows[(size_t)owner.selectedRow].markers;
+            for (const auto& marker:markers) if (marker.id==draggingMarkerId) {
+                draggingMarkerSeconds=previewMarkerSeconds=marker.seconds;
+                break;
+            }
+            setMouseCursor(juce::MouseCursor::DraggingHandCursor);
+        }
+        return;
+    }
+    if (e.y>=46 && e.y<markerLaneTop) {
         seeking=true; owner.seekTimeline(juce::jlimit(0.0,86400.0,dragViewStart+(e.x-timelineStart)*dragLength/area)); return;
     }
     if (e.y<tracksTop || e.y>=getHeight()-48 || (e.y-tracksTop+trackScroll)%trackHeight>=32) return;
@@ -415,8 +479,28 @@ void Timeline::mouseDoubleClick(const juce::MouseEvent& e) {
     if (!e.mods.isLeftButtonDown()) return;
     syncViewport();
     if (owner.selectedRow<0 || owner.selectedRow>=(int)owner.show.rows.size()
-        || e.x<timelineStart || e.x>getWidth()-20 || e.y<tracksTop || e.y>=getHeight()-48) return;
-    if ((e.y-tracksTop+trackScroll)%trackHeight>=32) return;
+        || e.x<timelineStart || e.x>getWidth()-20 || e.y<markerLaneTop || e.y>=getHeight()-48) return;
+    if (e.y<markerLaneBottom) {
+        if (const int id=markerHit(e.x); id>0) {
+            beginMarkerEdit(id,MarkerEdit::name);
+        } else {
+            const int rowId=owner.show.rows[(size_t)owner.selectedRow].id;
+            const int area=std::max(1,getWidth()-timelineStart-20);
+            const auto seconds=snapSeconds(juce::jlimit(0.0,86400.0,
+                viewStart+(e.x-timelineStart)*visibleLength()/area));
+            int createdId=0;
+            if (mutateMarkers([&](Row& row) {
+                    if (row.id!=rowId || row.markers.size()>=2048) return false;
+                    for (const auto& m:row.markers) createdId=std::max(createdId,m.id);
+                    ++createdId;
+                    row.markers.push_back({createdId,"Marker "+juce::String(createdId),
+                        seconds,false,row.tempo.front().bpm,4,4});
+                    return true;
+                },false,"Generic Marker added.")) beginMarkerEdit(createdId,MarkerEdit::name);
+        }
+        return;
+    }
+    if (e.y<tracksTop || (e.y-tracksTop+trackScroll)%trackHeight>=32) return;
     const int wanted=(e.y-tracksTop+trackScroll)/trackHeight;
     int track=0;
     const auto& row=owner.show.rows[(size_t)owner.selectedRow];
@@ -440,6 +524,12 @@ void Timeline::mouseDoubleClick(const juce::MouseEvent& e) {
 void Timeline::mouseDrag(const juce::MouseEvent& e) {
     syncViewport();
     if (owner.selectedRow<0 || owner.selectedRow>=(int)owner.show.rows.size() || owner.show.rows[owner.selectedRow].id!=dragRowId) return;
+    if (draggingMarkerId>0 && draggingMarkerRowId==dragRowId) {
+        previewMarkerSeconds=snapSeconds(juce::jlimit(0.0,86400.0,
+            draggingMarkerSeconds+e.getDistanceFromDragStartX()*dragLength/dragPixels));
+        repaint();
+        return;
+    }
     if (seeking) owner.seekTimeline(juce::jlimit(0.0,86400.0,dragViewStart+juce::jlimit(0.0,dragPixels,(double)e.x-timelineStart)*dragLength/dragPixels));
     else if (dragColumn>=0 && dragColumn<(int)owner.show.rows[owner.selectedRow].cells.size()) {
         const double delta=e.getDistanceFromDragStartX()*dragLength/dragPixels;
@@ -451,7 +541,174 @@ void Timeline::mouseDrag(const juce::MouseEvent& e) {
     }
     repaint();
 }
-void Timeline::mouseUp(const juce::MouseEvent&) { dragColumn=-1; seeking=false; resizingClip=false; syncViewport(); setMouseCursor(juce::MouseCursor::NormalCursor); repaint(); }
+void Timeline::mouseUp(const juce::MouseEvent&) {
+    if (draggingMarkerId>0) {
+        const int id=draggingMarkerId;
+        const double destination=previewMarkerSeconds;
+        const bool changedPosition=std::abs(destination-draggingMarkerSeconds)>0.000001;
+        bool tempo=false;
+        if (owner.selectedRow>=0 && owner.selectedRow<(int)owner.show.rows.size())
+            for (const auto& m:owner.show.rows[(size_t)owner.selectedRow].markers)
+                if (m.id==id) tempo=m.changesTempo;
+        draggingMarkerId=-1;
+        if (changedPosition)
+            mutateMarkers([id,destination](Row& row) {
+                for (auto& m:row.markers) if (m.id==id) {m.seconds=destination; return true;}
+                return false;
+            },tempo,tempo ? "Tempo Marker moved. LIVE playback stopped." :
+                            "Generic Marker moved.");
+    }
+    dragColumn=-1; seeking=false; resizingClip=false;
+    syncViewport(); setMouseCursor(juce::MouseCursor::NormalCursor); repaint();
+}
+
+int Timeline::markerHit(int x) const {
+    if (owner.selectedRow<0 || owner.selectedRow>=(int)owner.show.rows.size()) return -1;
+    const int area=std::max(1,getWidth()-timelineStart-20);
+    int result=-1, best=11;
+    for (const auto& marker:owner.show.rows[(size_t)owner.selectedRow].markers) {
+        const int markerX=timelineStart+(int)std::round(
+            area*(marker.seconds-viewStart)/visibleLength());
+        const int distance=std::abs(markerX-x);
+        if (distance<best) { best=distance; result=marker.id; }
+    }
+    return result;
+}
+bool Timeline::mutateMarkers(const std::function<bool(Row&)>& mutation,
+                             bool affectsTempo,const juce::String& labelText) {
+    if (owner.selectedRow<0 || owner.selectedRow>=(int)owner.show.rows.size()
+        || !owner.applyInspector()) return false;
+    auto candidate=owner.show;
+    auto& row=candidate.rows[(size_t)owner.selectedRow];
+    importLegacyTempoMarkers(row);
+    if (!mutation(row) || !rebuildTempoFromMarkers(row)) {
+        owner.message("Invalid marker change: conflicting or out-of-range time.");
+        return false;
+    }
+    if (auto result=validateShow(candidate); result.failed()) {
+        owner.message(result.getErrorMessage());
+        return false;
+    }
+    owner.show=std::move(candidate);
+    owner.changed(labelText,affectsTempo);
+    return true;
+}
+void Timeline::beginMarkerEdit(int id,MarkerEdit kind) {
+    if (owner.selectedRow<0 || owner.selectedRow>=(int)owner.show.rows.size()) return;
+    const auto& row=owner.show.rows[(size_t)owner.selectedRow];
+    for (const auto& marker:row.markers) if (marker.id==id) {
+        markerEdit=kind; editingMarkerId=id; editingMarkerRowId=row.id;
+        const bool bpm=kind==MarkerEdit::tempo || kind==MarkerEdit::conversion;
+        double initialBpm=marker.bpm;
+        if (kind==MarkerEdit::conversion) {
+            initialBpm=row.tempo.front().bpm;
+            for (const auto& point:row.tempo)
+                if (secondsAtBeat(row.tempo,point.beat)<=marker.seconds+0.0000001)
+                    initialBpm=point.bpm;
+        }
+        markerEditor.setInputRestrictions(bpm ? 7 : 80,
+                                          bpm ? "0123456789." : "");
+        markerEditor.setText(bpm ? juce::String(initialBpm,1) : marker.name,
+                             juce::dontSendNotification);
+        markerEditor.setTooltip(bpm ?
+            "Tempo Marker BPM (20-400). Enter to save, Esc to cancel." :
+            "Rename Marker. Enter to save, Esc to cancel.");
+        const int area=std::max(1,getWidth()-timelineStart-20);
+        const int x=timelineStart+(int)std::round(area*(marker.seconds-viewStart)/visibleLength());
+        markerEditor.setBounds(juce::jlimit(timelineStart,std::max(timelineStart,getWidth()-195),
+            x+7),markerLaneTop+2,175,22);
+        markerEditor.setVisible(true);
+        markerEditor.toFront(false);
+        markerEditor.grabKeyboardFocus();
+        markerEditor.selectAll();
+        return;
+    }
+}
+void Timeline::finishMarkerEdit(bool accept) {
+    if (markerEdit==MarkerEdit::none) return;
+    const auto mode=markerEdit;
+    const int id=editingMarkerId,rowId=editingMarkerRowId;
+    const auto value=markerEditor.getText().trim();
+    markerEdit=MarkerEdit::none; editingMarkerId=-1; editingMarkerRowId=-1;
+    markerEditor.setVisible(false);
+    if (!accept || owner.selectedRow<0 || owner.selectedRow>=(int)owner.show.rows.size()
+        || owner.show.rows[(size_t)owner.selectedRow].id!=rowId) return;
+    const bool tempo=mode==MarkerEdit::tempo || mode==MarkerEdit::conversion;
+    if (tempo) {
+        int decimals=0,digits=0;
+        for (auto c:value) {
+            if (c=='.') ++decimals;
+            else if (c>='0' && c<='9') ++digits;
+            else { owner.message("Invalid BPM. Use 20-400."); return; }
+        }
+        const double number=value.getDoubleValue();
+        if (digits==0 || decimals>1 || !std::isfinite(number) ||
+            number<20 || number>400) { owner.message("BPM must be 20-400."); return; }
+        mutateMarkers([id,number](Row& row) {
+            for (auto& marker:row.markers) if (marker.id==id) {
+                if (marker.seconds<=0) return false;
+                marker.changesTempo=true;
+                marker.bpm=number;
+                return true;
+            }
+            return false;
+        },true,"Tempo Marker BPM updated. LIVE playback stopped.");
+    } else if (value.isNotEmpty() && value.length()<=80) {
+        mutateMarkers([id,value](Row& row) {
+            for (auto& marker:row.markers) if (marker.id==id) {
+                marker.name=value;
+                return true;
+            }
+            return false;
+        },false,"Marker renamed.");
+    }
+}
+void Timeline::showMarkerContextMenu(int markerId,const juce::Point<int>& screenPoint) {
+    if (owner.selectedRow<0 || owner.selectedRow>=(int)owner.show.rows.size()) return;
+    const auto& row=owner.show.rows[(size_t)owner.selectedRow];
+    const auto it=std::find_if(row.markers.begin(),row.markers.end(),
+        [markerId](const TimelineMarker& m) {return m.id==markerId;});
+    if (it==row.markers.end()) return;
+    const int rowId=row.id;
+    const bool isTempo=it->changesTempo;
+    juce::PopupMenu menu;
+    menu.addItem(1,"Rename marker");
+    if (isTempo) {
+        menu.addItem(2,"Edit BPM");
+        menu.addItem(3,"Convert to Generic Marker");
+    } else menu.addItem(4,"Convert to Tempo Marker");
+    menu.addSeparator();
+    menu.addItem(5,"Delete marker");
+    auto safe=juce::Component::SafePointer<Timeline>(this);
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetScreenArea(
+        {screenPoint.x,screenPoint.y,1,1}),
+        [safe,rowId,markerId,isTempo](int choice) {
+            if (!safe || choice==0 ||
+                safe->owner.selectedRow<0 ||
+                safe->owner.selectedRow>=(int)safe->owner.show.rows.size() ||
+                safe->owner.show.rows[(size_t)safe->owner.selectedRow].id!=rowId)
+                return;
+            if (choice==1) safe->beginMarkerEdit(markerId,MarkerEdit::name);
+            else if (choice==2) safe->beginMarkerEdit(markerId,MarkerEdit::tempo);
+            else if (choice==4) safe->beginMarkerEdit(markerId,MarkerEdit::conversion);
+            else if (choice==3)
+                safe->mutateMarkers([markerId](Row& r) {
+                    for (auto& marker:r.markers) if (marker.id==markerId) {
+                        marker.changesTempo=false; return true;
+                    }
+                    return false;
+                },true,"Tempo Marker converted to Generic. LIVE playback stopped.");
+            else if (choice==5)
+                safe->mutateMarkers([markerId](Row& r) {
+                    const auto it=std::remove_if(r.markers.begin(),r.markers.end(),
+                        [markerId](const TimelineMarker& m){return m.id==markerId;});
+                    if (it==r.markers.end()) return false;
+                    r.markers.erase(it,r.markers.end());
+                    return true;
+                },isTempo,isTempo ? "Tempo Marker deleted. LIVE playback stopped." :
+                                  "Generic Marker deleted.");
+        });
+}
 void Timeline::mouseMove(const juce::MouseEvent& e) {
     // Paint-only hover. Do not call select(), change focused row or edit data.
     int candidate=-1;
