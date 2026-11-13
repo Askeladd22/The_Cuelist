@@ -15,6 +15,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.53] - 2026-11-13
 
+**PR:** [#174](https://github.com/Askeladd22/The_Cuelist/pull/174) (draft, nessun merge automatico).
+
 **Stato:** semplificazione del dialogo di import/export Control Mapping, senza cambiare i due formati, le operazioni del modello, le assegnazioni LIVE o il progetto JSON v10.
 
 ### Semplificato
