@@ -89,3 +89,37 @@ I record vanno nel file `RQ-001-T03-OBSERVATIONS.csv`: una riga per partecipante
 - Origine statica: `controlsV3::named()` restituisce `juce::Component*`; `juce::TextButton` implementa `TooltipClient` e permette `getTooltip()`.
 - In `0.9.35`, il test usa `dynamic_cast<juce::TextButton*>(liveTab)` con verifica di null prima di esaminare il tooltip. La modifica è limitata al test; nessun runtime, layout o comportamento GO modificato.
 - **Non** considerare T03 passato dal log 0.9.34: CTest non è partito. Gate 0.9.35: compilazione completa, nuovo CTest, i due PNG screenshot T03, successiva ispezione dei PNG. Gate DPI reali, operatori e hardware ancora **ND**.
+
+## 9. UX-01 — variante della testata VIEW/LIVE (proposta di verifica, 13 novembre 2026)
+
+**Scenario invariato:** nove Cuelist, VIEW `Emergency` alla posizione 9,
+LIVE `Pre-show` alla posizione 1, secondo GO armato. Le due righe della
+testata cue indicano ora LIVE L01 / Pre-show / GO 02, mantenendo nome
+della VIEW e contatori di cue e clip. La testata è solo informativa:
+nessun clic aggiuntivo o cambio dei comandi di trasporto.
+
+**Ipotesi H-UX01:** nella finestra 1180×820, l'indicazione LIVE accanto
+alla VIEW riduce errori e tempo d'identificazione rispetto alla baseline
+0.9.56, in particolare quando la LIVE non è nella barra tab visibile.
+
+**Controesempio:** la terza riga di testo nel blocco alto 72px può
+aumentare rumore, oppure il nome della LIVE può essere ellissato;
+il prefisso L01–L12 permette comunque di distinguerne la posizione.
+L'operatore può già utilizzare il riquadro ON DECK: misurare se la nuova
+etichetta porta un vantaggio reale, non presumerlo dal solo screenshot.
+
+**Test automatici introdotti:** screenshot JUCE del pinned header a
+1180×820 (LIVE nascosta) e 1920×1080; variazione dei pixel sulla riga
+LIVE dopo rename, preservazione dei contatori VIEW, aggiornamento
+GO 02 → END dopo GO effettivo e nessun cambio di VIEW/LIVE.
+Le schermate T03 esistenti permettono confronto visivo fra versioni.
+
+**Gate operatori ancora ND:** usare pilota bilanciato A/B già descritto
+nelle sezioni 4–7; stessa configurazione e istruzioni neutrali,
+rilevare successo, tempi, occhio/ricerca visiva ed eventuale confusione
+tra Row GO e GO globale. Non sostituire la baseline con la nuova variante
+per entrambe le condizioni: archiviare screenshot 0.9.56 separatamente.
+Il test nativo a scala 1× non verifica DPI Windows reale; acquisire
+100%, 125% e 150%, soprattutto sulla riga LIVE appena aggiunta.
+
+**Rollback:** revert della PR UX-01; progetto .cuelist JSON v10 invariato.

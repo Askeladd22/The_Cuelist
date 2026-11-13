@@ -508,6 +508,69 @@ void cuelistGuiMockupTests() {
               "T03B: explicit LIVE selection did not rearm the displayed GO");
     });
 
+
+    test("UX01: pinned native header identifies hidden LIVE and next GO across VIEW",[] {
+        MainComponent ui(false);
+        check(ui.setCuelistName(0,"Pre-show"),
+              "UX01 setup could not name the LIVE Cuelist");
+        addRow(ui.show,"Next LIVE cue");
+        const int liveSecond=ui.show.rows[1].id;
+        ui.engine.connected.store(true);
+        ui.triggerRow(0);
+        ui.engine.processBlock(nullptr,0,1,100);
+        for(int i=1;i<9;++i) ui.createCuelist();
+        check(ui.setCuelistName(8,"Emergency"),
+              "UX01 setup could not name VIEW Cuelist");
+        ui.setSize(1180,820);
+        ui.resized();
+        auto* pinned=cueViewFixtures::find<PinnedCueHeaders>(ui);
+        auto* liveTab=controlsV3::named(ui,"cuelistTab0");
+        check(pinned && liveTab && !liveTab->isVisible() &&
+              ui.show.activeCuelist==8 && ui.liveCuelistIndex()==0 &&
+              ui.nextLiveGoCueForUi()=="02",
+              "UX01 setup did not put LIVE in the compact tab overflow");
+        if (!pinned) return;
+        const auto capture=[&] {
+            return pinned->createComponentSnapshot(
+                {0,0,CueGrid::nameWidth,CueGrid::headerHeight});
+        };
+        const auto changedPixels=[](const juce::Image& first,
+                                    const juce::Image& second,
+                                    juce::Rectangle<int> region) {
+            int changed=0;
+            for(int y=region.getY();y<region.getBottom();++y)
+                for(int x=region.getX();x<region.getRight();++x)
+                    if (first.getPixelAt(x,y)!=second.getPixelAt(x,y))
+                        ++changed;
+            return changed;
+        };
+        const auto original=capture();
+        check(original.isValid() && original.getWidth()==CueGrid::nameWidth &&
+              original.getHeight()==CueGrid::headerHeight,
+              "UX01 cannot capture the 72px pinned native header");
+        check(ui.setCuelistName(0,"Standby Audio"),
+              "UX01 failed to rename the hidden LIVE Cuelist");
+        const auto renamed=capture();
+        check(changedPixels(original,renamed,{98,32,121,20})>0 &&
+              changedPixels(original,renamed,{24,53,270,14})==0,
+              "UX01 LIVE identity is absent, or VIEW counts changed with LIVE");
+        ui.goNext();
+        ui.engine.collectRetired();
+        ui.engine.processBlock(nullptr,0,1,100);
+        const auto advanced=capture();
+        check(ui.engine.acknowledgedCueId.load()==liveSecond &&
+              ui.show.activeCuelist==8 && ui.liveCuelistIndex()==0 &&
+              ui.nextLiveGoCueForUi()=="END" &&
+              changedPixels(renamed,advanced,{224,33,70,19})>0,
+              "UX01 pinned GO destination failed to reflect LIVE completion");
+        ui.setSize(1920,1080);
+        ui.resized();
+        const auto wide=capture();
+        check(wide.isValid() && wide.getWidth()==CueGrid::nameWidth &&
+              ui.show.activeCuelist==8 && ui.liveCuelistIndex()==0,
+              "UX01 wide header changed VIEW or LIVE while resizing");
+    });
+
     test("RQ001 T04: global GO preserves LIVE while native Row GO takes over VIEW",[] {
         MainComponent ui(false);
         check(ui.setCuelistName(0,"Act I"),

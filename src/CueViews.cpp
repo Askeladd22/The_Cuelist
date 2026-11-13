@@ -197,18 +197,27 @@ void CueGrid::paint(juce::Graphics& g) {
         : show.cuelists[(size_t)show.activeCuelist].name;
     label(g,activeName,{24,7,nameWidth-173,28},
           18,palette::text,true);
-    // Count is useful operator telemetry, unlike the duplicate
-    // "CUE / TRANSPORT" section label which consumed a third text row.
-    // The title names the browsed VIEW, not necessarily the GO destination.
-    // Keep title geometry unchanged; add the textual role to its metadata row.
+    // The title is the browsed VIEW. A separate LIVE/GO destination
+    // always remains visible when its tab is hidden in the overflow.
+    // Both are labels, never controls: no new transfer of LIVE ownership.
+    // The L01–L12 locator disambiguates long names that may ellipsize.
+    const auto liveGo=owner.nextLiveGoCueForUi();
+    label(g,"LIVE L"+juce::String(owner.liveCuelistIndex()+1).paddedLeft('0',2),
+          {24,33,72,19},11,palette::standby,true);
+    label(g,owner.liveCuelistNameForUi(),{98,32,121,20},
+          12,palette::text,true);
+    label(g,liveGo=="END" ? "END" : "GO "+liveGo,
+          {224,33,70,19},12,palette::standby,true,
+          juce::Justification::centredRight);
+    // Preserve both VIEW counts in the existing 72px header.
     const int viewCues=(int)show.rows.size();
     const int viewClips=owner.visibleClipCount;
     label(g,"VIEW  /  "+juce::String(viewCues)+
           (viewCues==1 ? " cue  /  " : " cues  /  ")+
           juce::String(viewClips)+(viewClips==1 ? " clip" : " clips"),
-          {24,36,nameWidth-48,20},11,palette::muted,true);
+          {24,53,nameWidth-48,14},10,palette::muted,true);
     g.setColour(palette::line.withAlpha(.28f));
-    g.fillRoundedRectangle(24.f,63.f,(float)nameWidth-48.f,1.f,.5f);
+    g.fillRoundedRectangle(24.f,68.f,(float)nameWidth-48.f,1.f,.5f);
     for (int c=0;c<(int)show.columns.size();++c) {
         const auto& col=show.columns[(size_t)c];
         const int x=columnX(c),w=columnWidthAt(c);
