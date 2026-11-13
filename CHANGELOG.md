@@ -15,6 +15,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.63] - 2026-11-13
 
+**PR:** [#184](https://github.com/Askeladd22/The_Cuelist/pull/184) (draft, senza merge automatico).
+
 **Stato:** UX-03B — accesso da tastiera alle azioni della colonna selezionata, senza aggiungere focus ai controlli di trasporto o cambiare layout JUCE.
 
 ### Migliorato
