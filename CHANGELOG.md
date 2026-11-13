@@ -15,6 +15,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.57] - 2026-11-13
 
+**PR:** [#178](https://github.com/Askeladd22/The_Cuelist/pull/178) (draft, senza merge automatico).
+
 **Stato:** UX-01, testata Cue Grid JUCE con destinazione LIVE/GO persistente; intervento di presentazione e test, senza modificare trasporti o lo schema JSON v10.
 
 ### Migliorato
