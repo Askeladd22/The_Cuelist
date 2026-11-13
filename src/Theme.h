@@ -29,7 +29,9 @@ inline constexpr ThemeTokens industrialTokens{
     0xffc66b42,0xffd47a4f,0xffa95534,
     0xff8fa8b2,0xffb79a72,0xffa18bb9,0xff7186a6,
     0xff55b875,0xffe05a46,0xffe5a52e,0xff55afc5,
-    0xffe5e7e3,0xffa5b0ae,0xff718087,0xff536168
+    // Readable muted copy on even the lightest #303B40 selected panel.
+    // Disabled ink is unchanged and is not intended as enabled body text.
+    0xffe5e7e3,0xffa5b0ae,0xff99a6ab,0xff536168
 };
 inline Appearance activeAppearance=Appearance::industrialOrange;
 inline const ThemeTokens& tokens(Appearance id) {

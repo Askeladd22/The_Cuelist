@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.58] - 2026-11-13
+
+**Stato:** UX-02A, primo incremento di contrasto e semantica cromatica per i controlli di editing JUCE. Nessuna modifica al trasporto, alla disposizione dei pannelli o allo schema JSON v10.
+
+### Migliorato
+- `Import WAV / MP3` nell'Inspector è ora un controllo neutro (pannello grafite + testo primario) anziché un pulsante verde indistinguibile da GO. Resta la stessa action `importDialog()` e il tooltip avverte che l'importazione arresta il playback.
+- Il token Industrial Orange per il testo attenuato attivo passa da `#718087` a `#99A6AB`, mantenendo il token `disabled` distinto e la palette Legacy invariata. Contrasto teorico su superfici opache `#303B40`: circa 2,82:1 → 4,60:1.
+- Le istruzioni delle celle vuote, anche nelle colonne collassate, non vengono più rese con alpha 0,72/0,78: usano il testo attenuato leggibile (o il testo secondario in hover). Su righe di colore personalizzato rimane la selezione dell'inchiostro tramite `readableInk()`.
+- Regressioni sul contratto dei token/caption e sul vero `TextButton` Import prima/dopo cambio tema (inclusa conservazione di tooltip, callback esistente e dati Show).
+
+### Rischi, QA, rollback
+- Risultati calcolati sui token a tinta piena non equivalgono a una prova di contrasto su tutti gli stati rasterizzati e tutte le superfici custom, le quali possono avere contrasti inferiori a 4,5:1. Verificare screenshot nativi, testi a DPI 100/125/150%, stati cue selezionati/hover, tema Legacy.
+- Gate CI: Windows Release e CTest (non dichiarati eseguiti prima del run). Operatori, screen reader, hardware Audio/MIDI/OSC/LTC e prestazioni realtime: ND.
+- **Rollback:** revert della PR, senza migrazione di dati.
+
 ## [0.9.57] - 2026-11-13
 
 **PR:** [#178](https://github.com/Askeladd22/The_Cuelist/pull/178) (draft, senza merge automatico).

@@ -372,6 +372,12 @@ void CueGrid::paint(juce::Graphics& g) {
             const bool hovered=hoverRow==r && hoverColumn==c;
             const auto hoveredAction=hovered ? hoverCellAction : CellAction::none;
             const bool drop=dragging && dropRow==r && dropColumn==c;
+            // Placeholder instructions are live text, not disabled marks.
+            // Keep their minimum contrast when the cue has a selected
+            // graphite surface or a custom colour.
+            const auto placeholderInk=row.colour>0 &&
+                palette::activeAppearance==palette::Appearance::industrialOrange
+                    ? palette::readableInk(customSurface) : palette::dimmed;
             if (column.collapsed) {
                 // Empty collapsed lanes are not false clip buttons.
                 if (loaded) {
@@ -381,7 +387,7 @@ void CueGrid::paint(juce::Graphics& g) {
                     g.fillEllipse((float)x+w/2-4,(float)y+21,8.f,8.f);
                 } else {
                     label(g,"-",{x+8,y+13,w-16,20},12,
-                          palette::muted.withAlpha(.72f),true,juce::Justification::centred);
+                          placeholderInk,true,juce::Justification::centred);
                 }
                 if(!cell.followsRow) {g.setColour(palette::red);g.fillEllipse((float)x+6,(float)y+8,3.f,3.f);}
                 if(cell.loop) drawLoopIcon(g,{x+w-19,y+8,13,15},palette::amber);
@@ -490,7 +496,7 @@ void CueGrid::paint(juce::Graphics& g) {
                            {x+8,y+11,w-(cell.stopOnNext && !picking?16:60),20},11,
                            missing?palette::red:
                            cell.name.isNotEmpty()?palette::text:
-                           palette::muted.withAlpha(hovered?.96f:.78f),
+                           hovered && row.colour==0 ? palette::muted : placeholderInk,
                            false,juce::Justification::centred);
             if(!cell.followsRow) {
                 g.setColour(palette::red);g.fillEllipse((float)x+7,(float)y+6,3.f,3.f);
