@@ -15,6 +15,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.58] - 2026-11-13
 
+**PR:** [#179](https://github.com/Askeladd22/The_Cuelist/pull/179) (draft, senza merge automatico).
+
 **Stato:** UX-02A, primo incremento di contrasto e semantica cromatica per i controlli di editing JUCE. Nessuna modifica al trasporto, alla disposizione dei pannelli o allo schema JSON v10.
 
 ### Migliorato
