@@ -15,6 +15,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.51] - 2026-11-13
 
+**PR:** [#172](https://github.com/Askeladd22/The_Cuelist/pull/172) (draft; senza merge automatico).
+
 **Stato:** semplificazione focalizzata del reset Quick Learn, senza cambiamenti deliberati al trasporto, agli ingressi MIDI/OSC, all'Audio Engine o allo schema `.cuelist` JSON v10.
 
 ### Semplificato
