@@ -13,6 +13,24 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.57] - 2026-11-13
+
+**PR:** [#178](https://github.com/Askeladd22/The_Cuelist/pull/178) (draft, senza merge automatico).
+
+**Stato:** UX-01, testata Cue Grid JUCE con destinazione LIVE/GO persistente; intervento di presentazione e test, senza modificare trasporti o lo schema JSON v10.
+
+### Migliorato
+- La testata nativa della Cue Grid mantiene il nome della Cuelist visualizzata e usa una seconda riga informativa `LIVE L01–L12 / nome / GO nn` (oppure `END`). Anche con tab LIVE nascosta nell'overflow, la destinazione di Space è leggibile accanto alla VIEW.
+- Terza riga di metadati con i contatori `VIEW / n cue / n clip`, già presenti prima; altezza 72px, geometria di righe, colonne, tab e pulsanti immutata. Nessun nuovo pulsante e nessuna semantica trasporto aggiunta.
+- Ambra per il GO *armato* e la destinazione LIVE: il verde continua a identificare GO e playback, senza implicare che una cue sia già in riproduzione.
+- Nuova regressione JUCE T03/UX01 che confronta gli snapshot del pinned header prima/dopo rename LIVE e GO/END, e controlla identità VIEW/LIVE e contatori.
+- Aggiunta la variante e il protocollo A/B al documento `docs/research/RQ-001-T03-PILOT.md`.
+
+### Test e gate
+- **Eseguito:** analisi di sorgenti e geometrie, controllo statico dei consumer e invarianti, preparazione del test di regressione; Windows Release/CTest e snapshot aggiornati sono gate CI della PR.
+- **ND:** tempi/errori di operatori, rendering a Windows DPI 100/125/150%, chiusura di show hardware Audio/MIDI/OSC/LTC, misure di sincronismo, scenari di show dal vivo. Nessuna certificazione LIVE.
+- **Rollback:** revert della PR; nessuna migrazione dati.
+
 ## [0.9.56] - 2026-11-13
 
 **PR:** [#177](https://github.com/Askeladd22/The_Cuelist/pull/177) (draft, senza merge automatico).
