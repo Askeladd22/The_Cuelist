@@ -15,6 +15,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.62] - 2026-11-13
 
+**PR:** [#183](https://github.com/Askeladd22/The_Cuelist/pull/183) (draft, senza merge automatico).
+
 **Stato:** UX-03A — maggiore precisione e descrizioni contestuali dei comandi nelle intestazioni JUCE delle colonne; nessun redesign o modifica ai trasporti.
 
 ### Migliorato
