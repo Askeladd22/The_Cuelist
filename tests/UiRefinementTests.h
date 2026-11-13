@@ -579,8 +579,10 @@ void uiRefinementTests() {
         const auto original=encodeShow(ui.show);
         check(importControl->getButtonText().containsIgnoreCase("Import"),
               "Import action label was unexpectedly replaced");
-        check(importControl->getTooltip().contains("stops all playback"),
-              "Import no longer warns that it stops active playback");
+        const auto tooltip=importControl->getTooltip();
+        check(tooltip.contains("stops all playback"),
+              "Import no longer warns that it stops active playback. Actual tooltip: ["+
+              tooltip+"]");
         check(background()==palette::raised,
               "Import background did not follow the restored neutral theme");
         check(ink()==palette::text,
@@ -588,11 +590,17 @@ void uiRefinementTests() {
         check(background()!=palette::go,
               "Import is visually indistinguishable from global GO");
         ui.setAppearanceTheme(palette::Appearance::legacy);
+        check(importControl->getTooltip().contains("stops all playback"),
+              "Legacy theme removed the Import playback warning. Actual: ["+
+              importControl->getTooltip()+"]");
         check(background()==palette::raised,
               "Legacy background on Import drifted from neutral graphite");
         check(ink()==palette::text && background()!=palette::go,
               "Legacy Import borrowed GO colours after changing appearance");
         ui.setAppearanceTheme(palette::Appearance::industrialOrange);
+        check(importControl->getTooltip().contains("stops all playback"),
+              "Industrial Orange theme removed the Import playback warning. Actual: ["+
+              importControl->getTooltip()+"]");
         check(background()==palette::raised && ink()==palette::text,
               "Returning to Industrial Orange did not restore neutral Import");
         check(encodeShow(ui.show)==original,

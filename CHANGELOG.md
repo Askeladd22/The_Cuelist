@@ -13,6 +13,20 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.60] - 2026-11-13
+
+**Stato:** UX-02: follow-up dell'errore CTest sul tooltip di Import nella 0.9.59, senza ampliamento del perimetro a UX-03 o al trasporto.
+
+### Corretto
+- L'esecuzione Windows locale fornita dall'operatore (0.9.59) compila, ma fallisce la sola verifica `UX02: neutral audio import does not borrow the transport GO role`, specificamente `Import no longer warns that it stops active playback`: 420352 assert e un test fallito. Il sorgente assegna già un tooltip nel costruttore; il motivo dell'assenza nella lettura del test non è ancora misurato.
+- L'avviso di sicurezza rimane una singola stringa canonica `audioImportTooltip`, applicata all'inizializzazione e riaffermata dopo il refresh LookAndFeel, affinché il cambio tema non possa lasciare Import senza spiegazione della conseguenza operativa.
+- Le asserzioni JUCE indicano ora il testo realmente letto dal controllo in caso di fallimento e verificano la presenza dell'avviso in tema Industrial Orange, Legacy e nel ritorno a Industrial Orange.
+
+### Gate e rollback
+- Ispezione statica su codice JUCE e test eseguita; compilazione Windows, CTest, screenshot e prove a DPI 100/125/150 sono ancora da eseguire per questa PR. Se il test resta rosso, il nuovo messaggio è una prova diagnostica, non autorizza il merge.
+- Il runtime di Import e le azioni GO/STOP/PANIC, MIDI/OSC/LTC e il formato progetti JSON v10 non cambiano.
+- **Rollback:** revert integrale della PR, senza migrazione dati.
+
 ## [0.9.59] - 2026-11-13
 
 **PR:** [#180](https://github.com/Askeladd22/The_Cuelist/pull/180) (draft, senza merge automatico).
