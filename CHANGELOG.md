@@ -15,6 +15,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.55] - 2026-11-13
 
+**PR:** [#176](https://github.com/Askeladd22/The_Cuelist/pull/176) (draft; nessun merge automatico).
+
 **Stato:** unificazione della classe JUCE per le finestre staccabili MIDI/OSC, senza modifiche ai protocolli, allo stato LIVE, alla matrice cue o allo schema JSON v10.
 
 ### Semplificato
