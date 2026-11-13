@@ -15,6 +15,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.64] - 2026-11-14
 
+**PR:** [#185](https://github.com/Askeladd22/The_Cuelist/pull/185) (draft, senza merge automatico).
+
 **Stato:** UX-03C (Taste + UI/UX Review + Unlazy) — sicurezza dei comandi globali in modalità azioni colonna.
 
 ### Corretto
