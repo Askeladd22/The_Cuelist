@@ -508,6 +508,7 @@ void MainComponent::dismissSelectedColumnKeyboardActions() {
     columnKeyboardTargetId=-1;
     columnHeaders.setDescription(
         "Select a column; Shift+F10 shows non-modal keyboard actions. Escape PANIC; Space GO.");
+    columnHeaders.setTooltip({}); // No stale keyboard-mode hint after dismiss.
     columnHeaders.repaint();
 }
 
