@@ -8,6 +8,30 @@ namespace cuelist {
 // Cell clipboard, swaps and clip timing edits retain their existing
 // transport/engine publication semantics. No audio callback changes.
 
+// MIDI and OSC Undo/Redo search by a globally stable cell ID, regardless
+// of which Cuelist the operator is currently viewing. Never mutate VIEW
+// or LIVE here: each protocol-specific restore owns its own safety actions.
+MainComponent::StoredClipCell MainComponent::findStoredClipCell(
+    int cellId,ColumnType type) {
+    const auto inRows=[this,cellId,type](std::vector<Row>& rows,bool live)
+        -> StoredClipCell {
+        for (auto& row:rows)
+            for (size_t column=0;column<row.cells.size();++column)
+                if (row.cells[column].id==cellId &&
+                    show.columns[column].type==type)
+                    return {&row.cells[column],live};
+        return {};
+    };
+    auto target=inRows(show.rows,show.activeCuelist==liveCuelist);
+    if (target.cell) return target;
+    for (int index=0;index<(int)show.cuelists.size();++index) {
+        if (index==show.activeCuelist) continue;
+        target=inRows(show.cuelists[(size_t)index].rows,index==liveCuelist);
+        if (target.cell) return target;
+    }
+    return {};
+}
+
 juce::File MainComponent::audioFileForExplorer(int row,int column) const {
     if (row<0 || row>=(int)show.rows.size() ||
         column<0 || column>=(int)show.columns.size() ||

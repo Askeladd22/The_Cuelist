@@ -178,30 +178,18 @@ void MainComponent::midiClipEdited(int cellId,const MidiClip& before,const MidiC
         }
 }
 void MainComponent::restoreMidiClip(int cellId,const MidiClip& snapshot) {
-    // Editing a different VIEW must not make the unified MIDI history lose
-    // the original cell. Stable cell IDs are unique across all Cuelists.
-    auto apply=[&](std::vector<Row>& rows,bool live) {
-        for(auto& row:rows)
-            for(size_t c=0;c<row.cells.size();++c) {
-                if(row.cells[c].id!=cellId ||
-                   show.columns[c].type!=ColumnType::midi)continue;
-                if(live) {engine.panic();resetActiveMapping();}
-                row.cells[c].midi=snapshot;
-                dirty=true;
-                engine.publish(makeLiveRenderState(),!live);
-                if(clipEditor && clipEditorCellId==cellId)
-                    clipEditor->loadClip(snapshot);
-                status="MIDI edit reverted.";
-                grid.repaint();timeline.repaint();repaint();
-                return true;
-            }
-        return false;
-    };
-    if(apply(show.rows,show.activeCuelist==liveCuelist))return;
-    for(int index=0;index<(int)show.cuelists.size();++index) {
-        if(index==show.activeCuelist)continue;
-        if(apply(show.cuelists[(size_t)index].rows,index==liveCuelist))return;
-    }
+    // The original cell may now be in an inactive VIEW: do not restore a
+    // different cell just because the operator changed tabs.
+    const auto target=findStoredClipCell(cellId,ColumnType::midi);
+    if (!target.cell) return;
+    if (target.live) {engine.panic();resetActiveMapping();}
+    target.cell->midi=snapshot;
+    dirty=true;
+    engine.publish(makeLiveRenderState(),!target.live);
+    if (clipEditor && clipEditorCellId==cellId)
+        clipEditor->loadClip(snapshot);
+    status="MIDI edit reverted.";
+    grid.repaint();timeline.repaint();repaint();
 }
 bool MainComponent::undoEdit() {
     checkpointHistory("Edit Show");

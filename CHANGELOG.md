@@ -13,6 +13,20 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.54] - 2026-11-13
+
+**Stato:** unificazione della ricerca della cella per Undo/Redo MIDI e OSC fra Cuelist visualizzata e Cuelist inattive; formato progetti JSON v10 invariato.
+
+### Semplificato
+- Un nuovo metodo privato `findStoredClipCell(id,type)`, in `CellOperations.cpp`, possiede la ricerca in ordine della cella tramite ID stabile: prima la VIEW corrente (`show.rows`), quindi le altre Cuelist. Restituisce la cella e se appartiene alla LIVE.
+- `restoreMidiClip()` e `restoreOscClip()` riutilizzano lo stesso lookup, conservando integralmente le proprie differenze di assegnazione, aggiornamento editor, status, PANIC esclusivamente sul LIVE e pubblicazione dello stato runtime.
+- Due regressioni JUCE sul seam reale: Undo/Redo MIDI dopo cambio VIEW e ripristino OSC in Cuelist inattiva mentre una cue Audio continua in LIVE, compreso il no-op se il tipo della colonna non corrisponde.
+
+### Verifiche e gate
+- Confronto statico del traversal identico prima delle modifiche, ricerca dei consumer e ispezione del diff: eseguiti.
+- Build Windows, CTest e workflow della PR: ND fino alla loro esecuzione. Test fisici Audio/MIDI/OSC/LTC e screenshot DPI: ND. Una CI verde non implica idoneità LIVE.
+- **Rollback:** revert della PR; nessuna migrazione dati.
+
 ## [0.9.53] - 2026-11-13
 
 **PR:** [#174](https://github.com/Askeladd22/The_Cuelist/pull/174) (draft, nessun merge automatico).

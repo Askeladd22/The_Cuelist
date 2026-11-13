@@ -779,4 +779,77 @@ void cuelistGuiMockupTests() {
         check(validateShow(corrupt).failed(),
               "Overlapping cue identities across Cuelists went undetected");
     });
+
+    test("MIDI Undo/Redo restores the original cell after switching VIEW",[] {
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::midi,"MIDI history");
+        ui.createCuelist(); // VIEW 1; LIVE remains 0
+        ui.activateCuelist(0);
+        check(ui.select(0,1),"MIDI history fixture could not select its cell");
+        ui.editMidiClip();
+        auto* editor=ui.activeClipEditor();
+        check(editor!=nullptr,"MIDI editor was not created");
+        if (!editor) return;
+        const int cellId=ui.show.rows[0].cells[1].id;
+        auto& canvas=editor->getCanvas();
+        const juce::Point<float> point{70,1240};
+        canvas.mouseDown(cueViewFixtures::event(canvas,point,point));
+        check(ui.show.rows[0].cells[1].midi.has_value() &&
+              ui.show.rows[0].cells[1].midi->notes.size()==1,
+              "MIDI gesture did not commit a note before VIEW switch");
+        ui.activateCuelist(1);
+        check(ui.show.activeCuelist==1 && ui.liveCuelistIndex()==0 &&
+              ui.show.rows[0].cells[1].id!=cellId,
+              "MIDI Undo fixture did not separate VIEW from the edited cell");
+        check(ui.undoEdit(),"Cross-VIEW MIDI Undo unavailable");
+        const auto& saved=ui.show.cuelists[0].rows[0].cells[1];
+        check(saved.id==cellId && saved.midi.has_value() &&
+              saved.midi->notes.empty() && ui.show.activeCuelist==1,
+              "MIDI Undo restored a cell in the wrong Cuelist");
+        check(ui.redoEdit(),"Cross-VIEW MIDI Redo unavailable");
+        check(saved.midi.has_value() && saved.midi->notes.size()==1 &&
+              ui.show.activeCuelist==1 && ui.liveCuelistIndex()==0,
+              "MIDI Redo lost the original stable cell identity");
+    });
+
+    test("Restoring a dormant OSC clip does not interrupt unrelated LIVE Audio",[] {
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::osc,"OSC history");
+        auto audio=std::make_shared<AudioClip>();
+        audio->sampleRate=100;audio->samples.setSize(1,1200);
+        for(int i=0;i<1200;++i) audio->samples.setSample(0,i,.2f);
+        const int liveAudioId=ui.show.rows[0].cells[0].id;
+        ui.clips[liveAudioId]=audio;
+        ui.engine.connected.store(true);
+        ui.engine.publish(ui.makeLiveRenderState());
+        ui.triggerRow(0);
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.engine.getCellPlayback(liveAudioId).playing,
+              "OSC restore fixture did not start LIVE Audio");
+        ui.createCuelist();
+        const int dormantId=ui.show.rows[0].cells[1].id;
+        ui.activateCuelist(0);
+        check(ui.show.activeCuelist==0 && ui.liveCuelistIndex()==0 &&
+              ui.show.rows[0].cells[1].id!=dormantId,
+              "Dormant OSC cell was not outside the active VIEW");
+        OscClip restored;
+        restored.length=2.0;
+        restored.events.push_back({0.5,"/cue/restore",{}});
+        check(validateOscClip(restored).wasOk(),"OSC history fixture invalid");
+        ui.restoreOscClip(dormantId,restored);
+        const auto& stored=ui.show.cuelists[1].rows[0].cells[1];
+        check(stored.id==dormantId && stored.osc.has_value() &&
+              stored.osc->events.size()==1 &&
+              stored.osc->events.front().address=="/cue/restore",
+              "Dormant OSC restoration missed its stable cell ID");
+        ui.engine.collectRetired();
+        ui.engine.processBlock(nullptr,0,1,100);
+        check(ui.engine.getCellPlayback(liveAudioId).playing &&
+              ui.show.activeCuelist==0 && ui.liveCuelistIndex()==0,
+              "Restoring dormant OSC stopped unrelated LIVE Audio or changed VIEW");
+        ui.restoreOscClip(liveAudioId,restored); // Wrong column type: no-op.
+        check(!ui.show.rows[0].cells[0].osc.has_value() &&
+              ui.engine.getCellPlayback(liveAudioId).playing,
+              "OSC restore modified an Audio cell with a matching ID");
+    });
 }

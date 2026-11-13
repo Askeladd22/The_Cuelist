@@ -85,28 +85,16 @@ void MainComponent::oscClipEdited(int cellId,const OscClip& before,const OscClip
     }
 }
 void MainComponent::restoreOscClip(int cellId,const OscClip& snapshot) {
-    auto apply=[&](std::vector<Row>& rows,bool live) {
-        for(auto& row:rows)
-            for(size_t c=0;c<row.cells.size();++c) {
-                if(row.cells[c].id!=cellId ||
-                   show.columns[c].type!=ColumnType::osc)continue;
-                if(live) {engine.panic();resetActiveMapping();}
-                row.cells[c].osc=snapshot;
-                dirty=true;
-                engine.publish(makeLiveRenderState(),!live);
-                if(oscEditor && oscEditorCellId==cellId)
-                    oscEditor->loadClip(snapshot);
-                status="OSC edit reverted.";
-                grid.repaint();timeline.repaint();repaint();
-                return true;
-            }
-        return false;
-    };
-    if(apply(show.rows,show.activeCuelist==liveCuelist))return;
-    for(int index=0;index<(int)show.cuelists.size();++index) {
-        if(index==show.activeCuelist)continue;
-        if(apply(show.cuelists[(size_t)index].rows,index==liveCuelist))return;
-    }
+    const auto target=findStoredClipCell(cellId,ColumnType::osc);
+    if (!target.cell) return;
+    if (target.live) {engine.panic();resetActiveMapping();}
+    target.cell->osc=snapshot;
+    dirty=true;
+    engine.publish(makeLiveRenderState(),!target.live);
+    if (oscEditor && oscEditorCellId==cellId)
+        oscEditor->loadClip(snapshot);
+    status="OSC edit reverted.";
+    grid.repaint();timeline.repaint();repaint();
 }
 void MainComponent::syncOscEditor() {
     if (!oscEditor) return;
