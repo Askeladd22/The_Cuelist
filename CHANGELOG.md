@@ -15,6 +15,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.59] - 2026-11-13
 
+**PR:** [#180](https://github.com/Askeladd22/The_Cuelist/pull/180) (draft, senza merge automatico).
+
 **Stato:** hotfix UX-02: correzione della regressione CI introdotta in 0.9.58; invariati schema JSON v10, trasporto e controllo show.
 
 ### Corretto
