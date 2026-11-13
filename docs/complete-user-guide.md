@@ -6,7 +6,7 @@ This English guide covers the software currently implemented in this repository.
 
 > **Important:** The Cuelist is beta software, not certified for show-critical use. Always rehearse with the actual audio interface, controllers and OSC receivers, run Preflight, check backups and maintain a tested emergency procedure. A green CI build is not proof of hardware reliability or end-to-end timing accuracy.
 
-**Themes and appearance:** open **View → Appearance** or **Settings → Appearance** and choose **Legacy — Graphite / Copper** or **Industrial Orange**. Selection is applied immediately and remembered on the next application launch. Appearance belongs to local application settings, not to a Show file: existing cues, clip media and custom cue colour IDs never change.
+**Themes and appearance:** open **View → Appearance** and choose **Legacy — Graphite / Copper** or **Industrial Orange**. Selection is applied immediately and remembered on the next application launch. Appearance belongs to local application settings, not to a Show file: existing cues, clip media and custom cue colour IDs never change.
 
 **Industrial Orange colours:** structural graphite `#101619 / #182227 / #202C32 / #29373D / #303B40 / #35434A`; brand orange `#C66B42`. GO/PLAY is `#55B875`, PANIC `#E05A46`, WARNING `#E5A52E`, INFO `#55AFC5`. Audio is muted steel blue `#8FA8B2` (different from Info); MIDI is `#B79A72`, OSC `#A18BB9` and Control `#7186A6`. Clip bodies in Timeline show their type colour; selection uses a separate orange outline. Individually coloured cues have stronger body fills with independent selection rails and automatically contrasting labels. The seven saved cue colours are never rewritten. **Legacy** restores the preceding Graphite/Copper UI colours (v0.9.15).
 

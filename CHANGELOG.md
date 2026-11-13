@@ -13,6 +13,22 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.50] - 2026-11-13
+
+**Stato:** consolidamento del menu Settings nascosto nella navigazione JUCE già esistente; schema .cuelist JSON v10 e comportamento LIVE invariati.
+
+### Semplificato
+- Eliminata la seconda implementazione di costruzione e dispatch del popup Settings mantenuta dal pulsante nascosto `preferencesButton`. Il vecchio callback resta disponibile come adattatore verso la stessa funzione `showOperatorMenu` dei menu nativi.
+- Il callback legacy compone, attraverso l'unico builder corrente, i sottomenu Show, Cuelists, Devices e View: Pre-flight/Diagnostics, rinomina Cuelist, Audio/MIDI/OSC, aspetto, fader e orologio restano raggiungibili. A finestra stretta l'ancoraggio utilizza l'overflow More.
+- Aggiornata la specifica dei menu e rimossa dal manuale l'indicazione `Settings → Appearance` non più presente come controllo visibile.
+
+### Verifiche e rischi
+- Aggiunto un test strutturale nel controllo dei menu nativi per impedire il ritorno di un secondo popup e confermare i quattro sottomenu di compatibilità.
+- **Red/Green statico:** eseguito sul contratto del callback prima e dopo la modifica; ispezione del diff e controllo della persistenza dei comandi richiesti.
+- **Windows Build, CTest e CI della PR:** ND fino a esecuzione. GUI reale, tastiera, larghezze compatte, device MIDI/OSC e screenshot DPI: ND; banco hardware e timing realtime: ND.
+- **Nota compatibilità:** la struttura del solo popup attivato dal pulsante nascosto passa da voci dirette a quattro sottomenu; i comandi e i menu ordinari restano gli stessi.
+- **Rollback:** revert della PR. Nessuna migrazione di dati e nessuna modifica allo schema JSON v10.
+
 ## [0.9.49] - 2026-11-13
 
 **PR:** [#170](https://github.com/Askeladd22/The_Cuelist/pull/170) (draft, senza merge automatico).

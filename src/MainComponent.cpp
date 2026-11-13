@@ -301,110 +301,9 @@ MainComponent::MainComponent(bool startAudio) {
     for (const auto& midi:juce::MidiOutput::getAvailableDevices())
         engine.setMidiOutputEnabled(midi.identifier,
             appPreferences->getBoolValue("midiOutputEnabled_"+midi.identifier,true));
-    preferencesButton.onClick=[this] {
-        juce::PopupMenu menu;
-        menu.setLookAndFeel(&theme);
-        menu.addItem(1,"Pre-flight"); menu.addItem(2,"Diagnostics");
-        juce::PopupMenu appearanceMenu;
-        appearanceMenu.setLookAndFeel(&theme);
-        appearanceMenu.addItem(800,"Legacy — Graphite / Copper",true,
-                               appearanceTheme()==palette::Appearance::legacy);
-        appearanceMenu.addItem(801,"Industrial Orange",true,
-                               appearanceTheme()==palette::Appearance::industrialOrange);
-        menu.addSubMenu("Appearance",appearanceMenu);
-        juce::PopupMenu faderMenu;
-        faderMenu.setLookAndFeel(&theme);
-        faderMenu.addItem(3,faderRangeMenuTitle(6),true,faderCeilingDb==6);
-        faderMenu.addItem(4,faderRangeMenuTitle(0),true,faderCeilingDb==0);
-        menu.addSubMenu("Fader Range",faderMenu);
-        menu.addSeparator();
-        juce::PopupMenu clockMenu;
-        const bool twelve=appPreferences && appPreferences->getBoolValue("clock12Hour",false);
-        clockMenu.addItem(60,"24-hour clock",true,!twelve);
-        clockMenu.addItem(61,"12-hour clock",true,twelve);
-        menu.addSubMenu("Clock",clockMenu);
-        juce::PopupMenu midiMenu;
-        const auto inputs=juce::MidiInput::getAvailableDevices();
-        midiMenu.addSectionHeader("MIDI INPUT — ENABLE");
-        midiMenu.addItem(100,"Disable main MIDI input",true,show.controls.midiInputId.isEmpty());
-        for (int i=0;i<inputs.size() && i<100;++i)
-            midiMenu.addItem(101+i,inputs[i].name,true,
-                             show.controls.midiInputId==inputs[i].identifier ||
-                             isAdditionalMidiInputEnabled(inputs[i].identifier));
-        midiMenu.addSeparator();
-        midiMenu.addSectionHeader("MIDI OUTPUT — ENABLE");
-        const auto outputs=juce::MidiOutput::getAvailableDevices();
-        for (int i=0;i<outputs.size() && i<100;++i) {
-            const bool enabled=!appPreferences ||
-                appPreferences->getBoolValue("midiOutputEnabled_"+outputs[i].identifier,true);
-            midiMenu.addItem(301+i,outputs[i].name,true,enabled);
-        }
-        menu.addSubMenu("MIDI Devices",midiMenu);
-        juce::PopupMenu oscMenu;
-        oscMenu.addSectionHeader("Local IP: "+juce::IPAddress::getLocalAddress().toString());
-        const auto ports=configuredOscPorts();
-        oscMenu.addItem(70,"Receive UDP ports: "+(ports.isEmpty()?"not configured":ports));
-        oscMenu.addItem(71,"Disable OSC input");
-        menu.addSubMenu("OSC",oscMenu);
-        menu.addItem(72,"Audio Devices...");
-        menu.addSeparator();
-        menu.addItem(5,"Rename active Cuelist");
-        auto safe=juce::Component::SafePointer<MainComponent>(this);
-        // The original Settings button is retained only as an action source.
-        // Anchor its unchanged native settings popup to the visible
-        // operator Show menu after removing the duplicate sidebar button.
-        auto* anchor=preferencesButton.isVisible()
-            ? static_cast<juce::Component*>(&preferencesButton)
-            : static_cast<juce::Component*>(
-                  operatorMenus[2]->isVisible()
-                      ? operatorMenus[2].get()
-                      : operatorMenus[OperatorNavigationLayout::overflowIndex].get());
-        menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(anchor),
-        [safe,inputs,outputs](int choice) {
-            if (!safe) return;
-            if(choice==1) safe->showPreflight();
-            else if(choice==2) safe->showDiagnostics();
-            else if(choice==800 || choice==801)
-                safe->setAppearanceTheme(choice==800 ?
-                    palette::Appearance::legacy : palette::Appearance::industrialOrange);
-            else if(choice==3 || choice==4) safe->setAudioFaderCeilingDb(choice==3 ? 6 : 0);
-            else if(choice==5) safe->renameActiveCuelist();
-            else if(choice==60 || choice==61) {
-                if(safe->appPreferences)
-                    safe->appPreferences->setValue("clock12Hour",choice==61);
-                safe->repaint();
-            } else if(choice==72) safe->showDevices();
-            else if(choice==70) {
-                showOperatorTextPrompt(*safe,safe->theme,"OSC Input Ports",
-                    "Comma-separated UDP ports, up to 16; empty disables listening.",
-                    "Receive UDP ports",safe->configuredOscPorts(),false,"Apply",
-                    [safe](juce::String value) {
-                        if(safe) safe->configureOscInputPorts(value);
-                    });
-            } else if(choice==71) safe->configureOscInputPorts("");
-            else if(choice==100) safe->selectControlInput({});
-            else if(choice>=101 && choice<201 && choice-101<inputs.size()) {
-                const auto device=inputs[choice-101].identifier;
-                if (device==safe->show.controls.midiInputId)
-                    safe->selectControlInput({});
-                else if (safe->show.controls.midiInputId.isEmpty() &&
-                         !safe->isAdditionalMidiInputEnabled(device))
-                    safe->selectControlInput(device);
-                else safe->toggleAdditionalMidiInput(device);
-            }
-            else if(choice>=301 && choice<401 && choice-301<outputs.size()) {
-                const auto device=outputs[choice-301].identifier;
-                const bool enabled=safe->appPreferences ?
-                    !safe->appPreferences->getBoolValue("midiOutputEnabled_"+device,true) : false;
-                if (safe->appPreferences)
-                    safe->appPreferences->setValue("midiOutputEnabled_"+device,enabled);
-                safe->engine.setMidiOutputEnabled(device,enabled);
-                safe->status="MIDI output "+outputs[choice-301].name+
-                             (enabled?" enabled.":" disabled.");
-                safe->repaint();
-            }
-        });
-    };
+    // Legacy hidden button remains a compatibility entrypoint. All settings
+    // and actions now use the same native operator menus and dispatcher.
+    preferencesButton.onClick=[this] { showOperatorMenu(legacyPreferencesMenu); };
     newButton.onClick=[this] { withDiscardConfirmation([this] { if(projectLoader) projectLoader->cancel(); closeMidiClip(); closeOscClip(); editHistory.clearUndoHistory(); stopAll(); show=makeShow(); clips.clear(); projectFile={}; selectedRow=selectedColumn=nextCue=0;
         liveCuelist=show.activeCuelist; liveNextCue=0;
         resetActiveMapping(); refreshControlSettings();
@@ -1165,8 +1064,16 @@ void MainComponent::refreshCuelistTabs() {
 // functional, not a reduced mirror of the former Preferences popup. All
 // existing MIDI, OSC, clock and fader-range options remain accessible.
 void MainComponent::showOperatorMenu(int index) {
-    if (index<0 || index>OperatorNavigationLayout::overflowIndex) return;
-    auto* target=operatorMenus[(size_t)index].get();
+    const bool legacyPreferences=index==legacyPreferencesMenu;
+    if (!legacyPreferences &&
+        (index<0 || index>OperatorNavigationLayout::overflowIndex)) return;
+    // A hidden compatibility button must anchor its popup to a visible control.
+    // The same rule works when Show is moved into the narrow-layout overflow.
+    auto* target=legacyPreferences
+        ? (operatorMenus[2] && operatorMenus[2]->isVisible()
+            ? operatorMenus[2].get()
+            : operatorMenus[OperatorNavigationLayout::overflowIndex].get())
+        : operatorMenus[(size_t)index].get();
     if (!target || !target->isVisible()) return;
 
     // Capture device identities *when the menu opens*, not when it closes.
@@ -1287,7 +1194,17 @@ void MainComponent::showOperatorMenu(int index) {
 
     juce::PopupMenu menu;
     menu.setLookAndFeel(&theme);
-    if (index==OperatorNavigationLayout::overflowIndex) {
+    if (legacyPreferences) {
+        // Preserve every legacy Settings action without a second menu tree:
+        // Show = Pre-flight/Diagnostics, Cuelists = rename, Devices = I/O,
+        // View = appearance, fader range and clock.
+        for (int group : {2,3,4,5}) {
+            juce::PopupMenu sub;
+            sub.setLookAndFeel(&theme);
+            populate(sub,group);
+            menu.addSubMenu(OperatorNavigationLayout::title(group),sub);
+        }
+    } else if (index==OperatorNavigationLayout::overflowIndex) {
         const int first=OperatorNavigationLayout::atWidth(getWidth())
                             .visibleMenuCount;
         for (int i=first;i<OperatorNavigationLayout::menuCount;++i) {
