@@ -15,6 +15,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.61] - 2026-11-13
 
+**PR:** [#182](https://github.com/Askeladd22/The_Cuelist/pull/182) (draft, senza merge automatico).
+
 **Stato:** correzione della compilazione del test diagnostico UX-02 (PR #181, versione 0.9.60); nessun cambiamento al codice applicativo.
 
 ### Corretto
