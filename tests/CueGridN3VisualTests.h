@@ -84,6 +84,7 @@ void cueGridN3VisualTests() {
               "Column tooltip leaked outside its actual hit area");
     });
     test("UX03: column header mouse targets and tooltips remain distinct",[] {
+        using namespace cuelist;
         MainComponent ui(false);
         ui.show.columns[0].name="Audio tracks";
         addColumn(ui.show,ColumnType::midi,"MIDI triggers");
