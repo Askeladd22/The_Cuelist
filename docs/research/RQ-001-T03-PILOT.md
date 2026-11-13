@@ -93,9 +93,9 @@ I record vanno nel file `RQ-001-T03-OBSERVATIONS.csv`: una riga per partecipante
 ## 9. UX-01 — variante della testata VIEW/LIVE (proposta di verifica, 13 novembre 2026)
 
 **Scenario invariato:** nove Cuelist, VIEW `Emergency` alla posizione 9,
-LIVE `Pre-show` alla posizione 1, secondo GO armato. Le due righe della
-testata cue indicano ora LIVE L01 / Pre-show / GO 02, mantenendo nome
-della VIEW e contatori di cue e clip. La testata è solo informativa:
+LIVE `Pre-show` alla posizione 1, secondo GO armato. Le tre righe della
+testata cue mostrano nome VIEW, LIVE L01 / Pre-show / GO 02 e
+contatori VIEW di cue e clip. La testata è solo informativa:
 nessun clic aggiuntivo o cambio dei comandi di trasporto.
 
 **Ipotesi H-UX01:** nella finestra 1180×820, l'indicazione LIVE accanto
