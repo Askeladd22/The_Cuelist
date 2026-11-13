@@ -15,6 +15,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.54] - 2026-11-13
 
+**PR:** [#175](https://github.com/Askeladd22/The_Cuelist/pull/175) (draft, senza merge automatico).
+
 **Stato:** unificazione della ricerca della cella per Undo/Redo MIDI e OSC fra Cuelist visualizzata e Cuelist inattive; formato progetti JSON v10 invariato.
 
 ### Semplificato
