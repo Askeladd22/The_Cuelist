@@ -82,8 +82,6 @@ MainComponent::MainComponent(bool startAudio) {
     // Import is an editing action, never a transport GO. It can stop
     // playback (see tooltip), but must not look like the green GO action.
     importButton.setName("importAudioMedia");
-    importButton.setColour(juce::TextButton::buttonColourId,palette::raised);
-    importButton.setColour(juce::TextButton::textColourOffId,palette::text);
     behaviour.addItemList({"Retrigger","Pause / Restart","Pause / Resume","Continue"},1);
     rowGain.setSliderStyle(juce::Slider::LinearHorizontal);
     rowGain.setTextBoxStyle(juce::Slider::TextBoxRight,false,72,24);
@@ -268,6 +266,11 @@ MainComponent::MainComponent(bool startAudio) {
         =="legacy" ? palette::Appearance::legacy :
                       palette::Appearance::industrialOrange);
     theme.applyColourTokens();
+    // Component-specific colour IDs must be initialized AFTER restoring the
+    // stored appearance. Otherwise a Legacy palette from a previous session
+    // can leak into Import while the LookAndFeel uses Industrial Orange.
+    importButton.setColour(juce::TextButton::buttonColourId,palette::raised);
+    importButton.setColour(juce::TextButton::textColourOffId,palette::text);
     faderCeilingDb=appPreferences->getIntValue("audioFaderCeilingDb",6)==0 ? 0 : 6;
     showClock=appPreferences->getBoolValue("viewShowClock",true);
     showCpuMeter=appPreferences->getBoolValue("viewShowCpu",true);
@@ -568,6 +571,11 @@ void MainComponent::setAppearanceTheme(palette::Appearance id) {
         component.repaint();
     };
     refreshChildren(*this);
+    // Import has an intentional neutral editor role in both themes. Re-apply
+    // it after generic token remapping to avoid collisions between semantic
+    // roles that happened to use the same ARGB value in the previous theme.
+    importButton.setColour(juce::TextButton::buttonColourId,palette::raised);
+    importButton.setColour(juce::TextButton::textColourOffId,palette::text);
     // The explicit active-tab JUCE button colours must reflect selectedTab
     // (Legacy has a copper-dark tab; Industrial uses neutral graphite).
     refreshCuelistTabs();
