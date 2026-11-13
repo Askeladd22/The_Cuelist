@@ -566,19 +566,19 @@ void uiRefinementTests() {
     test("UX02: neutral audio import does not borrow the transport GO role",[] {
         MainComponent ui(false);
         ui.setAppearanceTheme(palette::Appearance::industrialOrange);
-        auto* import=dynamic_cast<juce::TextButton*>(
+        auto* importControl=dynamic_cast<juce::TextButton*>(
             controlsV3::named(ui,"importAudioMedia"));
-        check(import!=nullptr,"Audio import button must remain native and discoverable");
-        if (!import) return;
+        check(importControl!=nullptr,"Audio import button must remain native and discoverable");
+        if (!importControl) return;
         const auto background=[&] {
-            return import->findColour(juce::TextButton::buttonColourId,false);
+            return importControl->findColour(juce::TextButton::buttonColourId,false);
         };
         const auto ink=[&] {
-            return import->findColour(juce::TextButton::textColourOffId,false);
+            return importControl->findColour(juce::TextButton::textColourOffId,false);
         };
         const auto original=encodeShow(ui.show);
-        check(import->getButtonText().containsIgnoreCase("Import") &&
-              import->getTooltip().contains("stops all playback") &&
+        check(importControl->getButtonText().containsIgnoreCase("Import") &&
+              importControl->getTooltip().contains("stops all playback") &&
               background()==palette::raised &&
               ink()==palette::text &&
               background()!=palette::go,
