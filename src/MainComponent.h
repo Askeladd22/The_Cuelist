@@ -486,7 +486,6 @@ public:
     void completeQuickLearn(const ControlEvent& event);
     void finishQuickLearn();
     void ensureStarterControlFunctions();
-    bool startOscControlInput(int port);
     bool configureOscInputPorts(const juce::String& csv);
     juce::String configuredOscPorts() const;
     void armOscControlLearn() { controlLearnArmed=false;oscLearnArmed=true; }
