@@ -13,6 +13,22 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.51] - 2026-11-13
+
+**PR:** [#172](https://github.com/Askeladd22/The_Cuelist/pull/172) (draft; senza merge automatico).
+
+**Stato:** semplificazione focalizzata del reset Quick Learn, senza cambiamenti deliberati al trasporto, agli ingressi MIDI/OSC, all'Audio Engine o allo schema `.cuelist` JSON v10.
+
+### Semplificato
+- Estratto `clearQuickLearnSessionState()` come singolo proprietario dell'azzeramento dei flag di cattura MIDI/OSC, della selezione/pulsazione Quick Learn, del feedback e della visibilità dei tre controlli di sessione. Lo stesso blocco era duplicato in `resetActiveMapping()` e `finishQuickLearn()`.
+- Mantenute le differenze operative: `finishQuickLearn()` esegue ancora `refresh()` e `updateQuickLearnVisuals()`, senza azzerare l'identità della cue LIVE; `resetActiveMapping()` continua invece a ripristinare `activeCueId` e `controlMapping.setActiveCue(0,0)`, senza nuovi refresh.
+- Non toccati i selettori della Control Map, le associazioni persistenti, `learnedInput`, gli edge MIDI fisici, i listener UDP, GO e PANIC.
+
+### Verifiche e gate
+- Ispezione del codice: verificata l'identità esatta del blocco di stato prima della sua estrazione. Aggiunta regressione JUCE al seam pubblico di Quick Learn: annullamento tramite secondo click del protocollo e PANIC tramite Escape devono disarmare l'apprendimento senza inviare GO né creare binding.
+- Controlli statici del nuovo codice e diff: eseguiti. Test JUCE Windows Release/CTest e CI: ND fino all'esecuzione; test fisici MIDI/OSC, prestazioni realtime e verifica DPI: ND.
+- **Rollback:** revert della PR. Nessun dato migrato; schema dei progetti JSON v10 invariato.
+
 ## [0.9.50] - 2026-11-13
 
 **PR:** [#171](https://github.com/Askeladd22/The_Cuelist/pull/171) (draft, nessun merge automatico).

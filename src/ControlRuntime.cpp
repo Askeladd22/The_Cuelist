@@ -8,17 +8,20 @@ namespace cuelist {
 // Device and mapping application remains on JUCE's message thread.
 // This module does not run in the audio callback.
 
-void MainComponent::resetActiveMapping() {
+void MainComponent::clearQuickLearnSessionState() {
     quickLearnMode=QuickLearnMode::off;quickLearnFunctionId=0;
     quickLearnArmedEntryId=0;quickLearnPulseTicks=0;quickLearnPulseBright=true;
     quickLearnFeedback.clear();
     controlLearnArmed=false;oscLearnArmed=false;
     quickControlTargets.setVisible(false);quickLearnMapSelector.setVisible(false);
     cancelQuickLearn.setVisible(false);
+}
+
+void MainComponent::resetActiveMapping() {
+    clearQuickLearnSessionState();
     activeCueId=0;
     controlMapping.setActiveCue(0,0);
 }
-
 
 juce::String MainComponent::configuredOscPorts() const {
     return appPreferences ? appPreferences->getValue("oscInputPorts","") : juce::String();
@@ -730,12 +733,7 @@ void MainComponent::ensureStarterControlFunctions() {
     refreshControlSettings();dirty=true;
 }
 void MainComponent::finishQuickLearn() {
-    quickLearnMode=QuickLearnMode::off;quickLearnFunctionId=0;
-    quickLearnArmedEntryId=0;quickLearnPulseTicks=0;quickLearnPulseBright=true;
-    quickLearnFeedback.clear();
-    controlLearnArmed=false;oscLearnArmed=false;
-    quickControlTargets.setVisible(false);quickLearnMapSelector.setVisible(false);
-    cancelQuickLearn.setVisible(false);
+    clearQuickLearnSessionState();
     refresh();
     updateQuickLearnVisuals();
 }
