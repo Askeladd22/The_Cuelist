@@ -13,7 +13,6 @@ bool sameMidiClip(const MidiClip& a,const MidiClip& b) {
     }
     return true;
 }
-
 }
 
 // This history action records the logical gesture, not its intermediate drag frames.
