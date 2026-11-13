@@ -15,6 +15,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.56] - 2026-11-13
 
+**PR:** [#177](https://github.com/Askeladd22/The_Cuelist/pull/177) (draft, senza merge automatico).
+
 **Stato:** aggiornamento esclusivamente documentale; nessun cambiamento ai sorgenti runtime o allo schema `.cuelist` JSON v10.
 
 ### Corretto
