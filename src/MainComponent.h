@@ -804,6 +804,10 @@ private:
     void showColumnMenu(juce::Point<int> screenPoint);
     void addCue();
     void timerCallback() override;
+    // Stable cell IDs span VIEW and dormant Cuelists. Keep this lookup
+    // independent of the protocol-specific restoration and transport actions.
+    struct StoredClipCell { Cell* cell=nullptr; bool live=false; };
+    StoredClipCell findStoredClipCell(int cellId,ColumnType type);
     void midiClipEdited(int cellId,const MidiClip& before,const MidiClip& after,bool complete);
     void restoreMidiClip(int cellId,const MidiClip& snapshot);
     void syncClipEditor();
