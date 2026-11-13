@@ -15,6 +15,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.50] - 2026-11-13
 
+**PR:** [#171](https://github.com/Askeladd22/The_Cuelist/pull/171) (draft, nessun merge automatico).
+
 **Stato:** consolidamento del menu Settings nascosto nella navigazione JUCE già esistente; schema .cuelist JSON v10 e comportamento LIVE invariati.
 
 ### Semplificato
