@@ -586,6 +586,35 @@ int main() {
             save(1180,820,"interface-rq001-t04-long-live-2-1180.png");
             save(1920,1080,"interface-rq001-t04-long-live-2-1920.png");
         });
+        test("UX03C: capture native keyboard action strip at compact and wide widths", [&] {
+            MainComponent keyboard(false);
+            addColumn(keyboard.show,ColumnType::midi,"MIDI cues");
+            keyboard.select(0,1);
+            const juce::KeyPress actions{juce::KeyPress::F10Key,
+                                         juce::ModifierKeys::shiftModifier,0};
+            auto capture=[&](int width,int height,const juce::String& file) {
+                keyboard.setSize(width,height);
+                keyboard.resized();
+                const auto image=keyboard.createComponentSnapshot(keyboard.getLocalBounds());
+                check(image.isValid() && image.getWidth()==width &&
+                      image.getHeight()==height,
+                      "UX03C native screenshot dimensions invalid");
+                auto stream=folder.getChildFile(file).createOutputStream();
+                check(stream!=nullptr,"UX03C screenshot stream unavailable");
+                stream->setPosition(0);stream->truncate();
+                check(juce::PNGImageFormat{}.writeImageToStream(image,*stream),
+                      "UX03C screenshot encode failed");
+            };
+            check(keyboard.keyPressed(actions),
+                  "UX03C visual fixture could not open non-modal actions");
+            capture(1180,820,"interface-ux03c-actions-1180.png");
+            check(keyboard.keyPressed(juce::KeyPress{'5'}),
+                  "UX03C visual fixture could not arm Delete");
+            capture(1180,820,"interface-ux03c-delete-armed-1180.png");
+            check(keyboard.keyPressed(actions) && keyboard.keyPressed(actions),
+                  "UX03C visual fixture could not restore normal actions");
+            capture(1920,1080,"interface-ux03c-actions-1920.png");
+        });
         std::cerr << "VISUAL QA: all snapshots complete" << std::endl;
     }
     // Run this last: FileChooser::launchAsync opens a modal UI dialog and
