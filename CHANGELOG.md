@@ -15,6 +15,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.52] - 2026-11-13
 
+**PR:** [#173](https://github.com/Askeladd22/The_Cuelist/pull/173) (draft, senza merge automatico).
+
 **Stato:** refactoring mirato della serializzazione JSON v10 dei Control Binding, senza migrazione dati o modifiche alle funzioni di show control.
 
 ### Semplificato
