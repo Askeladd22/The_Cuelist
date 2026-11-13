@@ -13,6 +13,23 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.63] - 2026-11-13
+
+**PR:** [#184](https://github.com/Askeladd22/The_Cuelist/pull/184) (draft, senza merge automatico).
+
+**Stato:** UX-03B — accesso da tastiera alle azioni della colonna selezionata, senza aggiungere focus ai controlli di trasporto o cambiare layout JUCE.
+
+### Migliorato
+- `Shift+F10` apre un `juce::PopupMenu` nativo e navigabile da tastiera per la colonna selezionata: Rename (solo se espansa), Move left/right, Collapse/Expand e Delete. Le voci disabilitate indicano le operazioni non disponibili. Nessuna azione si esegue all'apertura del menu.
+- Il callback asincrono recupera la colonna tramite ID stabile prima di eseguire gli handler già esistenti; una colonna riordinata o eliminata mentre il menu è aperto non deve provocare un intervento sul target sbagliato.
+- Metadati descrittivi JUCE (`setTitle`, `setDescription`) sulla testata colonne, senza trasformare la testata in un pulsante con focus. Il tasto Space continua ad appartenere a GO, Esc a PANIC e le scorciatoie non vengono intercettate negli editor di testo.
+- Guida utente aggiornata e regressione nativa sul solo shortcut, sulla conservazione di Show/VIEW/LIVE e sulla propagazione di Esc. Non viene cambiato lo schema `.cuelist` JSON v10.
+
+### Evidenza, red team e gate
+- Il workflow della PR #183 (baseline 0.9.62) è riuscito. Per UX-03B la compilazione Windows Release e tutti i CTest sono **da verificare** sulla nuova PR.
+- Red team: Shift+F10 va testato con IME/layout tastiera Windows, editor di testo focalizzati, colonne fuori viewport e menu dismessi; i metadati JUCE non attestano lettura effettiva da Windows Narrator. Verify con hardware esterno resta indipendente dalla CI.
+- **ND:** DPI reali, misure di errore operatori e screen reader, hardware Audio/MIDI/OSC/LTC, sincronismo e readiness LIVE. Revert della PR per rollback senza migrazioni.
+
 ## [0.9.62] - 2026-11-13
 
 **PR:** [#183](https://github.com/Askeladd22/The_Cuelist/pull/183) (draft, senza merge automatico).

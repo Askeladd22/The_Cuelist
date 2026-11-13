@@ -563,6 +563,33 @@ void uiRefinementTests() {
               contrast(palette::background,palette::go)>=4.5,
               "Industrial Orange primary labels or controls lost accessibility");
     });
+    test("UX03B: Shift+F10 offers column actions without firing the show",[] {
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::midi,"MIDI cues");
+        ui.select(0,1);
+        auto* pinned=cueViewFixtures::find<PinnedColumnHeaders>(ui);
+        check(pinned && pinned->getTitle()=="Cue column headers" &&
+              pinned->getDescription().contains("Shift+F10"),
+              "Column accessibility metadata no longer explains keyboard actions");
+        const auto snapshot=encodeShow(ui.show);
+        const int selected=ui.selectedColumn,live=ui.liveCuelistIndex();
+        const int next=ui.nextCueIndex();
+        const juce::KeyPress menuKey{juce::KeyPress::F10Key,
+                                     juce::ModifierKeys::shiftModifier,0};
+        check(ui.keyPressed(menuKey),
+              "Shift+F10 did not open the native selected-column actions");
+        juce::PopupMenu::dismissAllActiveMenus();
+        check(encodeShow(ui.show)==snapshot &&
+              ui.selectedColumn==selected && ui.liveCuelistIndex()==live &&
+              ui.nextCueIndex()==next,
+              "Opening column actions accidentally edited Show or armed GO");
+        check(!ui.keyPressed(juce::KeyPress{juce::KeyPress::F10Key}),
+              "Unmodified F10 was stolen from existing keyboard behavior");
+        check(ui.keyPressed(juce::KeyPress{juce::KeyPress::escapeKey}) &&
+              ui.liveCuelistIndex()==live,
+              "Escape no longer reaches PANIC after column menu access");
+    });
+
     test("UX02: neutral audio import does not borrow the transport GO role",[] {
         MainComponent ui(false);
         ui.setAppearanceTheme(palette::Appearance::industrialOrange);
