@@ -197,4 +197,35 @@ void quickLearnPersistenceTests() {
         ui.finishQuickLearn();
         check(!ui.isQuickLearnActive(),"Explicit Cancel must stop OSC Learn.");
     });
+
+    test("Cancelling Quick Learn and PANIC clear capture without changing GO or saved bindings",[] {
+        MainComponent ui(false);
+        auto* go=dynamic_cast<QuickLearnHotspot*>(
+            controlsV3::named(ui,"quickLearnGo"));
+        check(go!=nullptr,"Quick Learn GO target is missing");
+        const int next=ui.nextCueIndex();
+        const int live=ui.liveCuelistIndex();
+        ui.beginQuickLearn(false);
+        ui.chooseQuickLearnGuiTarget(ControlTarget::go);
+        check(ui.isQuickLearnActive() && ui.isQuickLearnAwaitingInput() &&
+              go->isArmedTarget(),"MIDI GO must arm for Learn");
+        // Pressing the same Learn protocol again cancels only Learn, not GO.
+        ui.beginQuickLearn(false);
+        check(!ui.isQuickLearnActive() && !ui.isQuickLearnAwaitingInput() &&
+              !go->isVisible() && ui.nextCueIndex()==next &&
+              ui.liveCuelistIndex()==live,
+              "Quick Learn Cancel must restore the GUI without moving GO");
+        // Escape is PANIC, even while OSC Learn has a selected target.
+        ui.beginQuickLearn(true);
+        ui.chooseQuickLearnGuiTarget(ControlTarget::go);
+        check(ui.isQuickLearnAwaitingInput() && go->isArmedTarget(),
+              "OSC GO must arm for Learn");
+        check(ui.keyPressed(juce::KeyPress(juce::KeyPress::escapeKey)) &&
+              !ui.isQuickLearnActive() && !ui.isQuickLearnAwaitingInput() &&
+              ui.activeCueMappingId()==0,
+              "PANIC must also disarm Learn and reset the active mapping");
+        check(ui.nextCueIndex()==next && ui.liveCuelistIndex()==live &&
+              ui.show.controls.bindings.empty(),
+              "Learn teardown must not arm another cue or create a binding");
+    });
 }

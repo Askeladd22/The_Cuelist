@@ -726,6 +726,7 @@ private:
     std::optional<ControlEvent> learnedInput;
     juce::Component::SafePointer<juce::DialogWindow> controlDialog;
     PhysicalControlEdges physicalEdges;
+    void clearQuickLearnSessionState();
     void resetActiveMapping();
     void dispatchControl(const ControlEvent&);
     void refreshControlSettings();
