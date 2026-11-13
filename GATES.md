@@ -6,7 +6,7 @@ Scope: Replace only the Shift+F10-created modal column popup in native JUCE with
 
 These are **manual evidence gates** rather than executable Unlazy `CHECK:` commands because this connector can inspect GitHub CI but cannot execute arbitrary approved local Windows tests. CI results must be linked to a specific head SHA. No inherited checks or hooks may run.
 
-- [ ] G1: Shift+F10 shows an explicit, visible native column action hint and does not create a PopupMenu or change keyboard focus.
+- [ ] G1: Shift+F10 shows an explicit, visible native column action hint, does not create a PopupMenu or change keyboard focus, and a click on the hint cannot activate obscured column controls.
   EVIDENCE: pending
 
 - [ ] G2: With column actions active, Esc still executes MainComponent::stopAll and Space still executes MainComponent::goNext; no Show/VIEW/LIVE mutation at mode entry.
