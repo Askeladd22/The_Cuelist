@@ -13,6 +13,22 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.56] - 2026-11-13
+
+**PR:** [#177](https://github.com/Askeladd22/The_Cuelist/pull/177) (draft, senza merge automatico).
+
+**Stato:** aggiornamento esclusivamente documentale; nessun cambiamento ai sorgenti runtime o allo schema `.cuelist` JSON v10.
+
+### Corretto
+- Rettificato il significato delle vecchie voci del changelog che indicavano `draft`: erano lo stato delle PR al momento della loro redazione, **non lo stato corrente**. La verifica diretta su GitHub attesta ora l'integrazione su `main` di tutte le PR [#170](https://github.com/Askeladd22/The_Cuelist/pull/170)–[#176](https://github.com/Askeladd22/The_Cuelist/pull/176). Le voci storiche sono conservate come richiesto da `docs/VERSIONING.md`, senza riscrittura retroattiva.
+- `docs/refactor-roadmap.md` esplicita il proprio carattere storico (espressioni `current PR`, `next stage` e CI ancora da verificare) e registra la mappa S1–S8, le PR integrate, la regola di arresto della pulizia mirata e i gate residui.
+- Separata la conclusione della campagna di semplificazione dall'idoneità LIVE: nessun successo CI certifica dispositivi esterni, sincronismo UDP/MIDI/LTC, recupero fault, DPI o licenze.
+
+### Verifiche e gate
+- **Verificato:** GitHub API, sette PR #170–#176 integrate. La CI Windows Release/CTest per il commit della #176 risulta `completed/success` (run [43503240808](https://github.com/Askeladd22/The_Cuelist/actions/runs/43503240808)); controllo statico della coerenza delle note con la versione.
+- **Da verificare per questa PR:** version/changelog guard, Windows build/CTest, review dei documenti. **ND:** verifica manuale DPI, pulsanti di chiusura delle finestre, hardware Audio/MIDI/OSC, ricevitore LTC, misure realtime e licenze.
+- **Rollback:** revert di questa PR documentale; nessuna migrazione dati.
+
 ## [0.9.55] - 2026-11-13
 
 **PR:** [#176](https://github.com/Askeladd22/The_Cuelist/pull/176) (draft; nessun merge automatico).

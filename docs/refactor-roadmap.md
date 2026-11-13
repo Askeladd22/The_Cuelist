@@ -1,5 +1,60 @@
 # The Cuelist — incremental refactor plan (post-0.9 GUI fixes)
 
+> **Avvertenza documentale — revisione 13 novembre 2026.** Questo file contiene
+> un piano storico: espressioni come “current PR”, “the next stage” e
+> “CI must still be verified” descrivono il momento in cui furono scritte,
+> non lo stato operativo attuale. La fonte della versione resta
+> [VERSION.txt](../VERSION.txt); lo storico reale delle modifiche resta
+> [CHANGELOG.md](../CHANGELOG.md). Non usare questi riferimenti storici come
+> autorizzazione per nuovi merge o refactoring.
+
+## Chiusura della campagna Simplify S1–S8 — 13 novembre 2026
+
+**Perimetro:** le duplicazioni effettivamente verificate nelle superfici
+native di menu, Quick Learn, codec JSON Control Binding, FileChooser,
+ripristino dei clip MIDI/OSC e finestra di editor sganciata. Non è
+una dichiarazione che *l'intero repository* sia libero da debito tecnico.
+
+| Fase | Risultato integrato su `main` | PR verificata |
+|---|---|---|
+| S1 + S3 | Eliminato avvio OSC non richiamato; unica lista CMake dei sorgenti GUI | [#170](https://github.com/Askeladd22/The_Cuelist/pull/170) |
+| S2 | Menu Settings nascosto delega al builder/dispatcher nativo | [#171](https://github.com/Askeladd22/The_Cuelist/pull/171) |
+| S4 | Unico teardown dei flag della sessione Quick Learn | [#172](https://github.com/Askeladd22/The_Cuelist/pull/172) |
+| S5 | Unico contratto di serializzazione dei 22 campi ControlBinding v10 | [#173](https://github.com/Askeladd22/The_Cuelist/pull/173) |
+| S6 | FileChooser JSON condivisi, importatori Default Map e Control Map separati | [#174](https://github.com/Askeladd22/The_Cuelist/pull/174) |
+| S7 | Unica ricerca per ID stabile negli Undo MIDI/OSC fra Cuelist | [#175](https://github.com/Askeladd22/The_Cuelist/pull/175) |
+| S8 | Unico shell `juce::DocumentWindow` per gli editor MIDI e OSC | [#176](https://github.com/Askeladd22/The_Cuelist/pull/176) |
+
+**Evidenza:** GitHub conferma il merge di tutte le PR #170–#176.
+La CI Windows Release/CTest sulla PR #176 è terminata con
+`success` ([run 43503240808](https://github.com/Askeladd22/The_Cuelist/actions/runs/43503240808)).
+Questo dato non sostituisce un collaudo operativo esterno. La baseline
+al momento della verifica era `main@ddc36ef07b20e45365554f43a3e57780a8d7ebca`
+con versione applicativa `0.9.55`.
+
+### Regola di arresto e attività distinte
+
+**Questa campagna di semplificazione mirata termina qui**, salvo una
+regressione effettiva dimostrata dagli ultimi test o dalla revisione.
+Non aprire nuove micro-PR per mera riduzione di righe o per aggiungere
+un'altra astrazione: ogni nuova modifica richiede un consumer identificato,
+una complessità eliminabile, un'ipotesi falsificabile e un test decisivo.
+
+**Gate ancora aperti (ND, non attestati da CI):** uso Windows nativo a
+DPI 100/125/150%, click sulla X di chiusura, Detach/Dock di MIDI e OSC,
+cambi VIEW durante una LIVE, banco Audio/MIDI/OSC e ricevitore LTC esterno,
+misure di dropout, latenza e sincronismo end-to-end, recupero da errore
+e verifiche di licensing prima di qualunque distribuzione. Registrare
+risultati per configurazione, unità e soglia; non inferire prestazioni
+a valle di UDP/MIDI da test simulati.
+
+**Rollback:** ogni fase è una PR piccola e separata, reversibile per
+revert. Nessuna richiede migrazione dello schema progetti JSON v10.
+Per il lavoro successivo usare le RQ del laboratorio, anziché proseguire
+automaticamente questa sequenza.
+
+---
+
 ## Non-negotiable invariants
 
 - No implicit GO, PANIC, transport reset or MIDI/OSC transmission when editing Inspector data.
