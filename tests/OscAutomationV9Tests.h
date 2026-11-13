@@ -736,7 +736,6 @@ void oscAutomationV9Tests() {
         check(validateOscClip(editor.getClip()).wasOk(),"Scrolled edit damaged OSC data");
     });
 
-
     test("Detaching OSC uses a native titled window and preserves its editor",[] {
         MainComponent ui(false);
         addColumn(ui.show,ColumnType::osc,"OSC floating");
