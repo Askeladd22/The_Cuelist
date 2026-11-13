@@ -1141,12 +1141,12 @@ void PinnedColumnHeaders::mouseDoubleClick(const juce::MouseEvent& e) {
         owner.grid.doubleClickColumnHeader(gridXAt(e.x),e.y);
 }
 void PinnedColumnHeaders::mouseMove(const juce::MouseEvent& e) {
-    if (owner.columnKeyboardActionsOpen) {
-        setTooltip(getDescription());
-        return;
-    }
     if (e.y<0 || e.y>=CueGrid::headerHeight) {
         setTooltip({});
+        return;
+    }
+    if (owner.columnKeyboardActionsOpen) {
+        setTooltip(getDescription());
         return;
     }
     const int column=owner.grid.columnAt(gridXAt(e.x));
