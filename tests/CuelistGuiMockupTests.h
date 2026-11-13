@@ -802,12 +802,14 @@ void cuelistGuiMockupTests() {
               ui.show.rows[0].cells[1].id!=cellId,
               "MIDI Undo fixture did not separate VIEW from the edited cell");
         check(ui.undoEdit(),"Cross-VIEW MIDI Undo unavailable");
-        const auto& saved=ui.show.cuelists[0].rows[0].cells[1];
-        check(saved.id==cellId && saved.midi.has_value() &&
-              saved.midi->notes.empty() && ui.show.activeCuelist==1,
+        const auto& undone=ui.show.cuelists[0].rows[0].cells[1];
+        check(undone.id==cellId && undone.midi.has_value() &&
+              undone.midi->notes.empty() && ui.show.activeCuelist==1,
               "MIDI Undo restored a cell in the wrong Cuelist");
         check(ui.redoEdit(),"Cross-VIEW MIDI Redo unavailable");
-        check(saved.midi.has_value() && saved.midi->notes.size()==1 &&
+        const auto& redone=ui.show.cuelists[0].rows[0].cells[1];
+        check(redone.id==cellId && redone.midi.has_value() &&
+              redone.midi->notes.size()==1 &&
               ui.show.activeCuelist==1 && ui.liveCuelistIndex()==0,
               "MIDI Redo lost the original stable cell identity");
     });
