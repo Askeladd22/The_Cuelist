@@ -580,6 +580,7 @@ private:
     // V2 operator navigation. Existing command handlers are reused; the
     // original mixer and Master Audio are deliberately outside this phase.
     std::array<std::unique_ptr<OperatorNavigationButton>,8> operatorMenus;
+    static constexpr int legacyPreferencesMenu=-1; // hidden compatibility action
     void showOperatorMenu(int index);
     void dispatchOperatorMenu(int index,int command);
     void dispatchOperatorDeviceChoice(int choice,

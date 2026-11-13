@@ -26,7 +26,7 @@
 
 ## Garanzie
 
-- Il vecchio `preferencesButton` rimane nascosto e i suoi callback di compatibilità restano nel codice per non spezzare integrazioni storiche, ma **non è più una via necessaria** per raggiungere le opzioni. Le voci di cui sopra aprono direttamente i controlli effettivi.
+- Il vecchio `preferencesButton` rimane nascosto e conserva il callback di compatibilità, ma non definisce più un secondo menu Settings. L'azione inoltra alla **stessa costruzione e allo stesso dispatcher dei menu JUCE** (Show, Cuelists, Devices, View), usando Show o More come ancoraggio visibile. La struttura del popup legacy cambia da voci dirette a sottomenu, ma tutte le funzioni originali restano raggiungibili nei menu standard e dal callback di compatibilità.
 - Per input/output MIDI si conservano gli **identificatori reali dei dispositivi rilevati all'apertura del menu** in modo che un riordino dell'enumerazione non indirizzi un comando verso un altro dispositivo mentre il popup è aperto.
 - I controlli MIDI/OSC con stato on/off sono impostazioni reali, non mockup. Il formato dei salvataggi `.cuelist` schema v10, il motore audio/MIDI/OSC e l'ordine GO/Panic restano immutati.
 - Il **Master Audio nativo è escluso da tutte le modifiche**: disegno, ingombri, controlli e callback originali.

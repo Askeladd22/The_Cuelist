@@ -42,6 +42,20 @@ class NativeOperatorMenuParity(unittest.TestCase):
         self.assertNotIn('"MIDI / OSC Settings..."', MENU)
         self.assertNotIn('"Diagnostics / I/O activity..."', MENU)
 
+    def test_legacy_preferences_reuses_only_the_native_operator_menu(self):
+        # Regression: do not restore a second Settings menu/dispatcher.
+        legacy = between(CPP, "preferencesButton.onClick=[this] {",
+                         "newButton.onClick=[this]")
+        self.assertIn("showOperatorMenu(legacyPreferencesMenu);", legacy)
+        self.assertNotIn("juce::PopupMenu menu;", legacy)
+        self.assertNotIn("menu.addItem(", legacy)
+        self.assertIn("static constexpr int legacyPreferencesMenu=-1", HEADER)
+        self.assertIn("if (legacyPreferences)", MENU)
+        self.assertIn("for (int group : {2,3,4,5})", MENU)
+        self.assertIn("populate(sub,group)", MENU)
+        self.assertIn("menu.addSubMenu(OperatorNavigationLayout::title(group),sub)", MENU)
+        self.assertIn("operatorMenus[OperatorNavigationLayout::overflowIndex]", MENU)
+
     def test_all_legacy_preferences_settings_are_reachable(self):
         device = menu_case(4)
         view = menu_case(5)
