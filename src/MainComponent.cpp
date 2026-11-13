@@ -43,6 +43,10 @@ MainComponent::MainComponent(bool startAudio) {
          &cuelistOverflowButton,&addCuelistButton,&cuelistMoveLeft,&cuelistMoveRight,&undoButton,&redoButton,&globalMidiLearn,&globalOscLearn,&quickControlTargets,&quickLearnMapSelector,&cancelQuickLearn,&goLearnHotspot,&panicLearnHotspot,&helpButton,&dockResize,&timelineResize,&importButton,&midiEditButton,&oscEditButton,&playCellButton,&stopCellButton,&clearButton,&applyButton,
          &cellTab,&rowTab,&rowGain,&rowBehaviour,&rowMute,&rowLoop,&rowName,&cellName,&bpm,&cueNotes,&behaviour,&follow,&loop,&cellAutoStop,&gainDb,&viewport,&timeline,&timelineCollapseButton,&utilities,
          &clipCollapseButton,&clipCloseButton,&editorDivider,&cueHeaders,&columnHeaders,&cueMetrics,&preflightButton,&diagnosticsButton,&preferencesButton,&projectNameLabel,&inlineNameEditor}) addAndMakeVisible(c);
+    // Static native accessibility metadata. Do not make the entire painted
+    // column strip a single focusable button or steal Space from global GO.
+    columnHeaders.setTitle("Cue column headers");
+    columnHeaders.setDescription("Select a column; Shift+F10 opens its keyboard actions.");
     for (juce::TextButton* b : std::initializer_list<juce::TextButton*>{&openButton,&saveButton,&newButton,&addRowButton,&addColumnButton,&goButton,&panicButton,&deviceButton,&controlButton,&collapseAllButton,&inspectorSideTab,
                     &cuelistOverflowButton,&addCuelistButton,&cuelistMoveLeft,&cuelistMoveRight,&undoButton,&redoButton,&globalMidiLearn,&globalOscLearn,&helpButton,
                     &importButton,&midiEditButton,&oscEditButton,&playCellButton,&stopCellButton,&clearButton,&applyButton,
@@ -2241,6 +2245,19 @@ void MainComponent::stopAll() {
     status="PANIC / audio, MIDI and OSC playback stopped."; repaint();
 }
 bool MainComponent::keyPressed(const juce::KeyPress& key) {
+    // Standard Windows context-menu shortcut for the currently selected
+    // column. The native popup is keyboard navigable; no hidden GO, STOP or
+    // PANIC focus targets are added to the grid.
+    if (key.getKeyCode()==juce::KeyPress::F10Key &&
+        key.getModifiers().isShiftDown() &&
+        !key.getModifiers().isCommandDown() &&
+        !key.getModifiers().isAltDown() &&
+        !dynamic_cast<juce::TextEditor*>(
+            juce::Component::getCurrentlyFocusedComponent()) &&
+        !show.columns.empty()) {
+        showSelectedColumnActionsMenu();
+        return true;
+    }
     // Explicit modifier combination so normal Left/Right arrows and all
     // text editing remain untouched.
     if (!dynamic_cast<juce::TextEditor*>(

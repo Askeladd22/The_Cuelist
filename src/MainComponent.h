@@ -802,6 +802,9 @@ private:
     void showPreflight();
     void showDiagnostics();
     void showColumnMenu(juce::Point<int> screenPoint);
+    // Native, keyboard-invoked actions for the currently selected column.
+    // Shift+F10 does not move keyboard focus onto transport controls.
+    void showSelectedColumnActionsMenu();
     void addCue();
     void timerCallback() override;
     // Stable cell IDs span VIEW and dormant Cuelists. Keep this lookup
