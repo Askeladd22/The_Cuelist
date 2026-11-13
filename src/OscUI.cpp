@@ -1,5 +1,6 @@
 #include "MainComponent.h"
 #include "OscEditor.h"
+#include "FloatingClipWindow.h"
 
 namespace cuelist {
 namespace {
@@ -23,15 +24,6 @@ private:
     int id=0;
     OscClip before,after;
     bool first=true;
-};
-class FloatingOscWindow final : public juce::DocumentWindow {
-public:
-    explicit FloatingOscWindow(std::function<void()> callback)
-      : juce::DocumentWindow("The Cuelist - OSC",palette::panel,juce::DocumentWindow::closeButton,true),
-        close(std::move(callback)) {}
-    void closeButtonPressed() override { if (close) close(); }
-private:
-    std::function<void()> close;
 };
 }
 void MainComponent::editOscClip() {
@@ -109,7 +101,7 @@ void MainComponent::detachOscClip() {
     if (!oscEditor || oscWindow) return;
     if (oscEditor->getParentComponent()==this) removeChildComponent(oscEditor.get());
     auto safe=juce::Component::SafePointer<MainComponent>(this);
-    oscWindow=std::make_unique<FloatingOscWindow>([safe] {
+    oscWindow=std::make_unique<FloatingClipWindow>("The Cuelist - OSC",[safe] {
         juce::MessageManager::callAsync([safe] { if (safe) safe->dockOscClip(); });
     });
     oscWindow->setUsingNativeTitleBar(true);

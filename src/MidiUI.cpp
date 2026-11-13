@@ -1,5 +1,6 @@
 #include "MainComponent.h"
 #include "PianoRoll.h"
+#include "FloatingClipWindow.h"
 
 namespace cuelist {
 namespace {
@@ -13,16 +14,6 @@ bool sameMidiClip(const MidiClip& a,const MidiClip& b) {
     return true;
 }
 
-class FloatingPianoRoll final : public juce::DocumentWindow {
-public:
-    explicit FloatingPianoRoll(std::function<void()> onClose)
-        : juce::DocumentWindow("The Cuelist - Piano Roll",palette::panel,
-                               juce::DocumentWindow::closeButton,true),
-          close(std::move(onClose)) {}
-    void closeButtonPressed() override { if (close) close(); }
-private:
-    std::function<void()> close;
-};
 }
 
 // This history action records the logical gesture, not its intermediate drag frames.
@@ -120,7 +111,7 @@ void MainComponent::detachMidiClip() {
     if (!clipEditor || clipWindow) return;
     if (clipEditor->getParentComponent()==this) removeChildComponent(clipEditor.get());
     auto safe=juce::Component::SafePointer<MainComponent>(this);
-    auto* window=new FloatingPianoRoll([safe] {
+    auto* window=new FloatingClipWindow("The Cuelist - Piano Roll",[safe] {
         juce::MessageManager::callAsync([safe] { if (safe) safe->dockMidiClip(); });
     });
     clipWindow.reset(window);
