@@ -13,6 +13,22 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.61] - 2026-11-13
+
+**PR:** [#182](https://github.com/Askeladd22/The_Cuelist/pull/182) (draft, senza merge automatico).
+
+**Stato:** correzione della compilazione del test diagnostico UX-02 (PR #181, versione 0.9.60); nessun cambiamento al codice applicativo.
+
+### Corretto
+- GitHub Actions [43514560543](https://github.com/Askeladd22/The_Cuelist/actions/runs/43514560543) ha fallito in compilazione: `check(bool,const char*)` non accetta un messaggio `juce::String`; MSVC C2664 su tre assert di `tests/UiRefinementTests.h`. Le verifiche di runtime non sono state eseguite in quel workflow.
+- Un'unica funzione locale nel test `expectSafetyTooltip(phase)` mantiene un `juce::String` diagnostico valido fino alla chiamata sincrona di `check(..., diagnostic.toRawUTF8())`. La condizione e il tooltip di sicurezza non sono indeboliti.
+- `VERSION.txt` e CMake aggiornati a 0.9.61, schema JSON v10 invariato.
+
+### Gate e rollback
+- Verifica statica delle firme `check(bool,const char*)` e degli assert aggiornata. **ND:** build Windows/CTest nuova fino al suo run, tooltip reale su Windows, screenshots e DPI, hardware esterno.
+- Se CTest ancora fallisce, il log riporterà il testo letto effettivamente da JUCE; non unire la modifica automaticamente.
+- Rollback tramite revert della PR.
+
 ## [0.9.60] - 2026-11-13
 
 **PR:** [#181](https://github.com/Askeladd22/The_Cuelist/pull/181) (draft, senza merge automatico).
