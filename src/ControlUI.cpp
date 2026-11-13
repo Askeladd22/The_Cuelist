@@ -713,7 +713,7 @@ private:
             });
     }
     void importJsonFile(const juce::String& title,const juce::String& tooLarge,
-                        std::function<void(ControlPanel&,const juce::String&)> import) {
+                        std::function<void(ControlPanel&,const juce::String&)> onImport) {
         presetFileChooser=std::make_unique<juce::FileChooser>(
             title,juce::File::getSpecialLocation(juce::File::userDocumentsDirectory),
             "*.json");
@@ -721,7 +721,7 @@ private:
         presetFileChooser->launchAsync(
             juce::FileBrowserComponent::openMode |
             juce::FileBrowserComponent::canSelectFiles,
-            [safe,tooLarge,import=std::move(import)](const juce::FileChooser& chooser) {
+            [safe,tooLarge,onImport=std::move(onImport)](const juce::FileChooser& chooser) {
                 if (!safe || !safe->owner) return;
                 const auto file=chooser.getResult();
                 if (file==juce::File()) return;
@@ -729,7 +729,7 @@ private:
                     safe->state.setText(tooLarge,juce::dontSendNotification);
                     return;
                 }
-                import(*safe.getComponent(),file.loadFileAsString());
+                onImport(*safe.getComponent(),file.loadFileAsString());
             });
     }
     void updateInputVisibility() {
