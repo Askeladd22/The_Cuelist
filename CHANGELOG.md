@@ -13,6 +13,22 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.55] - 2026-11-13
+
+**PR:** [#176](https://github.com/Askeladd22/The_Cuelist/pull/176) (draft; nessun merge automatico).
+
+**Stato:** unificazione della classe JUCE per le finestre staccabili MIDI/OSC, senza modifiche ai protocolli, allo stato LIVE, alla matrice cue o allo schema JSON v10.
+
+### Semplificato
+- Eliminati `FloatingPianoRoll` da `MidiUI.cpp` e `FloatingOscWindow` da `OscUI.cpp`: entrambi duplicavano l'identica callback di chiusura del `juce::DocumentWindow`.
+- Introdotto il solo `FloatingClipWindow` in `src/FloatingClipWindow.h`. Il titolo è passato dal chiamante; l'ownership dell'editor, i diversi formati delle finestre (1000×620 MIDI, 1000×500 OSC), i limiti di resize, le funzioni Detach/Dock/Close e `SafePointer` restano invariati.
+- Aggiunte asserzioni JUCE per il titolo nativo MIDI e per la sequenza OSC Detach/Dock/Close mantenendo la stessa istanza dell'editor.
+
+### Verifiche e gate
+- Ispezione statica delle due vecchie classi, consumer, titoli, geometrie e callback: eseguita. La regressione comportamentale è affidata a Windows Release e CTest CI: ND prima dell'esecuzione.
+- Screenshot DPI, interazione manuale col pulsante chiusura nativo e hardware Audio/MIDI/OSC/LTC: ND. Green CI non certifica readiness LIVE.
+- **Rollback:** revert della PR; nessuna migrazione dati.
+
 ## [0.9.54] - 2026-11-13
 
 **PR:** [#175](https://github.com/Askeladd22/The_Cuelist/pull/175) (draft, senza merge automatico).

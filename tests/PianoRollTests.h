@@ -239,6 +239,9 @@ inline void pianoRollTests() {
         check(ui.show.rows[0].cells[1].midi->notes.size()==1,"Redo did not restore MIDI");
         ui.detachMidiClip();
         check(ui.isClipEditorFloating() && ui.activeClipEditor()==editor,"Floating editor was not the same instance");
+        auto* floating=dynamic_cast<juce::DocumentWindow*>(editor->getTopLevelComponent());
+        check(floating && floating->getName()=="The Cuelist - Piano Roll",
+              "Detached MIDI editor lost its native window title or shell");
         ui.dockMidiClip();
         check(!ui.isClipEditorFloating() && ui.activeClipEditor()==editor,"Editor could not reattach");
         check(ui.show.rows[0].cells[1].id==cellId,"Docking moved the wrong cell");

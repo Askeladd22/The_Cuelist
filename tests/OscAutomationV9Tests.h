@@ -736,4 +736,25 @@ void oscAutomationV9Tests() {
         check(validateOscClip(editor.getClip()).wasOk(),"Scrolled edit damaged OSC data");
     });
 
+    test("Detaching OSC uses a native titled window and preserves its editor",[] {
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::osc,"OSC floating");
+        check(ui.select(0,1),"OSC floating test could not select its cell");
+        ui.editOscClip();
+        auto* editor=ui.activeOscEditor();
+        check(editor!=nullptr,"OSC native editor was not constructed");
+        if (!editor) return;
+        ui.detachOscClip();
+        auto* floating=dynamic_cast<juce::DocumentWindow*>(editor->getTopLevelComponent());
+        check(floating && floating->getName()=="The Cuelist - OSC" &&
+              ui.activeOscEditor()==editor,
+              "Detached OSC lost its original editor or native window title");
+        ui.dockOscClip();
+        check(ui.activeOscEditor()==editor &&
+              editor->getTopLevelComponent()==&ui,
+              "Docking OSC did not restore the same native editor");
+        ui.closeOscClip();
+        check(ui.activeOscEditor()==nullptr,
+              "Closing docked OSC did not release its editor");
+    });
 }
