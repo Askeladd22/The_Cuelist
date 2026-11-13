@@ -1100,13 +1100,21 @@ void PinnedColumnHeaders::paint(juce::Graphics& g) {
         g.fillRect(0,0,getWidth(),3);
         label(g,(owner.columnKeyboardDeleteArmed ? "CONFIRM DELETE  /  " : "COLUMN ACTIONS  /  ")+
               name,{10,5,getWidth()-20,19},13,palette::text,true);
-        const auto fold=index>=0 && owner.show.columns[(size_t)index].collapsed ?
-            juce::String("Expand") : juce::String("Fold");
+        const bool collapsed=index>=0 &&
+            owner.show.columns[(size_t)index].collapsed;
+        const auto fold=collapsed ? juce::String("Expand") : juce::String("Fold");
+        // In compact mode use the same short labels, but explicitly mark
+        // unavailable actions instead of showing a misleading enabled hint.
+        const auto rename=collapsed || index<0 ? juce::String("1 N/A") :
+            juce::String("1 Name");
+        const auto left=index>0 ? juce::String("2 Left") : juce::String("2 N/A");
+        const auto right=index>=0 && index+1<(int)owner.show.columns.size() ?
+            juce::String("3 Right") : juce::String("3 N/A");
         const auto actions=owner.columnKeyboardDeleteArmed ?
             juce::String("Press D to delete  /  repeating 5 does nothing") :
             getWidth()<520 ?
-                juce::String("1 Name   2 Left   3 Right   4 ")+fold+"   5 Del" :
-                juce::String("1 Rename   2 Move left   3 Move right   4 ")+fold+"   5 Delete";
+                rename+"   "+left+"   "+right+"   4 "+fold+"   5 Del" :
+                rename+"   "+left+"   "+right+"   4 "+fold+"   5 Delete";
         label(g,actions,{10,27,getWidth()-20,19},11,
               owner.columnKeyboardDeleteArmed ? palette::red : palette::muted,true);
         label(g,"ESC  PANIC    SPACE  GO    SHIFT+F10  EXIT",
