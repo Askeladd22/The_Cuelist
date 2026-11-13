@@ -577,20 +577,26 @@ void uiRefinementTests() {
             return importControl->findColour(juce::TextButton::textColourOffId,false);
         };
         const auto original=encodeShow(ui.show);
-        check(importControl->getButtonText().containsIgnoreCase("Import") &&
-              importControl->getTooltip().contains("stops all playback") &&
-              background()==palette::raised &&
-              ink()==palette::text &&
-              background()!=palette::go,
-              "Import lost its neutral editing role or playback-warning tooltip");
+        check(importControl->getButtonText().containsIgnoreCase("Import"),
+              "Import action label was unexpectedly replaced");
+        check(importControl->getTooltip().contains("stops all playback"),
+              "Import no longer warns that it stops active playback");
+        check(background()==palette::raised,
+              "Import background did not follow the restored neutral theme");
+        check(ink()==palette::text,
+              "Import foreground did not follow the restored text theme");
+        check(background()!=palette::go,
+              "Import is visually indistinguishable from global GO");
         ui.setAppearanceTheme(palette::Appearance::legacy);
-        check(background()==palette::raised && ink()==palette::text &&
-              background()!=palette::go,
-              "Theme switch repainted import as a transport action");
+        check(background()==palette::raised,
+              "Legacy background on Import drifted from neutral graphite");
+        check(ink()==palette::text && background()!=palette::go,
+              "Legacy Import borrowed GO colours after changing appearance");
         ui.setAppearanceTheme(palette::Appearance::industrialOrange);
-        check(background()==palette::raised && ink()==palette::text &&
-              encodeShow(ui.show)==original,
-              "Returning to Industrial Orange changed Import or Show data");
+        check(background()==palette::raised && ink()==palette::text,
+              "Returning to Industrial Orange did not restore neutral Import");
+        check(encodeShow(ui.show)==original,
+              "Theme switch unexpectedly edited the saved Show");
     });
 
     test("Industrial Orange keeps selections, playback and column types separate",[] {

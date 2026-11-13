@@ -13,6 +13,20 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.59] - 2026-11-13
+
+**Stato:** hotfix UX-02: correzione della regressione CI introdotta in 0.9.58; invariati schema JSON v10, trasporto e controllo show.
+
+### Corretto
+- PR #179 compilava, ma il workflow Windows [43510860209](https://github.com/Askeladd22/The_Cuelist/actions/runs/43510860209) ha fallito CTest: `UX02: neutral audio import does not borrow the transport GO role` (1 test fallito su 420351 assert; screenshot CI non caricati).
+- `MainComponent.cpp`: i colori JUCE espliciti del pulsante Import sono ora applicati dopo il caricamento della preferenza di tema; `setAppearanceTheme()` conferma la semantica grafite/testo anche dopo il rimapping. Nessun cambio di callback, tooltip, ordine delle operazioni di importazione, GO o PANIC.
+- `tests/UiRefinementTests.h`: i singoli aspetti del contratto (etichetta, tooltip di stop, sfondo, testo, differenza rispetto a GO, transizione Legacy/Industrial e modello persistito) sono verificati separatamente per rendere diagnostici gli eventuali fallimenti.
+
+### Test, rischi, rollback
+- Il fallimento CTest della 0.9.58 è **misurato**. La causa proposta è la sequenza di inizializzazione dei colori prima del ripristino delle preferenze; deve essere confermata dalla nuova CI.
+- Gate da verificare: Windows Release e tutti i CTest, screenshot native GUI dopo il build; DPI nativi e hardware esterno ND. CI verde non indica readiness LIVE.
+- Revert della PR ripristina il precedente comportamento; nessuna migrazione dati.
+
 ## [0.9.58] - 2026-11-13
 
 **PR:** [#179](https://github.com/Askeladd22/The_Cuelist/pull/179) (draft, senza merge automatico).
