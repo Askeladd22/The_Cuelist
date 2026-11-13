@@ -26,6 +26,10 @@
 
 namespace cuelist {
 namespace {
+// Shared warning for both startup and appearance changes. A neutral editing
+// button still needs to disclose that importing can interrupt live playback.
+constexpr const char* audioImportTooltip=
+    "Mono/stereo WAV and MP3. Importing stops all playback.";
 juce::String typeName(ColumnType t) { return t==ColumnType::audio ? "AUDIO" : t==ColumnType::midi ? "MIDI" : t==ColumnType::osc ? "OSC" : "CONTROL"; }
 juce::String duration(double seconds) {
     int s=(int)seconds; return juce::String(s/60).paddedLeft('0',2)+":"+juce::String(s%60).paddedLeft('0',2);
@@ -447,7 +451,7 @@ MainComponent::MainComponent(bool startAudio) {
         else editOscClip();
     };
     applyButton.onClick=[this] { applyInspector(); };
-    importButton.setTooltip("Mono/stereo WAV and MP3. Importing stops all playback.");
+    importButton.setTooltip(audioImportTooltip);
     applyButton.setTooltip("Apply parameters without stopping playback. Enter confirms names.");
     addColumnButton.setTooltip("Add a column.");
     addRowButton.setTooltip("Add a cue.");
@@ -580,6 +584,10 @@ void MainComponent::setAppearanceTheme(palette::Appearance id) {
     // (Legacy has a copper-dark tab; Industrial uses neutral graphite).
     refreshCuelistTabs();
     sendLookAndFeelChange();
+    // Preserve the safety warning after JUCE rebuilds native button state
+    // during appearance changes. Avoid relying on an earlier constructor
+    // assignment that may be cleared by a LookAndFeel refresh.
+    importButton.setTooltip(audioImportTooltip);
     // PianoRollEditor and OscClipEditor own independent Theme instances.
     // They do not inherit the MainComponent LookAndFeel when docked or
     // reparented into floating DocumentWindows.
