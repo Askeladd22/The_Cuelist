@@ -13,6 +13,20 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.52] - 2026-11-13
+
+**Stato:** refactoring mirato della serializzazione JSON v10 dei Control Binding, senza migrazione dati o modifiche alle funzioni di show control.
+
+### Semplificato
+- Introdotto un solo `controlBindingObject()` e un solo `parseControlBinding()` in `ShowModel.cpp`: Default Map, Control Set e route delle funzioni astratte usano lo stesso contratto dei 22 campi.
+- Rimossi i due writer e due reader paralleli. Ordine dei 22 campi, tipi, validazione esistente, fallback dei campi opzionali `curve`/`functionId` e transazione `decodeShow()` conservati.
+- Nuovo test nativo di parità JSON tra Default Map e Control Set, valori non-default, round-trip, documenti v10 senza campi opzionali e rifiuto atomico di un valore malformato.
+
+### Verifiche e gate
+- Verifica statica preventiva dei 22 campi nei due serializer e nei due parser, e confronto post-refactoring dei consumer. **Build e CTest Windows / CI:** ND fino all'esecuzione della PR.
+- Prove con progetti reali, hardware MIDI/OSC, screenshot DPI e prestazioni/audio realtime: ND; una CI verde non certifica uso LIVE.
+- **Rollback:** revert della PR. Nessuna migrazione dello schema `.cuelist` JSON v10.
+
 ## [0.9.51] - 2026-11-13
 
 **PR:** [#172](https://github.com/Askeladd22/The_Cuelist/pull/172) (draft; senza merge automatico).

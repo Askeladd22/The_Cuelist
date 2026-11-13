@@ -388,41 +388,49 @@ juce::Array<juce::var> array(const juce::var& o,const char* key) {
 }
 // A Control Set stores the same binding schema as legacy Control Mapping,
 // but without a competing cue/preset scope. Optional v10 extension.
+// Keep the v10 binding representation identical for Default Map, Control Sets
+// and abstract-function routes. Field order and optional decode defaults are
+// part of the persisted project compatibility contract.
+static juce::var controlBindingObject(const ControlBinding& b) {
+    return object({{"id",b.id},{"deviceId",b.deviceId},
+        {"kind",(int)b.kind},{"channel",b.channel},{"number",b.number},
+        {"scope",(int)b.scope},{"scopeId",b.scopeId},{"target",(int)b.target},
+        {"targetColumnId",b.targetColumnId},{"outputChannel",b.outputChannel},
+        {"outputNumber",b.outputNumber},{"outputDeviceId",b.outputDeviceId},
+        {"oscHost",b.oscHost},{"oscPort",b.oscPort},{"oscAddress",b.oscAddress},
+        {"minimum",b.minimum},{"maximum",b.maximum},{"invert",b.invert},
+        {"enabled",b.enabled},{"takeover",(int)b.takeover},{"curve",(int)b.curve},
+        {"functionId",b.functionId}});
+}
+static ControlBinding parseControlBinding(const juce::var& item) {
+    ControlBinding b;
+    b.id=integer(item,"id"); b.deviceId=string(item,"deviceId");
+    b.kind=(ControlKind)integer(item,"kind");
+    b.channel=integer(item,"channel"); b.number=integer(item,"number");
+    b.scope=(ControlScope)integer(item,"scope");
+    b.scopeId=integer(item,"scopeId"); b.target=(ControlTarget)integer(item,"target");
+    b.targetColumnId=integer(item,"targetColumnId");
+    b.outputChannel=integer(item,"outputChannel");
+    b.outputNumber=integer(item,"outputNumber"); b.outputDeviceId=string(item,"outputDeviceId");
+    b.oscHost=string(item,"oscHost"); b.oscPort=integer(item,"oscPort");
+    b.oscAddress=string(item,"oscAddress");
+    b.minimum=(float)number(item,"minimum"); b.maximum=(float)number(item,"maximum");
+    b.invert=boolean(item,"invert"); b.enabled=boolean(item,"enabled");
+    b.takeover=(ControlTakeover)integer(item,"takeover");
+    if (item.hasProperty("curve")) b.curve=(ControlCurve)integer(item,"curve");
+    if (item.hasProperty("functionId")) b.functionId=integer(item,"functionId");
+    return b;
+}
 juce::var controlSetObject(const ControlSet& set) {
     juce::Array<juce::var> bindings;
     for (const auto& b:set.bindings)
-        bindings.add(object({{"id",b.id},{"deviceId",b.deviceId},
-            {"kind",(int)b.kind},{"channel",b.channel},{"number",b.number},
-            {"scope",(int)b.scope},{"scopeId",b.scopeId},{"target",(int)b.target},
-            {"targetColumnId",b.targetColumnId},{"outputChannel",b.outputChannel},
-            {"outputNumber",b.outputNumber},{"outputDeviceId",b.outputDeviceId},
-            {"oscHost",b.oscHost},{"oscPort",b.oscPort},{"oscAddress",b.oscAddress},
-            {"minimum",b.minimum},{"maximum",b.maximum},{"invert",b.invert},
-            {"enabled",b.enabled},{"takeover",(int)b.takeover},{"curve",(int)b.curve},
-            {"functionId",b.functionId}}));
+        bindings.add(controlBindingObject(b));
     return object({{"bindings",bindings}});
 }
 ControlSet parseControlSet(const juce::var& data) {
     ControlSet set;
-    for (const auto& item:array(data,"bindings")) {
-        ControlBinding b;
-        b.id=integer(item,"id"); b.deviceId=string(item,"deviceId");
-        b.kind=(ControlKind)integer(item,"kind");
-        b.channel=integer(item,"channel"); b.number=integer(item,"number");
-        b.scope=(ControlScope)integer(item,"scope");
-        b.scopeId=integer(item,"scopeId"); b.target=(ControlTarget)integer(item,"target");
-        b.targetColumnId=integer(item,"targetColumnId");
-        b.outputChannel=integer(item,"outputChannel");
-        b.outputNumber=integer(item,"outputNumber"); b.outputDeviceId=string(item,"outputDeviceId");
-        b.oscHost=string(item,"oscHost"); b.oscPort=integer(item,"oscPort");
-        b.oscAddress=string(item,"oscAddress");
-        b.minimum=(float)number(item,"minimum"); b.maximum=(float)number(item,"maximum");
-        b.invert=boolean(item,"invert"); b.enabled=boolean(item,"enabled");
-        b.takeover=(ControlTakeover)integer(item,"takeover");
-        if (item.hasProperty("curve")) b.curve=(ControlCurve)integer(item,"curve");
-        if (item.hasProperty("functionId")) b.functionId=integer(item,"functionId");
-        set.bindings.push_back(std::move(b));
-    }
+    for (const auto& item:array(data,"bindings"))
+        set.bindings.push_back(parseControlBinding(item));
     return set;
 }
 juce::String encodeShow(const Show& show) {
@@ -498,15 +506,7 @@ juce::String encodeShow(const Show& show) {
     for (const auto& preset:show.controls.presets)
         presets.add(object({{"id",preset.id},{"name",preset.name}}));
     for (const auto& binding:show.controls.bindings)
-        bindings.add(object({{"id",binding.id},{"deviceId",binding.deviceId},
-            {"kind",(int)binding.kind},{"channel",binding.channel},{"number",binding.number},
-            {"scope",(int)binding.scope},{"scopeId",binding.scopeId},{"target",(int)binding.target},
-            {"targetColumnId",binding.targetColumnId},{"outputChannel",binding.outputChannel},
-            {"outputNumber",binding.outputNumber},{"outputDeviceId",binding.outputDeviceId},
-            {"oscHost",binding.oscHost},{"oscPort",binding.oscPort},{"oscAddress",binding.oscAddress},
-            {"minimum",binding.minimum},{"maximum",binding.maximum},{"invert",binding.invert},
-            {"enabled",binding.enabled},{"takeover",(int)binding.takeover},
-            {"curve",(int)binding.curve},{"functionId",binding.functionId}}));
+        bindings.add(controlBindingObject(binding));
     juce::Array<juce::var> templates;
     for (const auto& item:show.controls.templates)
         templates.add(object({{"id",item.id},{"name",item.name},
@@ -579,26 +579,8 @@ juce::Result decodeShow(const juce::String& text, Show& destination) {
                         integer(item,"id"),string(item,"name"),
                         std::move(route.bindings.front())});
                 }
-            for (const auto& item:array(data,"bindings")) {
-                ControlBinding b;
-                b.id=integer(item,"id"); b.deviceId=string(item,"deviceId");
-                b.kind=(ControlKind)integer(item,"kind");
-                b.channel=integer(item,"channel"); b.number=integer(item,"number");
-                b.scope=(ControlScope)integer(item,"scope"); b.scopeId=integer(item,"scopeId");
-                b.target=(ControlTarget)integer(item,"target");
-                b.targetColumnId=integer(item,"targetColumnId");
-                b.outputChannel=integer(item,"outputChannel");
-                b.outputNumber=integer(item,"outputNumber");
-                b.outputDeviceId=string(item,"outputDeviceId");
-                b.oscHost=string(item,"oscHost"); b.oscPort=integer(item,"oscPort");
-                b.oscAddress=string(item,"oscAddress");
-                b.minimum=(float)number(item,"minimum"); b.maximum=(float)number(item,"maximum");
-                b.invert=boolean(item,"invert"); b.enabled=boolean(item,"enabled");
-                b.takeover=(ControlTakeover)integer(item,"takeover");
-                if (item.hasProperty("curve")) b.curve=(ControlCurve)integer(item,"curve");
-                if (item.hasProperty("functionId")) b.functionId=integer(item,"functionId");
-                show.controls.bindings.push_back(std::move(b));
-            }
+            for (const auto& item:array(data,"bindings"))
+                show.controls.bindings.push_back(parseControlBinding(item));
         }
         if (version>=8) show.masterGain=(float)number(root,"masterGain");
         // Optional fields keep every existing v10 document backwards-compatible.

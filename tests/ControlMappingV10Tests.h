@@ -397,4 +397,87 @@ void controlMappingV10Tests() {
               "Lock/unlock edits did not survive a project roundtrip");
     });
 
+
+    test("v10 Default Map and Control Set use one lossless binding JSON schema",[] {
+        auto show=makeShow();
+        ControlFunction fn;
+        fn.id=show.controls.nextId++;
+        fn.name="House master gain";
+        fn.destination.target=ControlTarget::masterGain;
+        show.controls.functions.push_back(fn);
+        ControlBinding input;
+        input.id=show.controls.nextId++;
+        input.deviceId="desk-controller";
+        input.kind=ControlKind::cc;input.channel=3;input.number=74;
+        input.target=ControlTarget::masterGain;input.functionId=fn.id;
+        input.outputChannel=8;input.outputNumber=73;
+        input.outputDeviceId="midi-out";
+        input.oscHost="127.0.0.1";input.oscPort=9123;
+        input.oscAddress="/house/gain";
+        input.minimum=0.125f;input.maximum=0.875f;
+        input.invert=true;input.takeover=ControlTakeover::jump;
+        input.curve=ControlCurve::easeOut;
+        show.controls.bindings.push_back(input);
+        ControlSetTemplate saved;
+        saved.id=show.controls.nextId++;saved.name="Backup desk";
+        auto alternate=input;
+        alternate.id=show.controls.nextId++;
+        saved.set.bindings.push_back(alternate);
+        show.controls.templates.push_back(saved);
+        check(validateShow(show).wasOk(),"Shared binding schema fixture is invalid");
+
+        const auto encoded=encodeShow(show);
+        auto root=juce::JSON::parse(encoded);
+        check((int)root["version"]==10,"Show format changed from v10");
+        auto controls=root.getProperty("controls",{});
+        auto globalEntries=controls.getProperty("bindings",{});
+        auto savedMaps=controls.getProperty("templates",{});
+        auto savedSet=savedMaps.getArray()->getReference(0).getProperty("set",{});
+        auto savedEntries=savedSet.getProperty("bindings",{});
+        const auto& global=globalEntries.getArray()->getReference(0);
+        const auto& fromSaved=savedEntries.getArray()->getReference(0);
+        auto normalized=juce::JSON::parse(juce::JSON::toString(fromSaved));
+        normalized.getDynamicObject()->setProperty("id",input.id);
+        check(juce::JSON::toString(normalized)==juce::JSON::toString(global),
+              "Default Map and Control Set binding fields or order diverged");
+
+        Show roundtrip;
+        check(decodeShow(encoded,roundtrip).wasOk(),
+              "v10 show with both binding locations rejected on reload");
+        check(roundtrip.controls.bindings.size()==1 &&
+              roundtrip.controls.templates.size()==1 &&
+              roundtrip.controls.templates.front().set.bindings.size()==1,
+              "Binding locations changed after round-trip");
+        const auto& globalLoaded=roundtrip.controls.bindings.front();
+        const auto& savedLoaded=roundtrip.controls.templates.front().set.bindings.front();
+        check(globalLoaded.curve==ControlCurve::easeOut &&
+              savedLoaded.curve==ControlCurve::easeOut &&
+              globalLoaded.functionId==fn.id && savedLoaded.functionId==fn.id &&
+              globalLoaded.oscPort==9123 && savedLoaded.outputDeviceId=="midi-out" &&
+              savedLoaded.minimum==0.125f && globalLoaded.outputChannel==8,
+              "ControlBinding values were not preserved across v10 locations");
+
+        for (auto* obj:{globalEntries.getArray()->getReference(0).getDynamicObject(),
+                        savedEntries.getArray()->getReference(0).getDynamicObject()}) {
+            obj->removeProperty("curve");
+            obj->removeProperty("functionId");
+        }
+        Show oldV10;
+        check(decodeShow(juce::JSON::toString(root),oldV10).wasOk() &&
+              oldV10.controls.bindings[0].curve==ControlCurve::linear &&
+              oldV10.controls.bindings[0].functionId==0 &&
+              oldV10.controls.templates.front().set.bindings[0].curve==
+                  ControlCurve::linear &&
+              oldV10.controls.templates.front().set.bindings[0].functionId==0,
+              "Older v10 bindings without optional curve/functionId were rejected");
+        auto invalid=juce::JSON::parse(encoded);
+        auto invalidControls=invalid.getProperty("controls",{});
+        auto entries=invalidControls.getProperty("bindings",{});
+        entries.getArray()->getReference(0).getDynamicObject()
+            ->setProperty("oscPort","invalid");
+        Show untouched;untouched.name="Keep existing show";
+        check(decodeShow(juce::JSON::toString(invalid),untouched).failed() &&
+              untouched.name=="Keep existing show",
+              "Invalid binding must not partially replace the working show");
+    });
 }
