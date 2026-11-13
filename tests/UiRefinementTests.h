@@ -667,6 +667,42 @@ void uiRefinementTests() {
               "UX03C confirmed Delete failed or targeted another column");
     });
 
+    test("UX03C: hidden column targets cannot activate through action hint",[] {
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::midi,"MIDI cues");
+        ui.setSize(1440,900);
+        ui.select(0,1);
+        auto* pinned=cueViewFixtures::find<PinnedColumnHeaders>(ui);
+        check(pinned!=nullptr,"UX03C column overlay is absent");
+        if (!pinned) return;
+        const juce::KeyPress actions{juce::KeyPress::F10Key,
+                                      juce::ModifierKeys::shiftModifier,0};
+        const int beforeId=ui.show.columns[0].id;
+        const auto original=encodeShow(ui.show);
+        check(ui.keyPressed(actions),"UX03C cannot show keyboard actions");
+        // This maps to Delete on the actual underlying column header.
+        // The visible non-modal hint must consume the first mouse click.
+        cueViewFixtures::click(*pinned,(float)CueGrid::columnWidth-12.f,20.f);
+        check(encodeShow(ui.show)==original &&
+              ui.show.columns[0].id==beforeId &&
+              !pinned->getDescription().contains("1 Rename"),
+              "UX03C click-through fired a hidden destructive Delete icon");
+        ui.select(0,0);
+        check(ui.keyPressed(actions) && ui.keyPressed(juce::KeyPress{'1'}) &&
+              ui.isInlineRenaming(),
+              "UX03C keyboard Rename did not invoke the existing inline editor");
+        ui.cancelInlineRename();
+        // A concurrent removal must invalidate the captured model ID.
+        ui.select(0,1);
+        check(ui.keyPressed(actions),"UX03C cannot capture target for stale-ID test");
+        ui.deleteColumn(1);
+        const auto afterRemoval=encodeShow(ui.show);
+        check(ui.keyPressed(juce::KeyPress{'4'}) &&
+              encodeShow(ui.show)==afterRemoval &&
+              !pinned->getDescription().contains("1 Rename"),
+              "UX03C stale target acted upon another column");
+    });
+
     test("UX02: neutral audio import does not borrow the transport GO role",[] {
         MainComponent ui(false);
         ui.setAppearanceTheme(palette::Appearance::industrialOrange);
