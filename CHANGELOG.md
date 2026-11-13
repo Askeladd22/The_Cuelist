@@ -15,6 +15,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.49] - 2026-11-13
 
+**PR:** [#170](https://github.com/Askeladd22/The_Cuelist/pull/170) (draft, senza merge automatico).
+
 **Stato:** semplificazione circoscritta delle superfici OSC non raggiunte e del manifest di compilazione CMake. Nessuna modifica voluta al comportamento operativo, al runtime realtime o allo schema .cuelist JSON v10.
 
 ### Semplificato
