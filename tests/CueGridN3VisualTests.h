@@ -85,6 +85,7 @@ void cueGridN3VisualTests() {
     });
     test("UX03: column header mouse targets and tooltips remain distinct",[] {
         MainComponent ui(false);
+        ui.show.columns[0].name="Audio tracks";
         addColumn(ui.show,ColumnType::midi,"MIDI triggers");
         addColumn(ui.show,ColumnType::osc,"OSC lights");
         ui.setSize(1440,900);
