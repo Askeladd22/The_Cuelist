@@ -15,6 +15,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.60] - 2026-11-13
 
+**PR:** [#181](https://github.com/Askeladd22/The_Cuelist/pull/181) (draft, senza merge automatico).
+
 **Stato:** UX-02: follow-up dell'errore CTest sul tooltip di Import nella 0.9.59, senza ampliamento del perimetro a UX-03 o al trasporto.
 
 ### Corretto
