@@ -83,6 +83,57 @@ void cueGridN3VisualTests() {
         check(column->getTooltip().isEmpty(),
               "Column tooltip leaked outside its actual hit area");
     });
+    test("UX03: column header mouse targets and tooltips remain distinct",[] {
+        using namespace cuelist;
+        MainComponent ui(false);
+        ui.show.columns[0].name="Audio tracks";
+        addColumn(ui.show,ColumnType::midi,"MIDI triggers");
+        addColumn(ui.show,ColumnType::osc,"OSC lights");
+        ui.setSize(1440,900);
+        auto* pinned=cueViewFixtures::find<PinnedColumnHeaders>(ui);
+        check(pinned!=nullptr,"UX03 pinned native column headers missing");
+        if (!pinned) return;
+        const int width=CueGrid::columnWidth;
+        const int firstId=ui.show.columns[0].id;
+        const int secondId=ui.show.columns[1].id;
+        const int live=ui.liveCuelistIndex();
+        const int next=ui.nextCueIndex();
+        const auto hover=[&](float x,float y) {
+            const juce::Point<float> at{x,y};
+            pinned->mouseMove(cueViewFixtures::event(*pinned,at,at));
+            return pinned->getTooltip();
+        };
+        check(hover((float)width-52.f,9.f).contains("cannot move left"),
+              "UX03 disabled left arrow tooltip does not warn the operator");
+        check(hover((float)width-32.f,9.f).contains("Move") &&
+              hover((float)width-12.f,9.f).contains("Delete"),
+              "UX03 top-row action hover does not explain each icon");
+        check(hover((float)width-12.f,36.f).contains("Collapse"),
+              "UX03 enlarged collapse hit target is not discoverable");
+        check(hover(20.f,45.f)==ui.show.columns[0].name,
+              "UX03 untruncated name tooltip was displaced");
+        // y=9 was formerly outside the top-row buttons (y=10..29).
+        cueViewFixtures::click(*pinned,(float)width-32.f,9.f);
+        check(ui.show.columns.size()==3 &&
+              ui.show.columns[0].id==secondId &&
+              ui.show.columns[1].id==firstId &&
+              ui.liveCuelistIndex()==live && ui.nextCueIndex()==next,
+              "UX03 extended right-arrow hit area moved the wrong column or LIVE");
+        // The 3px vertical gutter between icon rows cannot delete or fold.
+        const auto noAction=encodeShow(ui.show);
+        cueViewFixtures::click(*pinned,(float)width-12.f,33.f);
+        check(encodeShow(ui.show)==noAction,
+              "UX03 vertical action gutter triggered Delete/Collapse");
+        cueViewFixtures::click(*pinned,(float)width-2.f,36.f);
+        check(ui.show.columns.size()==3 &&
+              ui.show.columns[0].id==secondId &&
+              ui.show.columns[0].collapsed &&
+              ui.liveCuelistIndex()==live && ui.nextCueIndex()==next,
+              "UX03 expanded collapse target overlapped the editing/transport state");
+        check(hover(14.f,20.f).contains("Expand"),
+              "UX03 collapsed header no longer identifies its expand action");
+    });
+
     test("N3.2 selecting the cue name never triggers GO or Stop",[] {
         using namespace cuelist;
         MainComponent ui(false);

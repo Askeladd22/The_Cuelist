@@ -13,6 +13,23 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.62] - 2026-11-13
+
+**PR:** [#183](https://github.com/Askeladd22/The_Cuelist/pull/183) (draft, senza merge automatico).
+
+**Stato:** UX-03A — maggiore precisione e descrizioni contestuali dei comandi nelle intestazioni JUCE delle colonne; nessun redesign o modifica ai trasporti.
+
+### Migliorato
+- Le aree di click di Move Left/Right e Delete nelle intestazioni delle colonne espanse passano verticalmente da 19 a 24 unità logiche (y=8–32); i glifi restano 18×19 e mantengono 2 unità di separazione orizzontale. La prudenza per Delete prevale su hitbox da 24 unità in larghezza che si sovrapporrebbero alle frecce vicine.
+- Il controllo Collapse usa una hitbox di 28×26 unità logiche (prima circa 26×21) senza ridurre la zona di rinomina e senza spostare l'icona. Le zone di click e le descrizioni hover condividono un unico helper.
+- Tooltip operativi espliciti `Move [name] left/right`, `Delete [name]`, `Collapse/Expand [name]`; le frecce non disponibili descrivono il limite anziché simulare un'azione. La normale area del titolo conserva il nome completo.
+
+### Verifiche e rollback
+- Regressione nativa in `CueGridN3VisualTests.h`: tooltip specifici, hitbox aggiunte, assenza di click nel gutter verticale, invarianti VIEW/LIVE e colonne, hover Expand dopo collasso.
+- La CI della [#182](https://github.com/Askeladd22/The_Cuelist/pull/182) era verde prima della baseline. Per questa PR, build Windows Release/CTest e screenshot sono gate da verificare, non risultati già misurati.
+- **ND:** Windows DPI 100/125/150 reali, tastiera/Narrator, test operatori con pressione su X/Move, hardware Audio/MIDI/OSC/LTC e sincronismo. Non certifica readiness LIVE.
+- **Rollback:** revert della PR, senza migrazione dei progetti JSON v10.
+
 ## [0.9.61] - 2026-11-13
 
 **PR:** [#182](https://github.com/Askeladd22/The_Cuelist/pull/182) (draft, senza merge automatico).

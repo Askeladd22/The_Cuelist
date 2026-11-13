@@ -8,6 +8,17 @@ juce::String timeText(double seconds) {
     const auto whole=(int)seconds;
     return juce::String(whole/60).paddedLeft('0',2)+":"+juce::String(whole%60).paddedLeft('0',2);
 }
+
+// Hit areas are a little taller than the visual 18x19 glyphs. Preserve
+// the two-pixel horizontal gap: increasing these widths would make a
+// neighbouring destructive X too easy to hit during a show.
+struct ColumnHeaderHitTargets {
+    juce::Rectangle<int> moveLeft,moveRight,remove,collapse;
+};
+ColumnHeaderHitTargets columnHeaderHitTargets(int width) {
+    return {{width-61,8,18,24},{width-41,8,18,24},
+            {width-21,8,18,24},{width-28,35,28,26}};
+}
 void smallButton(juce::Graphics& g, const juce::String& text,
                  juce::Rectangle<int> box, bool enabled, bool danger=false,
                  bool understated=false,bool hovered=false) {
@@ -703,14 +714,19 @@ void CueGrid::clickColumnHeader(int gridX,int y,int clicks,
         return;
     }
     if (clicks>1) return;
-    if (y>=10 && y<29) {
-        if (local>=width-61 && local<width-43) owner.reorderColumn(column,-1);
-        else if (local>=width-41 && local<width-23) owner.reorderColumn(column,1);
-        else if (local>=width-21 && local<width-3) owner.deleteColumn(column);
-        else owner.select(owner.selectedRow,column);
-    } else if (y>=38 && y<59 && local>=width-26)
+    const auto hit=columnHeaderHitTargets(width);
+    if (hit.moveLeft.contains(local,y)) {
+        if (column>0) owner.reorderColumn(column,-1);
+    } else if (hit.moveRight.contains(local,y)) {
+        if (column+1<(int)owner.show.columns.size())
+            owner.reorderColumn(column,1);
+    } else if (hit.remove.contains(local,y)) {
+        owner.deleteColumn(column);
+    } else if (hit.collapse.contains(local,y)) {
         owner.toggleColumnCollapsed(column);
-    else owner.select(owner.selectedRow,column);
+    } else {
+        owner.select(owner.selectedRow,column);
+    }
 }
 void CueGrid::doubleClickColumnHeader(int gridX,int y) {
     if (y<34 || y>=headerHeight || gridX<nameWidth) return;
@@ -1091,17 +1107,33 @@ void PinnedColumnHeaders::mouseMove(const juce::MouseEvent& e) {
         return;
     }
     const auto& col=owner.show.columns[(size_t)column];
-    if (col.name.isNotEmpty()) {
-        setTooltip(col.name);
-        return;
-    }
     int ordinal=0;
     for (int i=0;i<=column;++i)
         if (owner.show.columns[(size_t)i].type==col.type) ++ordinal;
     const auto defaultName=col.type==ColumnType::audio ? "Audio" :
         col.type==ColumnType::midi ? "MIDI" :
         col.type==ColumnType::osc ? "OSC" : "Control";
-    setTooltip(juce::String(defaultName)+" "+juce::String(ordinal));
+    const auto name=col.name.isNotEmpty() ? col.name :
+        juce::String(defaultName)+" "+juce::String(ordinal);
+    if (col.collapsed) {
+        setTooltip("Expand "+name); return;
+    }
+    // Explain the actual action under the pointer. Ordinary title space
+    // still exposes the untruncated column name.
+    const auto localX=gridXAt(e.x)-owner.grid.columnX(column);
+    const auto hit=columnHeaderHitTargets(owner.grid.columnWidthAt(column));
+    if (hit.moveLeft.contains(localX,e.y))
+        setTooltip(column>0 ? "Move "+name+" left" :
+                   "First column: cannot move left");
+    else if (hit.moveRight.contains(localX,e.y))
+        setTooltip(column+1<(int)owner.show.columns.size() ?
+                   "Move "+name+" right" : "Last column: cannot move right");
+    else if (hit.remove.contains(localX,e.y))
+        setTooltip("Delete "+name);
+    else if (hit.collapse.contains(localX,e.y))
+        setTooltip("Collapse "+name);
+    else
+        setTooltip(name);
 }
 void PinnedColumnHeaders::mouseWheelMove(
         const juce::MouseEvent& e,const juce::MouseWheelDetails& wheel) {
