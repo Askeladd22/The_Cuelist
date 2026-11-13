@@ -79,8 +79,11 @@ MainComponent::MainComponent(bool startAudio) {
     goButton.setColour(juce::TextButton::textColourOffId,palette::background);
     panicButton.setColour(juce::TextButton::buttonColourId,palette::panic);
     panicButton.setColour(juce::TextButton::textColourOffId,palette::background);
-    importButton.setColour(juce::TextButton::buttonColourId,palette::go);
-    importButton.setColour(juce::TextButton::textColourOffId,palette::background);
+    // Import is an editing action, never a transport GO. It can stop
+    // playback (see tooltip), but must not look like the green GO action.
+    importButton.setName("importAudioMedia");
+    importButton.setColour(juce::TextButton::buttonColourId,palette::raised);
+    importButton.setColour(juce::TextButton::textColourOffId,palette::text);
     behaviour.addItemList({"Retrigger","Pause / Restart","Pause / Resume","Continue"},1);
     rowGain.setSliderStyle(juce::Slider::LinearHorizontal);
     rowGain.setTextBoxStyle(juce::Slider::TextBoxRight,false,72,24);

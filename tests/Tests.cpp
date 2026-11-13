@@ -79,7 +79,7 @@ int main() {
             0xff303b40,0xff35434a,0xffc66b42,0xffd47a4f,
             0xffa95534,0xff8fa8b2,0xffb79a72,0xffa18bb9,
             0xff7186a6,0xff55b875,0xffe05a46,0xffe5a52e,
-            0xff55afc5,0xffe5e7e3,0xffa5b0ae,0xff718087
+            0xff55afc5,0xffe5e7e3,0xffa5b0ae,0xff99a6ab
         };
         for(size_t i=0;i<actual.size();++i)
             check(actual[i].getARGB()==expected[i],"Industrial Orange token mismatch");
@@ -144,7 +144,13 @@ int main() {
                                  palette::raised}) {
             check(ratio(palette::text,surface)>=4.5f,"Primary text contrast");
             check(ratio(palette::muted,surface)>=4.5f,"Secondary text contrast");
+            check(ratio(palette::dimmed,surface)>=4.5f,
+                  "Muted enabled captions lost contrast on graphite");
         }
+        check(ratio(palette::dimmed,palette::hover)>=4.5f &&
+              palette::dimmed!=palette::muted &&
+              palette::dimmed!=palette::disabled,
+              "Muted caption must remain distinct and legible on hovered surfaces");
         check(ratio(palette::teal,palette::raised)>=4.5f,
               "Accessible accent ink on selected graphite");
         check(ratio(palette::red,palette::raised)>=4.5f,

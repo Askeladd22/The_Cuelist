@@ -563,6 +563,36 @@ void uiRefinementTests() {
               contrast(palette::background,palette::go)>=4.5,
               "Industrial Orange primary labels or controls lost accessibility");
     });
+    test("UX02: neutral audio import does not borrow the transport GO role",[] {
+        MainComponent ui(false);
+        ui.setAppearanceTheme(palette::Appearance::industrialOrange);
+        auto* importControl=dynamic_cast<juce::TextButton*>(
+            controlsV3::named(ui,"importAudioMedia"));
+        check(importControl!=nullptr,"Audio import button must remain native and discoverable");
+        if (!importControl) return;
+        const auto background=[&] {
+            return importControl->findColour(juce::TextButton::buttonColourId,false);
+        };
+        const auto ink=[&] {
+            return importControl->findColour(juce::TextButton::textColourOffId,false);
+        };
+        const auto original=encodeShow(ui.show);
+        check(importControl->getButtonText().containsIgnoreCase("Import") &&
+              importControl->getTooltip().contains("stops all playback") &&
+              background()==palette::raised &&
+              ink()==palette::text &&
+              background()!=palette::go,
+              "Import lost its neutral editing role or playback-warning tooltip");
+        ui.setAppearanceTheme(palette::Appearance::legacy);
+        check(background()==palette::raised && ink()==palette::text &&
+              background()!=palette::go,
+              "Theme switch repainted import as a transport action");
+        ui.setAppearanceTheme(palette::Appearance::industrialOrange);
+        check(background()==palette::raised && ink()==palette::text &&
+              encodeShow(ui.show)==original,
+              "Returning to Industrial Orange changed Import or Show data");
+    });
+
     test("Industrial Orange keeps selections, playback and column types separate",[] {
         check(palette::selection==palette::swatch::accentPrimary &&
               palette::playing==palette::swatch::statusGo &&
