@@ -1118,7 +1118,12 @@ void PinnedColumnHeaders::paint(juce::Graphics& g) {
 void PinnedColumnHeaders::mouseDown(const juce::MouseEvent& e) {
     if (!e.mods.isLeftButtonDown() || e.mods.isPopupMenu()) return;
     if (e.y<0 || e.y>=CueGrid::headerHeight) return;
-    owner.dismissSelectedColumnKeyboardActions();
+    if (owner.columnKeyboardActionsOpen) {
+        // The visual action strip obscures the underlying icons. A click
+        // here may dismiss it, but MUST NOT fall through to hidden Delete.
+        owner.dismissSelectedColumnKeyboardActions();
+        return;
+    }
     owner.grabKeyboardFocus();
     owner.grid.clickColumnHeader(gridXAt(e.x),e.y,
                                  e.getNumberOfClicks(),e.getScreenPosition());
