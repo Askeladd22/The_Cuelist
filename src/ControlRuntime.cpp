@@ -19,19 +19,6 @@ void MainComponent::resetActiveMapping() {
     controlMapping.setActiveCue(0,0);
 }
 
-bool MainComponent::startOscControlInput(int port) {
-    if (port<1 || port>65535) return false;
-    if (!oscInput.startListening(port)) {
-        status="OSC input port unavailable. Choose another UDP port.";
-        return false;
-    }
-    show.controls.oscInputPort=port;
-    if (appPreferences) appPreferences->setValue("oscInputPorts",juce::String(port));
-    dirty=true;
-    status="OSC control listener enabled on UDP "+juce::String(port)+".";
-    repaint();
-    return true;
-}
 
 juce::String MainComponent::configuredOscPorts() const {
     return appPreferences ? appPreferences->getValue("oscInputPorts","") : juce::String();

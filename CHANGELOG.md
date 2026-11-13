@@ -13,6 +13,20 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.49] - 2026-11-13
+
+**Stato:** semplificazione circoscritta delle superfici OSC non raggiunte e del manifest di compilazione CMake. Nessuna modifica voluta al comportamento operativo, al runtime realtime o allo schema .cuelist JSON v10.
+
+### Semplificato
+- Rimossa la funzione privata non chiamata `MainComponent::startOscControlInput(int)` (dichiarazione e implementazione). Restano invariati `configureOscInputPorts`, il ripristino delle porte OSC salvate e il listener `OscControlInput` in uso.
+- Consolidato in `CUELIST_GUI_SOURCES` l'elenco identico dei 18 sorgenti JUCE condivisi tra eseguibile e `CuelistTests`. `src/Main.cpp` rimane esclusivo dell'applicazione; `tests/Tests.cpp` esclusivo dei test.
+
+### Verifiche e gate
+- Ispezione statica: prima del taglio la funzione rimossa era dichiarata e definita una sola volta, senza chiamanti individuati dall'indice del repository. Confrontati gli elenchi CMake: stesso insieme di file compilati per entrambi i target.
+- Test locali statici sul diff e ricerca residui: eseguiti prima di aprire la PR; nessun test native Windows dichiarato qui.
+- **Build Windows, CTest e CI della PR:** ND fino a esecuzione. Prove hardware OSC/MIDI, screenshot nativi DPI e timing end-to-end: ND.
+- **Rollback:** revert della PR. Nessun dato o progetto migra; formato JSON v10 invariato.
+
 ## [0.9.48] - 2026-11-11
 
 **Stato:** correzione mirata dei test nativi della Timeline e della telemetria Click Track; nessun cambiamento al motore Audio, ai trasporti o al formato dei progetti (.cuelist JSON v10).
