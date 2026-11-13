@@ -102,4 +102,20 @@ void controlMapArchiveTests() {
               encodeShow(original)==before,
               "Invalid format replaced the show");
     });
+    test("Control Map archives and legacy controller presets reject each other's format",[] {
+        const auto original=makeShow();
+        const auto map=exportControlMap(original,0);
+        const auto preset=exportControllerPreset(original);
+        check(map.contains("TheCuelistControlMap") &&
+              preset.contains("TheCuelistControllerPreset"),
+              "Import formats no longer have independent identities");
+        Show candidate=original;
+        const auto originalJson=encodeShow(original);
+        check(importControlMap(preset,candidate).failed() &&
+              encodeShow(candidate)==originalJson,
+              "Controller preset imported as a saved map or changed show");
+        check(importControllerPreset(map,candidate).failed() &&
+              encodeShow(candidate)==originalJson,
+              "Control Map imported as a controller preset or changed show");
+    });
 }

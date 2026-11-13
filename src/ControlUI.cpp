@@ -2,6 +2,8 @@
 #include "OperatorTextPrompt.h"
 #include "ControlMapArchive.h"
 #include <cmath>
+#include <functional>
+#include <utility>
 
 namespace cuelist {
 
@@ -254,54 +256,26 @@ public:
         loadControllerPreset.setTooltip("Import routing by function order; preserve project names, other functions and cue-local overrides.");
         saveControllerPreset.onClick=[this] {
             if (!owner) return;
-            const auto preset=owner->exportControlPresetText();
-            presetFileChooser=std::make_unique<juce::FileChooser>(
-                "Export Default Map",juce::File::getSpecialLocation(
-                    juce::File::userDocumentsDirectory)
-                    .getChildFile("TheCuelist-DefaultMap.json"),"*.json");
-            auto safe=juce::Component::SafePointer<ControlPanel>(this);
-            presetFileChooser->launchAsync(
-                juce::FileBrowserComponent::saveMode |
-                juce::FileBrowserComponent::canSelectFiles,
-                [safe,preset](const juce::FileChooser& chooser) {
-                    if (!safe) return;
-                    const auto path=chooser.getResult();
-                    if (path==juce::File()) return;
-                    safe->state.setText(path.replaceWithText(preset) ?
-                        "Default Map preset exported without function labels." :
-                        "Could not save mapping preset.",juce::dontSendNotification);
-                });
+            exportJsonFile("Export Default Map","TheCuelist-DefaultMap.json",
+                owner->exportControlPresetText(),
+                "Default Map preset exported without function labels.",
+                "Could not save mapping preset.");
         };
         loadControllerPreset.onClick=[this] {
             if (!owner) return;
-            presetFileChooser=std::make_unique<juce::FileChooser>(
-                "Import Default Map",juce::File::getSpecialLocation(
-                    juce::File::userDocumentsDirectory),"*.json");
-            auto safe=juce::Component::SafePointer<ControlPanel>(this);
-            presetFileChooser->launchAsync(
-                juce::FileBrowserComponent::openMode |
-                juce::FileBrowserComponent::canSelectFiles,
-                [safe](const juce::FileChooser& chooser) {
-                    if (!safe || !safe->owner) return;
-                    const auto file=chooser.getResult();
-                    if (file==juce::File()) return;
-                    if (file.getSize()>256*1024) {
-                        safe->state.setText("Mapping preset exceeds 256KB.",
-                                            juce::dontSendNotification);
-                        return;
-                    }
-                    const auto result=safe->owner->importControlPresetText(
-                        file.loadFileAsString());
+            importJsonFile("Import Default Map","Mapping preset exceeds 256KB.",
+                [](ControlPanel& panel,const juce::String& text) {
+                    const auto result=panel.owner->importControlPresetText(text);
                     if (result.wasOk()) {
-                        safe->refreshFunctions();
-                        safe->bindingList.updateContent();
-                        safe->bindingList.repaint();
-                        safe->selected=-1;
-                        safe->remove.setEnabled(false);
-                        safe->updateSelected.setEnabled(false);
-                        safe->refreshEmptyState();
+                        panel.refreshFunctions();
+                        panel.bindingList.updateContent();
+                        panel.bindingList.repaint();
+                        panel.selected=-1;
+                        panel.remove.setEnabled(false);
+                        panel.updateSelected.setEnabled(false);
+                        panel.refreshEmptyState();
                     }
-                    safe->state.setText(result.wasOk() ?
+                    panel.state.setText(result.wasOk() ?
                         "Imported routes and inputs; project labels retained." :
                         result.getErrorMessage(),juce::dontSendNotification);
                 });
@@ -718,6 +692,46 @@ private:
     int sourceRow=0,sourceColumn=0;
     int sourceRowId=0,sourceColumnId=0;
     int continuousLearn=0; // 0=off, 1=MIDI, 2=OSC
+    // Only file-dialog ownership and the bounded local file read are shared.
+    // Default Map preset and saved Control Map parsing remain independent.
+    void exportJsonFile(const juce::String& title,const juce::String& filename,
+                        const juce::String& contents,const juce::String& success,
+                        const juce::String& failure) {
+        presetFileChooser=std::make_unique<juce::FileChooser>(
+            title,juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+                      .getChildFile(filename),"*.json");
+        auto safe=juce::Component::SafePointer<ControlPanel>(this);
+        presetFileChooser->launchAsync(
+            juce::FileBrowserComponent::saveMode |
+            juce::FileBrowserComponent::canSelectFiles,
+            [safe,contents,success,failure](const juce::FileChooser& chooser) {
+                if (!safe) return;
+                const auto file=chooser.getResult();
+                if (file==juce::File()) return;
+                safe->state.setText(file.replaceWithText(contents) ? success : failure,
+                                    juce::dontSendNotification);
+            });
+    }
+    void importJsonFile(const juce::String& title,const juce::String& tooLarge,
+                        std::function<void(ControlPanel&,const juce::String&)> onImport) {
+        presetFileChooser=std::make_unique<juce::FileChooser>(
+            title,juce::File::getSpecialLocation(juce::File::userDocumentsDirectory),
+            "*.json");
+        auto safe=juce::Component::SafePointer<ControlPanel>(this);
+        presetFileChooser->launchAsync(
+            juce::FileBrowserComponent::openMode |
+            juce::FileBrowserComponent::canSelectFiles,
+            [safe,tooLarge,onImport=std::move(onImport)](const juce::FileChooser& chooser) {
+                if (!safe || !safe->owner) return;
+                const auto file=chooser.getResult();
+                if (file==juce::File()) return;
+                if (file.getSize()>256*1024) {
+                    safe->state.setText(tooLarge,juce::dontSendNotification);
+                    return;
+                }
+                onImport(*safe.getComponent(),file.loadFileAsString());
+            });
+    }
     void updateInputVisibility() {
         const bool osc=inputKind.getSelectedId()==4;
         inputAddress.setVisible(editingMapping && osc);
@@ -855,43 +869,18 @@ private:
                         panel->state.setText("Cannot export the selected map.",
                                              juce::dontSendNotification);return;
                     }
-                    panel->presetFileChooser=std::make_unique<juce::FileChooser>(
-                        "Export Control Map",
-                        juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
-                            .getChildFile("TheCuelist-ControlMap.json"),"*.json");
-                    panel->presetFileChooser->launchAsync(
-                        juce::FileBrowserComponent::saveMode |
-                        juce::FileBrowserComponent::canSelectFiles,
-                        [safe,json](const juce::FileChooser& chooser) {
-                            if (!safe) return;
-                            const auto file=chooser.getResult();
-                            if (file==juce::File()) return;
-                            safe->state.setText(file.replaceWithText(json) ?
-                                "Selected map exported." : "Map export failed.",
-                                juce::dontSendNotification);
-                        });
+                    panel->exportJsonFile("Export Control Map",
+                        "TheCuelist-ControlMap.json",json,
+                        "Selected map exported.","Map export failed.");
                 } else if (choice==4) {
-                    panel->presetFileChooser=std::make_unique<juce::FileChooser>(
-                        "Import Control Map",
-                        juce::File::getSpecialLocation(juce::File::userDocumentsDirectory),
-                        "*.json");
-                    panel->presetFileChooser->launchAsync(
-                        juce::FileBrowserComponent::openMode |
-                        juce::FileBrowserComponent::canSelectFiles,
-                        [safe](const juce::FileChooser& chooser) {
-                            if (!safe || !safe->owner) return;
-                            const auto file=chooser.getResult();
-                            if (file==juce::File()) return;
-                            if (file.getSize()>256*1024) {
-                                safe->state.setText("Map file exceeds 256KB.",
-                                    juce::dontSendNotification);return;
-                            }
-                            auto* main=safe->owner.getComponent();
+                    panel->importJsonFile("Import Control Map",
+                        "Map file exceeds 256KB.",
+                        [](ControlPanel& panel,const juce::String& text) {
+                            auto* main=panel.owner.getComponent();
                             auto candidate=main->show;
-                            const auto result=importControlMap(file.loadFileAsString(),
-                                                               candidate);
+                            const auto result=importControlMap(text,candidate);
                             if (result.failed()) {
-                                safe->state.setText(result.getErrorMessage(),
+                                panel.state.setText(result.getErrorMessage(),
                                                     juce::dontSendNotification);
                                 return;
                             }
@@ -899,7 +888,7 @@ private:
                             main->show=std::move(candidate);
                             main->dirty=true;
                             main->refreshControlSettings();main->refresh();
-                            safe->switchMap(id,false);
+                            panel.switchMap(id,false);
                         });
                 }
             });

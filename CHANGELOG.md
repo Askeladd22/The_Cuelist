@@ -13,6 +13,22 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.53] - 2026-11-13
+
+**PR:** [#174](https://github.com/Askeladd22/The_Cuelist/pull/174) (draft, nessun merge automatico).
+
+**Stato:** semplificazione del dialogo di import/export Control Mapping, senza cambiare i due formati, le operazioni del modello, le assegnazioni LIVE o il progetto JSON v10.
+
+### Semplificato
+- `ControlUI.cpp` usa `exportJsonFile()` e `importJsonFile()` del pannello JUCE per gestire in un solo posto chooser asincrono, percorso predefinito, lifetime `SafePointer`, annullamento, salvataggio e controllo preventivo dei file importati oltre 256KB.
+- Restano distinti `importControlPresetText()` e `importControlMap()`: il primo aggiorna Default Map e conserva le etichette, il secondo importa una nuova Map indipendente senza riassegnare celle. Restano anche le rispettive conferme ed errori.
+- Nuovo test di separazione dei formati legacy preset e standalone Control Map, con rigetto transazionale dell'import nel formato sbagliato.
+
+### Verifiche e gate
+- Confronto statico dei quattro callback e delle rispettive azioni pre/post: eseguito. Build Windows, CTest e CI della PR: ND fino alla loro esecuzione.
+- GUI nativa FileChooser (annullamento, percorsi locali, errori I/O, selezione file >256KB) e dispositivi hardware MIDI/OSC: ND. Non cambiano AudioEngine, GO/PANIC o JSON v10.
+- **Rollback:** revert della PR, senza migrazione dati o sostituzione di progetti.
+
 ## [0.9.52] - 2026-11-13
 
 **PR:** [#173](https://github.com/Askeladd22/The_Cuelist/pull/173) (draft, senza merge automatico).
