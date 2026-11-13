@@ -213,7 +213,7 @@ Cuelists share column definitions, routing and the overall show settings. They d
 | **Ctrl+C / Ctrl+V** | Copies/pastes compatible selected cells; row operations are also available through cue context menus. |
 | **Ctrl+X / Backspace** | Cuts or removes the selected cell where allowed, without intercepting normal text editing. |
 | **Ctrl+R** | Renames the selected cell inline. Enter saves, Escape cancels. Does not rename the underlying media file. |
-| **Shift+F10** | Opens a native keyboard-navigable menu for the selected column: Rename (expanded columns), Move left/right, Collapse/Expand and Delete. The menu identifies the column by name; selecting an action uses the existing Show edit command. |
+| **Shift+F10** | Toggles a non-modal keyboard action strip in the column header: **1** Rename (expanded column), **2** Move left, **3** Move right, **4** Collapse/Expand, **5** arm Delete followed by **D** to confirm. A repeated 5 cannot confirm deletion. Esc still calls PANIC and Space still triggers the global LIVE GO; either exits the action strip. |
 
 Space does not launch a cue while typing into a text input. Escape is intended to remain available for Panic even from the Inspector note editor; check the behavior with your connected devices.
 

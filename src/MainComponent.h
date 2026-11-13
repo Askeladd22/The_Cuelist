@@ -572,6 +572,11 @@ private:
     };
     CueGrid grid{*this}; PinnedCueHeaders cueHeaders{*this};
     PinnedColumnHeaders columnHeaders{*this}; CueMetricsOverlay cueMetrics{*this};
+    // Transient keyboard-only column action strip. Not a PopupMenu: the
+    // global Space/GO and Esc/PANIC handlers must remain reachable.
+    bool columnKeyboardActionsOpen=false;
+    bool columnKeyboardDeleteArmed=false;
+    int columnKeyboardTargetId=-1;
     Timeline timeline{*this}; DockCollapseButton timelineCollapseButton;
     CueViewport viewport;
     ColumnUtilities utilities{*this};
@@ -802,9 +807,11 @@ private:
     void showPreflight();
     void showDiagnostics();
     void showColumnMenu(juce::Point<int> screenPoint);
-    // Native, keyboard-invoked actions for the currently selected column.
-    // Shift+F10 does not move keyboard focus onto transport controls.
-    void showSelectedColumnActionsMenu();
+    // Shift+F10 uses the existing pinned header as a NON-MODAL action
+    // strip so Esc/PANIC and Space/GO always reach the root key handler.
+    void toggleSelectedColumnKeyboardActions();
+    void dismissSelectedColumnKeyboardActions();
+    bool performSelectedColumnKeyboardAction(int keyCode);
     void addCue();
     void timerCallback() override;
     // Stable cell IDs span VIEW and dormant Cuelists. Keep this lookup

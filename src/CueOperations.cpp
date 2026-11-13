@@ -502,48 +502,81 @@ void MainComponent::addCue() {
 }
 
 
-void MainComponent::showSelectedColumnActionsMenu() {
+void MainComponent::dismissSelectedColumnKeyboardActions() {
+    columnKeyboardActionsOpen=false;
+    columnKeyboardDeleteArmed=false;
+    columnKeyboardTargetId=-1;
+    columnHeaders.setDescription(
+        "Select a column; Shift+F10 shows non-modal keyboard actions. Escape PANIC; Space GO.");
+    columnHeaders.repaint();
+}
+
+void MainComponent::toggleSelectedColumnKeyboardActions() {
+    if (columnKeyboardActionsOpen) {
+        dismissSelectedColumnKeyboardActions();
+        return;
+    }
     if (show.columns.empty()) return;
-    const int column=juce::jlimit(0,(int)show.columns.size()-1,selectedColumn);
-    const auto& current=show.columns[(size_t)column];
-    const int columnId=current.id;
-    const auto title=current.name.isNotEmpty() ? current.name :
-        "Column "+juce::String(column+1);
-    juce::PopupMenu menu;
-    menu.setLookAndFeel(&theme);
-    menu.addSectionHeader("COLUMN "+juce::String(column+1)+" / "+title);
-    menu.addItem(1,"Rename "+title,!current.collapsed);
-    menu.addItem(2,"Move "+title+" left",column>0);
-    menu.addItem(3,"Move "+title+" right",column+1<(int)show.columns.size());
-    menu.addItem(4,(current.collapsed ? "Expand " : "Collapse ")+title);
-    menu.addSeparator();
-    menu.addItem(5,"Delete "+title);
-    // Popup anchored to the visible header even when the selected column
-    // is horizontally scrolled out of view; label identifies the target.
-    const auto anchor=columnHeaders.getScreenBounds().getCentre();
-    auto safe=juce::Component::SafePointer<MainComponent>(this);
-    menu.showMenuAsync(juce::PopupMenu::Options().withTargetScreenArea(
-        {anchor.x,anchor.y,1,1}),[safe,columnId](int choice) {
-        if (!safe || choice==0) return;
-        // Re-resolve the stable ID: another edit may have reordered or
-        // removed this column while the asynchronous menu was open.
-        int index=-1;
-        for (int i=0;i<(int)safe->show.columns.size();++i)
-            if (safe->show.columns[(size_t)i].id==columnId) {
-                index=i;break;
-            }
-        if (index<0) return;
-        if (choice==1 && !safe->show.columns[(size_t)index].collapsed)
-            safe->renameTitle(true,index);
-        else if (choice==2 && index>0)
-            safe->reorderColumn(index,-1);
-        else if (choice==3 && index+1<(int)safe->show.columns.size())
-            safe->reorderColumn(index,1);
-        else if (choice==4)
-            safe->toggleColumnCollapsed(index);
-        else if (choice==5)
-            safe->deleteColumn(index);
-    });
+    const int index=juce::jlimit(0,(int)show.columns.size()-1,selectedColumn);
+    const auto& column=show.columns[(size_t)index];
+    columnKeyboardActionsOpen=true;
+    columnKeyboardDeleteArmed=false;
+    columnKeyboardTargetId=column.id;
+    const auto name=column.name.isNotEmpty() ? column.name :
+        juce::String("Column ")+juce::String(index+1);
+    columnHeaders.setDescription(
+        "Column "+name+". 1 Rename, 2 Move left, 3 Move right, 4 Collapse or Expand, "
+        "5 Arm Delete then D to confirm. Shift+F10 exits. Escape PANIC; Space GO.");
+    columnHeaders.repaint();
+    // No grabKeyboardFocus, modal component or additional KeyListener.
+    // The original root keyboard receiver keeps control of GO and PANIC.
+}
+
+bool MainComponent::performSelectedColumnKeyboardAction(int keyCode) {
+    if (!columnKeyboardActionsOpen) return false;
+    int index=-1;
+    for (int i=0;i<(int)show.columns.size();++i)
+        if (show.columns[(size_t)i].id==columnKeyboardTargetId) {
+            index=i;break;
+        }
+    if (index<0) {
+        dismissSelectedColumnKeyboardActions();
+        status="Column action cancelled: column no longer exists.";
+        repaint();
+        return true;
+    }
+    if (keyCode=='5') {
+        // Repeating the same key is NEVER a confirmation (auto-repeat).
+        if (!columnKeyboardDeleteArmed) {
+            columnKeyboardDeleteArmed=true;
+            columnHeaders.setDescription(
+                "Delete column armed. Press D to confirm, not 5 again. "
+                "Escape PANIC; Space GO; Shift+F10 exits.");
+            columnHeaders.repaint();
+        }
+        return true;
+    }
+    if (keyCode=='D' || keyCode=='d') {
+        if (columnKeyboardDeleteArmed) {
+            dismissSelectedColumnKeyboardActions();
+            deleteColumn(index);
+        }
+        return true;
+    }
+    // Disable out-of-range moves, as the previous popup did.
+    if ((keyCode=='1' && show.columns[(size_t)index].collapsed) ||
+        (keyCode=='2' && index==0) ||
+        (keyCode=='3' && index+1==(int)show.columns.size()))
+        return true;
+    dismissSelectedColumnKeyboardActions();
+    switch (keyCode) {
+    case '1': renameTitle(true,index); break;
+    case '2': reorderColumn(index,-1); break;
+    case '3': reorderColumn(index,1); break;
+    case '4': toggleColumnCollapsed(index); break;
+    default: return false;
+    }
+    return true;
 }
 
 void MainComponent::showColumnMenu(juce::Point<int> screenPoint) {
