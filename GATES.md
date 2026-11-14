@@ -1,64 +1,84 @@
-# GATES — UX-03F: complete Delete instructions in compact native header
+# GATES — UX-04A: Esc/PANIC while editing native inline fields
 
-BASE: main@0d283e361d25c806efcbea9c93146ced06280cfd, VERSION.txt=0.9.66.
-ISSUE: https://github.com/Askeladd22/The_Cuelist/issues/188
-OWNS: GATES.md, src/CueViews.cpp, src/MainComponent.h,
-      tests/UiRefinementTests.h, tests/Tests.cpp, docs/complete-user-guide.md,
-      VERSION.txt, CMakeLists.txt, CHANGELOG.md.
-SCOPE: Only visual copy selection in PinnedColumnHeaders when Delete is
-armed, plus native tests/screenshots and docs/versioning. No changes to
-keyboard dispatch, audio/MIDI/OSC/LTC, VIEW/LIVE, persistence JSON v10,
-geometry, mouse input, transport or other controls.
+BASE: `main@99b3f77ff3805c5f4580c576cf48b46fabe34aa2`,
+VERSION.txt `0.9.67`, JSON file schema v10.
+SCOPE: Three existing native TextEditor inline flows; no new controls,
+modal workarounds, changes to root keyboard handler or audio thread.
+OWNS: `GATES.md`, `src/MainComponent.cpp`,
+`src/CueOperations.cpp`, `src/CueViews.cpp`, `src/Timeline.cpp`,
+`tests/UiRefinementTests.h`, `docs/complete-user-guide.md`,
+`docs/research/RQ-UX04-ESC-PANIC-FOCUS.md`,
+`VERSION.txt`, `CMakeLists.txt`, `CHANGELOG.md`.
 
-## Evidence and hypothesis
+## Roles and reasoning budget
 
-- Baseline PR #187: Windows Release/CTest succeeded on
-  ef8c5b1b1cb4d7eca3b744c55f822019471323f5,
-  https://github.com/Askeladd22/The_Cuelist/actions/runs/43571468308
-- A real JUCE 1180x820 screenshot from PR #186 showed the armed Delete
-  row curtailed: "Press D to delete / repeating 5 does n…". The pinned
-  action header is ~210 logical px wide at that viewport.
-- H-UX03F: fit-checking short native copy with shaped JUCE glyph metrics
-  will keep the complete "D DELETE / 5 IGNORED" instruction legible
-  without reducing the 11px design size, while preserving Esc/PANIC and
-  Space/GO hints. Long column names cannot take away row 2.
-- Counterexample: merely setting drawText ellipses=false chops the final
-  words, and deprecated Font::getStringWidth() fails with newer JUCE 8;
-  measure with GlyphArrangement::getStringWidth() instead.
+- Taste/UI-UX: Esc/PANIC must be predictable in every editing state,
+  without throwing away editing Cancel or shifting cue selection.
+- Matt Pocock: spec vs standards review, explicit behavior-contract regression.
+- GStack: high-severity show-safety red-team and failure-mode analysis.
+- Context Engineering: pinned SHA/version/schema/VIEW-LIVE invariants.
+- CCteam: researcher -> native implementation -> reviewer -> QA -> custodian
+  are review lenses, NOT independent spawned agents.
+- SkillRoster: verified installed-skill catalog for routing; no local
+  SkillRoster CLI run or roster mutation.
+- Unlazy: all proof must come from commit-matched CI/test evidence; no
+  inherited shell CHECK may run without explicit approval.
+
+## Problem and falsifiable hypothesis
+
+The parent MainComponent::keyPressed(Escape) calls stopAll(), which invokes
+engine.panic() and clears MIDI/OSC output. But three inline TextEditors have
+setEscapeAndReturnKeysConsumed(true) and their onEscapeKey handlers only
+cancel local editing:
+- MainComponent::inlineNameEditor for Cuelist/cue/column/cell names;
+- CueMetricsOverlay::bpmEditor;
+- Timeline::markerEditor for name, BPM and conversions.
+According to official JUCE TextEditor documentation, consumed Escape
+does not propagate to parent. These specific paths are source-verified;
+physical Windows playback reproduction is ND.
+
+H-UX04A: calling the same MainComponent::stopAll() *after* cancelling the
+three edits sends one PANIC without committing any pending name/tempo
+changes. A regression test must assert editor closed, unsaved edits
+discarded, unchanged saved Show and LIVE, and acknowledgedCueId cleared.
+Contrast against normal Enter still committing the same editors.
 
 ## Gates
 
-- [x] F1 EVIDENCE: Issue #188, screenshot, main SHA, 0.9.66 baseline,
-  #187 success and relevant JUCE painter read.
-- [ ] F2 SOURCE: When armed, text is complete for measured available
-  header width. Compact >=200px uses explicit D and 5 ignored; narrower
-  fallback always begins with D. 72px/3-row layout and 11px label intact.
-  EVIDENCE: pending source audit plus native Windows test on PR SHA.
-- [ ] F3 REGRESSION: Native JUCE test checks actual 1180 and 1920
-  header widths, GlyphArrangement width <= drawable width, long names,
-  accessible description, repeat 5 does not delete, Esc still PANIC,
-  D deletes only the captured stable ID, VIEW/LIVE unchanged.
-  EVIDENCE: pending CTest on PR SHA.
-- [ ] F4 VISUAL: CI captures real native armed screenshots at
-  1180x820 and 1920x1080 plus 1180 with long column name; humans
-  review no ellipsis on instruction, readable 10-11px text and contrast.
-  EVIDENCE: pending screenshot artifacts and review.
-- [ ] F5 CI: Windows Release, complete CTest and version/changelog
-  guard green for exact PR head SHA.
-  EVIDENCE: pending workflows.
-- [ ] F6 LIVE / MANUAL: Windows 100/125/150% DPI, real keyboard/IME,
-  Narrator, external audio/MIDI/OSC/LTC with PANIC/GO, operator metrics.
-  EVIDENCE: ND; not proven by simulation or CI.
+- [x] G1 source+spec: confirmed 3 callbacks, root stopAll,
+  test fixtures and official JUCE TextEditor reference;
+  https://docs.juce.com/master/classjuce_1_1TextEditor.html
+- [ ] G2 regression: test actual TextEditor::keyPressed(Escape) for
+  name/BPM/timeline marker, assert no pending changes, ack cleared,
+  stable LIVE and model; Enter remains unaffected. Tests would
+  fail on old main because ack stays nonzero.
+  CHECK: GitHub Windows Release CTest for PR head (no local check approved).
+  EXPECT: CuelistTests PASS and zero failed tests.
+- [ ] G3 implementation: only three escape handlers forward stopAll,
+  after cancel; no duplicate PANIC and no audio-thread changes;
+  tooltip/user guide accurately documents Esc cancel+PANIC.
+  EVIDENCE: reviewed diff and CTest.
+- [ ] G4 code review: standards/spec and GStack red-team, no
+  inadvertent selection/VIEW/LIVE/Undo/Redo/JSON v10 changes.
+  EVIDENCE: review of exact PR patch and code.
+- [ ] G5 CI: Windows Release, complete CTest, version/changelog
+  guard green on exact head SHA.
+  EVIDENCE: pending GitHub Actions.
+- [ ] G6 manual: real Windows focus/IME, Narrator, active
+  audio/MIDI/OSC/LTC, Esc during playback, DPI 100/125/150,
+  measure actual audio panic latency.
+  EVIDENCE: ND; CI green != ready-for-LIVE.
+- [ ] G7 related-modal audit: document remaining PopupMenu/LaunchOptions
+  paths and do NOT claim Esc/PANIC fixed in native modal windows.
+  EVIDENCE: docs/research RQ, unresolved follow-up issue if needed.
 
-## Red team, tradeoff and rollback
+## Stop conditions, counterexamples and rollback
 
-Compact instruction is shorter than prose; full "5 cannot confirm"
-meaning remains in setDescription and user guide. No new visual hierarchy
-or controls; avoiding decreased text size is prioritized. Other JUCE
-modal popup Esc/PANIC pathways remain a separate RQ. Gate F6 cannot be
-declared passed by CI.
-
-PR remains draft, no automatic merge. Rollback: revert UX-03F PR; no
-project migration. GATES from prior merged PRs have unresolved manual
-LIVE checks that remain independent of this narrow patch.
-No inherited shell CHECK or hook is approved.
+Do not implement a system-global key hook, modify JUCE itself,
+replace modal menus, or invent timing guarantees. If inherited
+editing contracts or CI break, leave PR draft and inspect logs.
+The tests use a synthetic engine acknowledgement as a narrow indicator,
+not a measured external panic. Fixing inline text editors does not
+fix PopupMenu's modal MenuWindow keyboard interception.
+Rollback: revert PR, no project schema migration or engine state changes.
+No skill/plugin roster was mutated; no independent CCTeam agents ran.
