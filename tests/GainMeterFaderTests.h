@@ -3,6 +3,19 @@
 #include "MixerControls.h"
 
 void gainMeterFaderTests() {
+    test("RQ-METER atomic peak latch retains the interval maximum and resets once", [] {
+        PeakCapture peak;
+        peak.observe(0.43f);
+        peak.observe(0.81f);
+        peak.observe(0.10f);
+        near(peak.take(),0.81f);
+        near(peak.take(),0);
+        peak.observe(0.35f);
+        near(peak.take(),0.35f);
+        peak.observe(0.90f);
+        peak.clear(); // PANIC/disconnect path
+        near(peak.take(),0);
+    });
 
     test("RQ-METER peak capture survives a brief stereo transient followed by silent audio blocks", [] {
         auto show=makeShow();
@@ -48,7 +61,31 @@ void gainMeterFaderTests() {
               fader.getDisplayedPeakDb(1)>-6.0f,
               "An acquired short transient is not visibly retained in the L/R meter");
     });
-    test("Fader wheel steps are calibrated, precise and respect silence",[] {
+    test("RQ-METER republished RenderState retains an unconsumed column peak", [] {
+        auto show=makeShow();
+        auto clip=std::make_shared<AudioClip>();
+        clip->sampleRate=48000;
+        clip->samples.setSize(1,2048);
+        clip->samples.clear();
+        clip->samples.setSample(0,20,0.68f);
+        const int cellId=show.rows[0].cells[0].id;
+        const int columnId=show.columns[0].id;
+        ClipMap clips; clips[cellId]=clip;
+        AudioEngine engine;
+        engine.publish(makeRenderState(show,clips));
+        check(engine.send(cellId,false),"Source PCM pulse was not scheduled");
+        juce::AudioBuffer<float> out(2,256);
+        engine.processBlock(out.getArrayOfWritePointers(),2,256,48000);
+        near(engine.getColumnPeak(columnId),.68f);
+        // An unrelated edit can republish a snapshot before the UI's 25 Hz poll.
+        engine.publish(makeRenderState(show,clips));
+        for(int n=0;n<3;++n)
+            engine.processBlock(out.getArrayOfWritePointers(),2,256,48000);
+        const auto peak=engine.consumeColumnStereoPeak(columnId);
+        near(peak[0],.68f);near(peak[1],.68f); // mono duplicates to stereo
+        near(engine.consumeColumnStereoPeak(columnId)[0],0);
+    });
+    test("Fader wheel steps are calibrated, precise and respect silence"[] {
         GainMeterFader fader;
         near(GainMeterFader::wheelTargetDb(-12.0f,1,false),-11.5);
         near(GainMeterFader::wheelTargetDb(-12.0f,-1,false),-12.5);

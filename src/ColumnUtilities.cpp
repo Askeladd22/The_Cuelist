@@ -310,9 +310,11 @@ struct ColumnUtilities::Strip final : juce::Component {
             return;
         }
         if (owner.show.columns[(size_t)index].type!=ColumnType::audio) return;
-        const auto stereo=owner.engine.connected.load(std::memory_order_relaxed)
-            ? owner.engine.getColumnStereoPeak(id) : std::array<float,2>{{0.0f,0.0f}};
-        gain.setStereoPeaks(stereo[0],stereo[1]);
+        // Consume even while disconnected so an older peak cannot reappear
+        // on the first UI refresh after a device reconnect.
+        const auto stereo=owner.engine.consumeColumnStereoPeak(id);
+        const bool online=owner.engine.connected.load(std::memory_order_relaxed);
+        gain.setStereoPeaks(online ? stereo[0] : 0.0f,online ? stereo[1] : 0.0f);
     }
     void resized() override {
         const int w=getWidth(),h=getHeight();
@@ -462,9 +464,9 @@ void ColumnUtilities::refreshRouting() {
 void ColumnUtilities::refreshMeters() {
     for (auto& strip : strips) strip->updateMeter();
     const auto connected=owner.engine.connected.load(std::memory_order_relaxed);
-    owner.masterSlider.setStereoPeaks(
-        connected ? owner.engine.masterPeakLeft.load(std::memory_order_relaxed) : 0.0f,
-        connected ? owner.engine.masterPeakRight.load(std::memory_order_relaxed) : 0.0f);
+    const auto masterPeak=owner.engine.consumeMasterStereoPeak();
+    owner.masterSlider.setStereoPeaks(connected ? masterPeak[0] : 0.0f,
+                                     connected ? masterPeak[1] : 0.0f);
     owner.safetyLimiter.setGainReduction(
         connected && owner.show.safetyLimiterEnabled
         ? owner.engine.limiterReduction.load(std::memory_order_relaxed) : 0.0f);

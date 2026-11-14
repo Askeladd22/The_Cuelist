@@ -36,6 +36,17 @@ that peak once, without changing actual audio or timer frequency.
   and physical multichannel audio test. CI pass != live-ready.
 
 ## Risk, constraints and rollback
+## Implementation/verification notes
+- `PeakCapture` uses lock-free atomic float CAS(max) on callback and
+  `exchange(0)` on GUI. A competing exchange cannot erase a new peak: a
+  racing CAS retries into the next GUI window.
+- Instantaneous per-block getters remain unmodified for old tests/diagnostics.
+- UI consumes both strip and Master L/R; disconnected GUI drains stale captures
+  and PANIC clears pending values after final output is silenced.
+- Regression also covers RenderState snapshot republish before a GUI read,
+  which must retain captured peaks for the same column identity.
+- No changes to ClickTrack sources or saved project schema.
+
 Root cause of the user's specific visual symptom remains an informed code
 diagnosis until instrumented Windows runtime confirms it. Sample-peak meters
 are not event counters: multiple pulses within one interval display one max.
