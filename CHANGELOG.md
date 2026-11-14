@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.68] - 2026-11-14
+
+**PR:** UX-04A — Esc/PANIC nei tre editor JUCE inline; Taste + UI/UX Review, Matt Pocock, Context Engineering, GStack Review, CCteam, SkillRoster, Unlazy.
+
+### Sicurezza operativa — Esc durante l'editing
+- I TextEditor per rinomina inline (Cuelist/cue/colonna/cella), BPM nella matrice e marker Timeline usavano `setEscapeAndReturnKeysConsumed(true)`. Esc annullava la modifica senza arrivare al `MainComponent::keyPressed` che invoca PANIC.
+- I tre callback `onEscapeKey` adesso conservano l'annullamento non distruttivo delle modifiche e richiamano esplicitamente `MainComponent::stopAll()` dopo la chiusura dell'editor. `Enter` rimane l'azione di salvataggio.
+- Aggiornati tooltip e guida. Nuovo test nativo simula `TextEditor::keyPressed(Esc)` nei tre contesti e verifica testo non salvato scartato, Show identico, selezione NEXT/LIVE conservata e `acknowledgedCueId` azzerato (indicatore del percorso PANIC).
+- Rapporto RQ separa fonte ufficiale JUCE, evidenza del codice e ipotesi da misurare: `docs/research/RQ-UX04-ESC-PANIC-FOCUS.md`.
+
+### Ambito e gate
+- Nessuna nuova UI, hook globale, modifica al callback audio, GO, OSC/MIDI/LTC, Undo/Redo, Control Map, Mixer, Timeline di playback o progetto JSON v10.
+- **Non risolve gli altri popup JUCE modali**, che possono intercettare Esc: audit separato necessario. I risultati CI di questa PR, i test fisici Windows/IME/Narrator e il banco di periferiche esterne sono **ND** fino a verifica. CI verde non certifica readiness LIVE.
+- **Rollback:** revert della PR, senza migrazione e senza modificare lo schema del progetto.
+
 ## [0.9.67] - 2026-11-14
 
 **PR:** [#189](https://github.com/Askeladd22/The_Cuelist/pull/189) (draft, senza merge automatico) / [issue #188](https://github.com/Askeladd22/The_Cuelist/issues/188) — UX-03F (Taste + UI/UX Review + Unlazy).
