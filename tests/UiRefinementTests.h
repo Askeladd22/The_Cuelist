@@ -657,14 +657,30 @@ void uiRefinementTests() {
               ui.liveCuelistIndex()==live,
               "UX03C keyboard Move left acted on the wrong column or LIVE");
         check(ui.keyPressed(actions) && ui.keyPressed(juce::KeyPress{'4'}) &&
-              ui.show.columns[0].collapsed,
-              "UX03C keyboard Collapse did not reuse the existing handler");
+              ui.show.columns[0].collapsed &&
+              // Collapsing the selected column intentionally selects the
+              // first expanded column. Do not silently target the MIDI column.
+              ui.selectedColumn==1 &&
+              ui.show.columns[(size_t)ui.selectedColumn].id!=midiId,
+              "UX03C Collapse failed or did not update selectedColumn");
+        const auto selectedName=ui.show.columns[(size_t)ui.selectedColumn].name;
+        const auto selectedLabel=selectedName.isNotEmpty() ?
+            selectedName : juce::String("Column ")+juce::String(ui.selectedColumn+1);
+        check(ui.keyPressed(actions) &&
+              pinned->getDescription().contains("Column "+selectedLabel) &&
+              ui.keyPressed(actions),
+              "UX03D new keyboard action strip did not identify current selection");
+        // Collapsed cells are selectable, but require an explicit selection
+        // before the next destructive keyboard command.
+        check(ui.select(0,0) && ui.selectedColumn==0 &&
+              ui.show.columns[0].id==midiId,
+              "UX03D could not explicitly reselect collapsed MIDI target");
         check(ui.keyPressed(actions) && ui.keyPressed(juce::KeyPress{'5'}) &&
               ui.keyPressed(juce::KeyPress{'D'}) &&
               ui.show.columns.size()==1 &&
               ui.show.columns[0].id!=midiId &&
               ui.liveCuelistIndex()==live,
-              "UX03C confirmed Delete failed or targeted another column");
+              "UX03D explicit target Delete failed or removed another column");
     });
 
     test("UX03C: hidden column targets cannot activate through action hint",[] {
