@@ -54,7 +54,9 @@ A properly packaged build does not require Visual Studio, Git or CMake to run. K
 
 ### 3.1 Left sidebar
 
-The sidebar provides **New**, **Open**, **Save**, the editable show title, **Settings**, **Control Mappings** and a project overview. Near the bottom, **On Deck** identifies the next cue; **GO / SPACE** and **PANIC / ESC** remain accessible at all times.
+The sidebar shows the current editable **Workspace** show title, **Recent Projects**, and a fixed operator status area beside **GO / SPACE** and **PANIC / ESC**. File, Settings and Control Mappings commands live in the native top menus, not duplicate sidebar buttons.
+
+The status area separates **LIVE / ON DECK** (the Cuelist receiving global Space/GO), **NEXT GLOBAL** (its next cue, or **END**), and **VIEW** (the Cuelist currently being browsed). A distinct `L01`–`L12` locator identifies each Cuelist even if a long name is truncated. When the viewed Cuelist is LIVE, the panel explicitly says **VIEW = LIVE**. Otherwise it says **VIEW / BROWSING**: simply browsing another tab does not transfer LIVE. The global GO and PANIC buttons retain their original positions and behavior.
 
 - **New** starts a fresh show and warns if current changes would be discarded. The compact **Unsaved changes** dialog keeps **Cancel** as the safe choice; **Discard and continue** must be selected explicitly to proceed without saving. Closing the dialog or pressing Escape also cancels the operation. To save instead, select Cancel and then Save.
 - **Open** loads an existing project, subject to preparation and validation before activation.
@@ -168,7 +170,7 @@ remain supported through migration, not as a new operator lock.
 
 The native **M Learn** and **O Learn** actions now belong to the **I/O Activity** panel next to MIDI RX/TX and OSC RX/TX. Their Quick Learn behavior, device handling and protocol colors are unchanged.
 
-The left sidebar offers **Recent Projects** below **Workspace**. Click a previously opened or saved show to load it with the existing safe background loader. The current show's unsaved changes still require explicit discard confirmation. **Open...** launches the ordinary project chooser; **All** lists remaining history. The recent project paths are held in the application's local preferences and do not alter the project format.
+The left sidebar offers **Recent Projects** below **Workspace**. Click a previously opened or saved show to load it with the existing safe background loader. The current show's unsaved changes still require explicit discard confirmation. **Open...** launches the ordinary project chooser; **All** lists remaining history, including entries no longer visible inline when the LIVE/VIEW status needs more room at compact window heights. The recent project paths are held in the application's local preferences and do not alter the project format.
 
 The pinned BPM / Auto Stop lanes retain their original editing/toggle hitboxes but use balanced title/value alignment, a quieter cue-state accent and a continuous separator.
 
