@@ -20,6 +20,7 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 ### UI/UX e parità funzionale
 - Corretto un difetto di leggibilità visibile nei due ritagli nativi del fader: nelle strip Audio compatte, le etichette della scala dB potevano scartare il riferimento inferiore `−∞` (silenzio digitale) in base all'ordine di disegno di tacche intermedie. La scala del fader e dei meter stereo resta identica.
 - Aggiunta al componente JUCE `GainMeterFader` una **modalità opzionale di leggibilità** delle etichette, attivata esclusivamente nelle strip Audio. I riferimenti **0 dB** e **−∞** hanno priorità, mentre gli altri valori, compreso +6, sono aggiunti solo se distanziati. Le etichette secondarie hanno maggiore contrasto, senza ridisegnare cursore, meter L/R o rettangoli di input.
+- La review visiva delle snapshot ha rilevato che `−∞` poteva collidere con la didascalia **MUTE** della colonna al minimo 1180×820; il testo `−∞` viene ora alzato di 11px rispetto alla tacca finale (che **non** si muove) e la selezione delle altre etichette misura tale posizione effettiva. Test su rettangoli JUCE per MUTE e lettura PAN a quattro dimensioni.
 - **Master Audio invariato**: la modalità predefinita è quella storica, non attivata dal Master. `MasterAudioLayout`, meter, routing Main/Direct, limiter, mute, pan e hotspot Quick Learn non vengono modificati. Niente modifiche al motore realtime, GO/PANIC, VIEW/LIVE, MIDI/OSC/LTC o progetti `.cuelist` v10.
 
 ### Verifiche e rollback
