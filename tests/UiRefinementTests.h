@@ -42,6 +42,63 @@ void uiRefinementTests() {
         check(project && project->isEditableOnDoubleClick(),
               "Workspace project naming must remain in-place.");
     });
+    test("UX04D: project name Label Escape cancels and triggers PANIC",[] {
+        // This is a JUCE Label::TextEditor listener callback-contract test,
+        // not a physical Escape-key delivery/latency test on Windows.
+        for (const int width : {1180,1920}) {
+            MainComponent ui(false);
+            ui.setSize(width,width==1180 ? 820 : 1080);
+            auto* project=dynamic_cast<PanicAwareProjectLabel*>(
+                controlsV3::named(ui,"projectName"));
+            check(project!=nullptr && project->isEditableOnDoubleClick(),
+                  "UX04D native editable project Label is missing");
+            if (!project) return;
+            const auto original=encodeShow(ui.show);
+            const int live=ui.liveCuelistIndex();
+            const int next=ui.nextCueIndex();
+            project->showEditor();
+            auto* editor=project->getCurrentTextEditor();
+            check(project->isBeingEdited() && editor!=nullptr,
+                  "UX04D JUCE Label did not create its real editor");
+            if (!editor) return;
+            // Emil worst-case: long title at narrow viewport must not
+            // interfere with cancellation, stored data or transport.
+            editor->setText(
+                "This is an exceptionally long rehearsal project name that would "
+                "normally be truncated in the compact workspace header",
+                juce::dontSendNotification);
+            ui.engine.acknowledgedCueId.store(923);
+            project->textEditorEscapeKeyPressed(*editor);
+            check(!project->isBeingEdited() &&
+                  project->getCurrentTextEditor()==nullptr &&
+                  encodeShow(ui.show)==original &&
+                  ui.liveCuelistIndex()==live && ui.nextCueIndex()==next &&
+                  ui.engine.acknowledgedCueId.load()==0,
+                  "UX04D project Label dismissed Escape without PANIC");
+        }
+
+        // Focus-loss/confirm is not an emergency command: original JUCE
+        // editable Label behavior must still commit without PANIC.
+        MainComponent ui(false);
+        auto* project=dynamic_cast<PanicAwareProjectLabel*>(
+            controlsV3::named(ui,"projectName"));
+        check(project!=nullptr,"UX04D project label missing for confirm");
+        if (!project) return;
+        const int live=ui.liveCuelistIndex();
+        const int next=ui.nextCueIndex();
+        project->showEditor();
+        auto* editor=project->getCurrentTextEditor();
+        check(editor!=nullptr,"UX04D confirm editor was not created");
+        if (!editor) return;
+        editor->setText("Confirmed rehearsal name",juce::dontSendNotification);
+        ui.engine.acknowledgedCueId.store(923);
+        project->hideEditor(false);
+        check(!project->isBeingEdited() &&
+              ui.show.name=="Confirmed rehearsal name" &&
+              ui.liveCuelistIndex()==live && ui.nextCueIndex()==next &&
+              ui.engine.acknowledgedCueId.load()==923,
+              "UX04D standard project rename triggered PANIC or failed to save");
+    });
     test("Cue and column renaming never creates a modal dialog",[] {
         MainComponent ui(false);
         auto* editor=dynamic_cast<juce::TextEditor*>(
