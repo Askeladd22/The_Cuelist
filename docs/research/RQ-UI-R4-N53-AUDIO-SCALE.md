@@ -55,6 +55,26 @@ expanded/collapsed columns; 0 dB ceiling; +6dB ceiling; fader with
 negative gain and wheel precision; short 180px utility panel; dark
 and Legacy themes; MIDI and OSC must not acquire a fake audio fader.
 
+## GStack counterexample found after first green CI
+
+The first head `9674b722` passed Windows CTest (**420872 assertions,
+0 failed**; run 43603342673) and uploaded genuine JUCE screenshots.
+A pixel comparison with v0.9.73 at 1180×820 found **241 changed
+pixels exclusively inside the Audio column**, while the pinned
+Master and Cue Grid regions were pixel-identical (0 changes).
+However, direct visual inspection detected a separate defect: the
+new last `−∞` caption approached/overlapped the Audio strip's
+native **MUTE** caption. This had escaped the pure tick-spacing test.
+
+The fix in the SAME draft PR lifts the terminal *caption only* 11px
+above the calibrated bottom tick, prioritizes visible label positions
+rather than tick marks, and adds a JUCE rectangle regression checking
+against MUTE and PAN text at 1180×820, 1440×900, 1647×895 and 1920×1080.
+Original gain/meter geometry and Master drawing stay unchanged.
+**The first green CI run does not validate this later correction.**
+New Windows Release/CTest and visual comparison remain required on
+the final head before accepting N5.3.
+
 ## Operator risk, tests and results
 
 The most relevant operator error is to mistake the lower tick
