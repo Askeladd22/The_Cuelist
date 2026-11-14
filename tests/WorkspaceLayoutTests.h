@@ -2,6 +2,84 @@
 #include "WorkspaceLayout.h"
 
 void workspaceLayoutTests() {
+    test("N4.2 Inspector structural form is unscaled and non-overlapping",[] {
+        for (const auto dimensions:std::initializer_list<juce::Point<int>>{
+                {1180,820},{1440,900},{1647,895},{1920,1080},
+                {3840,1080}}) {
+            WorkspaceLayoutInput input;
+            input.width=dimensions.x;input.height=dimensions.y;
+            input.columnEndX=CueGridGeometry::nameWidth+8*CueGridGeometry::columnWidth;
+            input.rowCount=24;
+            const auto g=calculateWorkspaceLayout(input);
+            const auto& i=g.inspector;
+            check(i.cueNameField.getHeight()>=32 &&
+                  i.bpmField.getHeight()>=32 &&
+                  i.cellNameField.getHeight()>=31 &&
+                  i.followToggle.getHeight()>=26 &&
+                  i.loopToggle.getHeight()>=26 &&
+                  i.editAction.getHeight()>=32 &&
+                  i.importAction.getHeight()>=32,
+                  "N4.2 Inspector input hit targets shrank at a supported window size");
+            check(i.cueNameCaption.getBottom()<=i.cueNameField.getY() &&
+                  i.cueNameField.getBottom()<=i.bpmCaption.getY() &&
+                  i.bpmCaption.getBottom()<=i.bpmField.getY() &&
+                  i.bpmField.getBottom()<=i.rowLoop.getY() &&
+                  i.rowLoop.getBottom()<i.cellDividerY &&
+                  i.cellDividerY<i.cellSection.getY() &&
+                  i.cellNameCaption.getBottom()<=i.cellNameField.getY() &&
+                  i.cellNameField.getBottom()<i.gainField.getY() &&
+                  i.gainField.getBottom()<i.followToggle.getY() &&
+                  i.followToggle.getBottom()<i.loopToggle.getY() &&
+                  i.loopToggle.getBottom()<i.editAction.getY() &&
+                  i.editAction.getBottom()<=i.importAction.getY() &&
+                  i.importAction.getBottom()<i.notesDividerY &&
+                  i.notesTitle.getBottom()<=i.notesField.getY(),
+                  "N4.2 Inspector Cue, Cell, action and notes sections overlap");
+            check(i.notesField.getHeight()>=70 &&
+                  i.notesField.getBottom()<=g.inspectorPanel.getBottom() &&
+                  i.notesField.getX()>=g.inspectorPanel.getX() &&
+                  i.notesField.getRight()<=g.inspectorPanel.getRight(),
+                  "N4.2 Inspector notes became unreadable or clipped");
+            check(g.viewport.getX()==182 &&
+                  g.cueHeaders.getWidth()==CueGridGeometry::nameWidth &&
+                  g.metrics.getWidth()==CueGridGeometry::pinnedMetricsWidth &&
+                  g.utilities.getRight()==g.metrics.getX() &&
+                  g.timeline.getRight()==g.editorX,
+                  "N4.2 changed original Cue Grid, Master or Timeline geometry");
+        }
+    });
+    test("N4.2 real Inspector children share their caption layout geometry",[] {
+        for(const auto dimensions:std::initializer_list<juce::Point<int>>{
+                {1180,820},{1647,895},{1920,1080}}) {
+            MainComponent ui(false);
+            ui.setSize(dimensions.x,dimensions.y);
+            const auto g=calculateWorkspaceLayout({
+                dimensions.x,dimensions.y,0,467,1,72,62,184});
+            const auto& i=g.inspector;
+            const auto saved=encodeShow(ui.show);
+            const int live=ui.liveCuelistIndex(),next=ui.nextCueIndex();
+            const auto expect=[&](const char* name,
+                                  const juce::Rectangle<int>& expected) {
+                auto* child=controlsV3::named(ui,name);
+                check(child && child->getBounds()==expected,
+                      "N4.2 native Inspector child diverged from shared field layout");
+            };
+            expect("cueName",i.cueNameField);
+            expect("cueBpm",i.bpmField);
+            expect("inspectorCueLoop",i.rowLoop);
+            expect("cellName",i.cellNameField);
+            expect("cellGainDb",i.gainField);
+            expect("inspectorFollowsRow",i.followToggle);
+            expect("inspectorCellLoop",i.loopToggle);
+            expect("inspectorMidiEdit",i.editAction);
+            expect("inspectorOscEdit",i.editAction);
+            expect("importAudioMedia",i.importAction);
+            expect("cueNotes",i.notesField);
+            check(encodeShow(ui.show)==saved &&
+                  ui.liveCuelistIndex()==live && ui.nextCueIndex()==next,
+                  "N4.2 layout-only resize changed Show or VIEW/LIVE/NEXT");
+        }
+    });
     test("Timeline header Collapse and View remain synchronized and reopenable",[] {
         MainComponent ui(false);
         auto* timeline=cueViewFixtures::find<Timeline>(ui);
