@@ -841,11 +841,11 @@ void uiRefinementTests() {
               "UX03F D failed to delete the captured ID safely");
     });
 
-    test("UX04A: Escape in inline name BPM and marker editors still calls PANIC",[] {
-        const juce::KeyPress esc{juce::KeyPress::escapeKey};
-
-        // The inline name editor consumes JUCE Escape instead of letting
-        // MainComponent::keyPressed receive it. Exercise the real callback.
+    test("UX04A: inline editor Escape callbacks cancel edit and invoke PANIC",[] {
+        // TextEditor::keyPressed(Escape) posts to JUCE's asynchronous queue.
+        // CTest does not run a dispatch loop, so checking right afterwards
+        // is a false-negative. Verify callback contracts directly here;
+        // actual physical key delivery/latency remains a manual gate.
         {
             MainComponent ui(false);
             ui.show.rows[0].cells[0].name="Original cell name";
@@ -861,7 +861,9 @@ void uiRefinementTests() {
             const int next=ui.nextCueIndex();
             editor->setText("Unsaved name",juce::dontSendNotification);
             ui.engine.acknowledgedCueId.store(923);
-            editor->keyPressed(esc);
+            check(static_cast<bool>(editor->onEscapeKey),
+                  "UX04A name Escape callback missing");
+            editor->onEscapeKey();
             check(!ui.isInlineRenaming() && !editor->isVisible() &&
                   encodeShow(ui.show)==saved &&
                   ui.liveCuelistIndex()==live && ui.nextCueIndex()==next &&
@@ -885,7 +887,9 @@ void uiRefinementTests() {
             const int next=ui.nextCueIndex();
             editor.setText("160.0",juce::dontSendNotification);
             ui.engine.acknowledgedCueId.store(923);
-            editor.keyPressed(esc);
+            check(static_cast<bool>(editor.onEscapeKey),
+                  "UX04A BPM Escape callback missing");
+            editor.onEscapeKey();
             check(!metrics->isBpmEditing() && !editor.isVisible() &&
                   encodeShow(ui.show)==saved &&
                   ui.liveCuelistIndex()==live && ui.nextCueIndex()==next &&
@@ -914,7 +918,9 @@ void uiRefinementTests() {
             const int next=ui.nextCueIndex();
             editor->setText("Uncommitted marker",juce::dontSendNotification);
             ui.engine.acknowledgedCueId.store(923);
-            editor->keyPressed(esc);
+            check(static_cast<bool>(editor->onEscapeKey),
+                  "UX04A Timeline marker Escape callback missing");
+            editor->onEscapeKey();
             check(!editor->isVisible() && encodeShow(ui.show)==saved &&
                   ui.liveCuelistIndex()==live && ui.nextCueIndex()==next &&
                   ui.engine.acknowledgedCueId.load()==0,
@@ -944,7 +950,9 @@ void uiRefinementTests() {
             const int next=ui.nextCueIndex();
             editor->setText("Pending function",juce::dontSendNotification);
             ui.engine.acknowledgedCueId.store(923);
-            editor->keyPressed(esc);
+            check(static_cast<bool>(editor->onEscapeKey),
+                  "UX04A Quick Learn Escape callback missing");
+            editor->onEscapeKey();
             check(!editor->isVisible() && !committed &&
                   encodeShow(ui.show)==saved &&
                   ui.liveCuelistIndex()==live && ui.nextCueIndex()==next &&
