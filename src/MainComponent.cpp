@@ -143,6 +143,11 @@ MainComponent::MainComponent(bool startAudio) {
     rowTab.setVisible(false);
     rowName.setSelectAllWhenFocused(true); cellName.setSelectAllWhenFocused(true); bpm.setInputRestrictions(6,"0123456789.");
     rowName.setName("cueName"); cellName.setName("cellName"); bpm.setName("cueBpm");
+    rowLoop.setName("inspectorCueLoop");
+    follow.setName("inspectorFollowsRow");
+    loop.setName("inspectorCellLoop");
+    midiEditButton.setName("inspectorMidiEdit");
+    oscEditButton.setName("inspectorOscEdit");
     cueNotes.setName("cueNotes");
     cueNotes.setMultiLine(true,true);
     // Escape must bubble to MainComponent::keyPressed so Panic works even
