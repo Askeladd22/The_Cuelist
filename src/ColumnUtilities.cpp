@@ -63,6 +63,9 @@ struct ColumnUtilities::Strip final : juce::Component {
         };
         configureMixerPan(pan);
         gain.setName("columnGainDb"); pan.setName("columnPan"); mute.setName("columnMute"); phase.setName("columnPhase");
+        // Column-only clarity: the Master uses GainMeterFader's original
+        // presentation and stays pixel-identical under the V2 parity spec.
+        gain.setColumnReadableScale(true);
         addAndMakeVisible(output); output.setName("columnOutput");
         addAndMakeVisible(midiOutputWarning);
         midiOutputWarning.setName("noMidiOutputWarning");
