@@ -383,9 +383,9 @@ private:
 class PanicAwareProjectLabel final : public juce::Label {
 public:
     std::function<void()> onEscapePanic;
-    void textEditorEscapeKeyPressed(juce::TextEditor& editor) override {
+    void textEditorEscapeKeyPressed(juce::TextEditor& activeEditor) override {
         const bool wasEditing=isBeingEdited();
-        juce::Label::textEditorEscapeKeyPressed(editor);
+        juce::Label::textEditorEscapeKeyPressed(activeEditor);
         // The base class may destroy the editor; never access it afterwards.
         if (wasEditing && onEscapePanic) onEscapePanic();
     }

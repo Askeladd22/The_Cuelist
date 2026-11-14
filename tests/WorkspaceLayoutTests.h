@@ -90,7 +90,18 @@ void workspaceLayoutTests() {
             ui.setSize(size.x,size.y);
             const auto saved=encodeShow(ui.show);
             const int live=ui.liveCuelistIndex(),next=ui.nextCueIndex();
+            // Opening Learn on a fresh Show intentionally provisions the
+            // default 8 MIDI + 8 OSC abstract functions. The layout test
+            // must not mistake that supported, persisted action for a bug.
+            check(ui.show.controls.functions.empty(),
+                  "N4.2 Quick Learn fixture must begin without starter functions");
             ui.beginQuickLearn(false);
+            const auto provisioned=encodeShow(ui.show);
+            check(provisioned!=saved &&
+                  ui.show.controls.functions.size()==16 &&
+                  ui.show.controls.bindings.empty() &&
+                  ui.liveCuelistIndex()==live && ui.nextCueIndex()==next,
+                  "N4.2 opening Quick Learn lost starter functions or LIVE/NEXT");
             auto* targets=cueViewFixtures::find<QuickControlTargets>(ui);
             const auto g=calculateWorkspaceLayout({
                 size.x,size.y,0,467,1,72,62,184});
@@ -101,9 +112,19 @@ void workspaceLayoutTests() {
                   targets->getBottom()<=g.inspectorPanel.getBottom(),
                   "N4.2 native Quick Learn list lost its Inspector position");
             ui.finishQuickLearn();
-            check(encodeShow(ui.show)==saved &&
+            check(encodeShow(ui.show)==provisioned &&
                   ui.liveCuelistIndex()==live && ui.nextCueIndex()==next,
-                  "N4.2 Quick Learn layout changed Show, LIVE or NEXT");
+                  "N4.2 ending Quick Learn changed Show or LIVE/NEXT after setup");
+            // Re-entering Quick Learn must be idempotent: no duplicate
+            // function creation and no edits from a pure layout toggle.
+            ui.beginQuickLearn(false);
+            check(encodeShow(ui.show)==provisioned &&
+                  ui.show.controls.functions.size()==16 &&
+                  ui.liveCuelistIndex()==live && ui.nextCueIndex()==next,
+                  "N4.2 re-entering Quick Learn added duplicate functions");
+            ui.finishQuickLearn();
+            check(encodeShow(ui.show)==provisioned,
+                  "N4.2 cancelling repeated Quick Learn changed persisted data");
         }
     });
     test("Timeline header Collapse and View remain synchronized and reopenable",[] {

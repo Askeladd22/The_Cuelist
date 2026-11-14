@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.71] - 2026-11-14
+
+**Correzione regressione test N4.2** della PR [#194](https://github.com/Askeladd22/The_Cuelist/pull/194), già integrata in `main` v0.9.70.
+
+### Corretto
+- Il test nativo `N4.2 Quick Learn retains native Inspector bounds after form reflow` verificava erroneamente che l'intero Show fosse byte-identico prima e dopo l'apertura di Quick Learn. Su uno Show appena creato, `ensureStarterControlFunctions()` aggiunge **intenzionalmente** 8 funzioni MIDI e 8 OSC, senza creare binding né cambiare LIVE/NEXT: ciò è parte dell'operatività esistente e non va rimosso per far passare la suite.
+- Il test ora verifica l'inizializzazione dei 16 target, l'assenza di binding inventati, le reali coordinate JUCE dell'Inspector e l'identità di Show **dopo l'inizializzazione**, oltre all'idempotenza di un secondo ciclo Learn/Cancel; LIVE e NEXT restano invariati.
+- Rinominato l'argomento `editor` del metodo `PanicAwareProjectLabel::textEditorEscapeKeyPressed` per eliminare il warning MSVC `C4458` (oscuramento del membro `juce::Label::editor`), senza modificare il callback Escape/PANIC.
+
+### Evidenze e gate
+- Log MSBuild/CTest Windows dell'operatore su 0.9.70: **compilazione completata**, **420505 assertions, 1 failed tests**, precisamente il confronto integrale Show del nuovo test N4.2. Nessuna altra failure riportata. La build segnala inoltre warning C4458 ripetuti su MainComponent.h:386.
+- **Da verificare su questa PR:** Release Windows, CTest integrale e guard VERSION/CMake/CHANGELOG sullo SHA finale. Il vecchio log non è prova di successo della correzione.
+- Runtime Audio/MIDI/OSC/LTC, formati `.cuelist` v10, operazioni GO/PANIC/VIEW/LIVE e geometria UI **invariati**. Nessun merge automatico; revert della PR come rollback.
+- **ND:** screenshot Windows DPI reali, keyboard/IME, hardware e misure operatore; nessuna certificazione live.
+
 ## [0.9.70] - 2026-11-14
 
 **RQ:** [#193](https://github.com/Askeladd22/The_Cuelist/issues/193) — redesign strutturale R1/N4.2 dell'Inspector nativo (Matt Pocock, GStack, Taste/UI-UX, Emil e Unlazy).
