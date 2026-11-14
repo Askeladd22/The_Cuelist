@@ -349,6 +349,8 @@ MainComponent::MainComponent(bool startAudio) {
     saveButton.onClick=[this] { saveProject(); };
     addRowButton.onClick=[this] { addCue(); };
     addColumnButton.onClick=[this] { showColumnMenu(addColumnButton.getScreenBounds().getCentre()); };
+    goButton.setName("globalGo");
+    panicButton.setName("globalPanic");
     goButton.onClick=[this] { goNext(); }; panicButton.onClick=[this] { stopAll(); };
     deviceButton.setButtonText("Settings");
     deviceButton.onClick=[this] {preferencesButton.triggerClick();};
