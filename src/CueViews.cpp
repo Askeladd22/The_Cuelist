@@ -1072,6 +1072,21 @@ int PinnedColumnHeaders::gridXAt(int localX) const {
     return CueGridGeometry::pinnedColumnGridX(
         localX,owner.viewport.getViewPositionX());
 }
+juce::String PinnedColumnHeaders::armedDeleteHintForWidth(int headerWidth) {
+    // At 1180px the pinned column header can be only ~210 logical px wide.
+    // Keep critical D and the ignored repeated 5 visible, not curtailed by
+    // Graphics::drawText's ellipsis; measure with JUCE 8 shaped glyph metrics.
+    constexpr float horizontalInsetAndSafety=24.0f; // label 10+10; 4px slack
+    const auto available=juce::jmax(0.0f,(float)headerWidth-horizontalInsetAndSafety);
+    const auto displayFont=font(11.0f,true);
+    for (const char* candidate : {"D DELETE  /  5 IGNORED",
+                                  "D DELETE",
+                                  "D"}) {
+        if (juce::GlyphArrangement::getStringWidth(displayFont,candidate)<=available)
+            return candidate;
+    }
+    return "D"; // pathological widths; never elide the confirmation key
+}
 void PinnedColumnHeaders::paint(juce::Graphics& g) {
     // The grid owns all header drawing. Clip to the fixed 72px strip and
     // translate by precisely the horizontal scroll offset so the headers
@@ -1111,7 +1126,7 @@ void PinnedColumnHeaders::paint(juce::Graphics& g) {
         const auto right=index>=0 && index+1<(int)owner.show.columns.size() ?
             juce::String("3 Right") : juce::String("3 N/A");
         const auto actions=owner.columnKeyboardDeleteArmed ?
-            juce::String("Press D to delete  /  repeating 5 does nothing") :
+            armedDeleteHintForWidth(getWidth()) :
             getWidth()<520 ?
                 rename+"   "+left+"   "+right+"   4 "+fold+"   5 Del" :
                 rename+"   "+left+"   "+right+"   4 "+fold+"   5 Delete";
