@@ -659,6 +659,14 @@ std::array<float,2> AudioEngine::getColumnStereoPeak(int columnId) const noexcep
     return {{it->second->left.load(std::memory_order_relaxed),
              it->second->right.load(std::memory_order_relaxed)}};
 }
+// Baseline adapter (red regression): these still expose only the last callback.
+std::array<float,2> AudioEngine::consumeColumnStereoPeak(int columnId) noexcept {
+    return getColumnStereoPeak(columnId);
+}
+std::array<float,2> AudioEngine::consumeMasterStereoPeak() noexcept {
+    return {{masterPeakLeft.load(std::memory_order_relaxed),
+             masterPeakRight.load(std::memory_order_relaxed)}};
+}
 CellPlaybackInfo AudioEngine::getCellPlayback(int cellId) const noexcept {
     const auto found=playback.find(cellId);
     return found==playback.end() ? CellPlaybackInfo{} : found->second.telemetry->read();

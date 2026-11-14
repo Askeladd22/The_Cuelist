@@ -151,6 +151,9 @@ public:
     float getColumnPeak(int columnId) const noexcept;
     // Returns post-cell/row/strip, pre-master L/R peaks (linear amplitude).
     std::array<float,2> getColumnStereoPeak(int columnId) const noexcept;
+    // UI-only peak captures across all callbacks since the preceding UI read.
+    std::array<float,2> consumeColumnStereoPeak(int columnId) noexcept;
+    std::array<float,2> consumeMasterStereoPeak() noexcept;
     uint64_t getMidiColumnSent(int columnId) {return midiRouter.getColumnSent(columnId);}
     uint64_t getOscColumnSent(int columnId) {return oscRouter.getColumnSent(columnId);}
     std::atomic<bool> limiterActive{false};
