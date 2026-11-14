@@ -58,7 +58,7 @@ WorkspaceLayout calculateWorkspaceLayout(const WorkspaceLayoutInput& input) {
     sidebar.nextValue={108,statusY+48,52,22};
     sidebar.dividerY=statusY+76;
     sidebar.viewHeading={20,statusY+80,108,16};
-    sidebar.viewLocator={125,statusY+80,35,16};
+    sidebar.viewLocator={132,statusY+80,28,16};
     sidebar.viewName={20,statusY+96,140,17};
 
     // The resized dock is a user preference, not an unconditional demand for
