@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.74] - 2026-11-14
+
+**N5.3 — Scala fader/meter delle sole colonne Audio:** [issue #200](https://github.com/Askeladd22/The_Cuelist/issues/200).
+
+### UI/UX e parità funzionale
+- Corretto un difetto di leggibilità visibile nei due ritagli nativi del fader: nelle strip Audio compatte, le etichette della scala dB potevano scartare il riferimento inferiore `−∞` (silenzio digitale) in base all'ordine di disegno di tacche intermedie. La scala del fader e dei meter stereo resta identica.
+- Aggiunta al componente JUCE `GainMeterFader` una **modalità opzionale di leggibilità** delle etichette, attivata esclusivamente nelle strip Audio. I riferimenti **0 dB** e **−∞** hanno priorità, mentre gli altri valori, compreso +6, sono aggiunti solo se distanziati. Le etichette secondarie hanno maggiore contrasto, senza ridisegnare cursore, meter L/R o rettangoli di input.
+- **Master Audio invariato**: la modalità predefinita è quella storica, non attivata dal Master. `MasterAudioLayout`, meter, routing Main/Direct, limiter, mute, pan e hotspot Quick Learn non vengono modificati. Niente modifiche al motore realtime, GO/PANIC, VIEW/LIVE, MIDI/OSC/LTC o progetti `.cuelist` v10.
+
+### Verifiche e rollback
+- Test in `tests/GainMeterFaderTests.h` per altezze 135–260px, ceiling +6/0, distanza delle etichette, output immagine e ripristino pixel-identico del default, senza callback; `tests/UtilityPolishTests.h` verifica che la modalità sia attiva solo sul gain colonna Audio e disattiva nel Master.
+- Aggiunte snapshot native JUCE a 1180×820 e 1647×895 del workspace con Master e strip Audio. **Risultati Windows Release/CTest, screenshot e version guard da verificare sulla PR finale**; nessuna affermazione di test superati prima della CI.
+- **ND:** DPI desktop Windows 100/125/150, IME/Narrator, misure operatori e banco Audio/MIDI/OSC/LTC esterno. CI verde non certifica l'utilizzo LIVE.
+- Rollback: revert della piccola PR, senza migrazioni di progetto o merge automatico.
+
 ## [0.9.73] - 2026-11-14
 
 **RQ:** [#198](https://github.com/Askeladd22/The_Cuelist/issues/198) — R3: gerarchia tipografica dei titoli LIVE/GO e BPM/AUTO STOP in componenti JUCE reali.
