@@ -42,6 +42,66 @@ void uiRefinementTests() {
         check(project && project->isEditableOnDoubleClick(),
               "Workspace project naming must remain in-place.");
     });
+    test("UX04D: project name Label Escape cancels and triggers PANIC",[] {
+        // This is a JUCE Label::TextEditor listener callback-contract test,
+        // not a physical Escape-key delivery/latency test on Windows.
+        for (const int width : {1180,1920}) {
+            MainComponent ui(false);
+            ui.setSize(width,width==1180 ? 820 : 1080);
+            auto* project=dynamic_cast<PanicAwareProjectLabel*>(
+                controlsV3::named(ui,"projectName"));
+            check(project!=nullptr && project->isEditableOnDoubleClick(),
+                  "UX04D native editable project Label is missing");
+            if (!project) return;
+            const auto original=encodeShow(ui.show);
+            const int live=ui.liveCuelistIndex();
+            const int next=ui.nextCueIndex();
+            project->showEditor();
+            auto* editor=project->getCurrentTextEditor();
+            check(project->isBeingEdited() && editor!=nullptr,
+                  "UX04D JUCE Label did not create its real editor");
+            if (!editor) return;
+            // Emil worst-case: a valid (<=120-char) title still overflows
+            // the 132px header at 1180px. If Escape accidentally commits,
+            // validation must NOT mask that regression by rejecting the name.
+            const juce::String pendingName=
+                "Extended rehearsal project name for stage-right cues, "
+                "Sunday matinee, alternate sound and early cue checks";
+            check(pendingName.length()<=120 && pendingName!=ui.show.name,
+                  "UX04D fixture must be a valid, changed project name");
+            editor->setText(pendingName,juce::dontSendNotification);
+            ui.engine.acknowledgedCueId.store(923);
+            project->textEditorEscapeKeyPressed(*editor);
+            check(!project->isBeingEdited() &&
+                  project->getCurrentTextEditor()==nullptr &&
+                  encodeShow(ui.show)==original &&
+                  ui.liveCuelistIndex()==live && ui.nextCueIndex()==next &&
+                  ui.engine.acknowledgedCueId.load()==0,
+                  "UX04D project Label dismissed Escape without PANIC");
+        }
+
+        // Focus-loss/confirm is not an emergency command: original JUCE
+        // editable Label behavior must still commit without PANIC.
+        MainComponent ui(false);
+        auto* project=dynamic_cast<PanicAwareProjectLabel*>(
+            controlsV3::named(ui,"projectName"));
+        check(project!=nullptr,"UX04D project label missing for confirm");
+        if (!project) return;
+        const int live=ui.liveCuelistIndex();
+        const int next=ui.nextCueIndex();
+        project->showEditor();
+        auto* editor=project->getCurrentTextEditor();
+        check(editor!=nullptr,"UX04D confirm editor was not created");
+        if (!editor) return;
+        editor->setText("Confirmed rehearsal name",juce::dontSendNotification);
+        ui.engine.acknowledgedCueId.store(923);
+        project->hideEditor(false);
+        check(!project->isBeingEdited() &&
+              ui.show.name=="Confirmed rehearsal name" &&
+              ui.liveCuelistIndex()==live && ui.nextCueIndex()==next &&
+              ui.engine.acknowledgedCueId.load()==923,
+              "UX04D standard project rename triggered PANIC or failed to save");
+    });
     test("Cue and column renaming never creates a modal dialog",[] {
         MainComponent ui(false);
         auto* editor=dynamic_cast<juce::TextEditor*>(
@@ -841,11 +901,11 @@ void uiRefinementTests() {
               "UX03F D failed to delete the captured ID safely");
     });
 
-    test("UX04A: Escape in inline name BPM and marker editors still calls PANIC",[] {
-        const juce::KeyPress esc{juce::KeyPress::escapeKey};
-
-        // The inline name editor consumes JUCE Escape instead of letting
-        // MainComponent::keyPressed receive it. Exercise the real callback.
+    test("UX04A: inline editor Escape callbacks cancel edit and invoke PANIC",[] {
+        // TextEditor::keyPressed(Escape) posts to JUCE's asynchronous queue.
+        // CTest does not run a dispatch loop, so checking right afterwards
+        // is a false-negative. Verify callback contracts directly here;
+        // actual physical key delivery/latency remains a manual gate.
         {
             MainComponent ui(false);
             ui.show.rows[0].cells[0].name="Original cell name";
@@ -861,7 +921,9 @@ void uiRefinementTests() {
             const int next=ui.nextCueIndex();
             editor->setText("Unsaved name",juce::dontSendNotification);
             ui.engine.acknowledgedCueId.store(923);
-            editor->keyPressed(esc);
+            check(static_cast<bool>(editor->onEscapeKey),
+                  "UX04A name Escape callback missing");
+            editor->onEscapeKey();
             check(!ui.isInlineRenaming() && !editor->isVisible() &&
                   encodeShow(ui.show)==saved &&
                   ui.liveCuelistIndex()==live && ui.nextCueIndex()==next &&
@@ -885,7 +947,9 @@ void uiRefinementTests() {
             const int next=ui.nextCueIndex();
             editor.setText("160.0",juce::dontSendNotification);
             ui.engine.acknowledgedCueId.store(923);
-            editor.keyPressed(esc);
+            check(static_cast<bool>(editor.onEscapeKey),
+                  "UX04A BPM Escape callback missing");
+            editor.onEscapeKey();
             check(!metrics->isBpmEditing() && !editor.isVisible() &&
                   encodeShow(ui.show)==saved &&
                   ui.liveCuelistIndex()==live && ui.nextCueIndex()==next &&
@@ -914,7 +978,9 @@ void uiRefinementTests() {
             const int next=ui.nextCueIndex();
             editor->setText("Uncommitted marker",juce::dontSendNotification);
             ui.engine.acknowledgedCueId.store(923);
-            editor->keyPressed(esc);
+            check(static_cast<bool>(editor->onEscapeKey),
+                  "UX04A Timeline marker Escape callback missing");
+            editor->onEscapeKey();
             check(!editor->isVisible() && encodeShow(ui.show)==saved &&
                   ui.liveCuelistIndex()==live && ui.nextCueIndex()==next &&
                   ui.engine.acknowledgedCueId.load()==0,
@@ -944,7 +1010,9 @@ void uiRefinementTests() {
             const int next=ui.nextCueIndex();
             editor->setText("Pending function",juce::dontSendNotification);
             ui.engine.acknowledgedCueId.store(923);
-            editor->keyPressed(esc);
+            check(static_cast<bool>(editor->onEscapeKey),
+                  "UX04A Quick Learn Escape callback missing");
+            editor->onEscapeKey();
             check(!editor->isVisible() && !committed &&
                   encodeShow(ui.show)==saved &&
                   ui.liveCuelistIndex()==live && ui.nextCueIndex()==next &&
