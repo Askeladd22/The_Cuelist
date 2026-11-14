@@ -497,6 +497,22 @@ void cuelistGuiMockupTests() {
               ui.liveCuelistNameForUi()=="Pre-show" &&
               ui.nextLiveGoCueForUi()=="END",
               "T03B: GO from VIEW failed to refresh LIVE target/end-of-sequence");
+        // R2: verify the rendered NEXT GLOBAL region actually changes
+        // from GO 02 to END, not only the underlying source-of-truth value.
+        const auto ended=ui.createComponentSnapshot(sidebar.card);
+        const auto nextLocal=sidebar.nextValue.translated(
+            -sidebar.card.getX(),-sidebar.card.getY());
+        bool nextPaintChanged=false;
+        if(ended.isValid() && snapshot.isValid()) {
+            for(int y=nextLocal.getY();y<nextLocal.getBottom() &&
+                                  !nextPaintChanged;++y)
+                for(int x=nextLocal.getX();x<nextLocal.getRight();++x)
+                    if(snapshot.getPixelAt(x,y)!=ended.getPixelAt(x,y)) {
+                        nextPaintChanged=true;break;
+                    }
+        }
+        check(nextPaintChanged,
+              "R2 sidebar still paints the old global GO after END");
         check(ui.setCuelistName(0,"Pre-show renamed") &&
               ui.liveCuelistNameForUi()=="Pre-show renamed" &&
               overflow->getTooltip().contains("Pre-show renamed"),
