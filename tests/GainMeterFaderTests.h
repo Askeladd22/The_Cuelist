@@ -91,6 +91,77 @@ void gainMeterFaderTests() {
         near(component.getDisplayedPeakDb(0),-60);
         check(component.getDisplayedPeakDb(1)>-1.0f,"Near-clipping peak not displayed");
     });
+    test("N5.3 column dB scale always labels unity and digital silence",[] {
+        using namespace cuelist;
+        constexpr int ticks[]={6,0,-6,-12,-18,-24,-36,-48,-60};
+        for(const int height:{135,148,163,195,260}) {
+            const float top=12.f,bottom=(float)(height-48);
+            for(const float ceiling:{6.f,0.f}) {
+                const auto labels=GainMeterFader::columnTickLabelMask(
+                    top,bottom,ceiling);
+                check(labels[1] && labels[8],
+                      "N5.3 a middle tick displaced 0 dB or -infinity");
+                check((ceiling!=0.f || !labels[0]),
+                      "N5.3 a +6 dB caption was drawn above a zero ceiling");
+                for(int i=0;i<9;++i) {
+                    if(!labels[(size_t)i]) continue;
+                    check((float)ticks[i]<=ceiling &&
+                          GainMeterFader::yForDb((float)ticks[i],top,bottom,ceiling)
+                              >=top &&
+                          GainMeterFader::yForDb((float)ticks[i],top,bottom,ceiling)
+                              <=bottom,
+                          "N5.3 visible label is out of calibrated scale");
+                    for(int j=i+1;j<9;++j) {
+                        if(!labels[(size_t)j]) continue;
+                        const float delta=std::abs(
+                            GainMeterFader::yForDb((float)ticks[i],
+                                                      top,bottom,ceiling)-
+                            GainMeterFader::yForDb((float)ticks[j],
+                                                      top,bottom,ceiling));
+                        check(delta>=13.49f,
+                              "N5.3 two compact scale captions overlap");
+                    }
+                }
+            }
+        }
+        // The default shared component is still the exact pinned Master
+        // presentation. A column-only style can be enabled and switched
+        // off without changing gain, telemetry, callbacks or base pixels.
+        GainMeterFader master;
+        master.setSize(92,163);
+        check(!master.isColumnReadableScale() &&
+              master.getGainDb()==0.0f && master.getNumChildComponents()==0,
+              "N5.3 default/master fader unexpectedly changed presentation");
+        const auto original=master.createComponentSnapshot(master.getLocalBounds());
+        int callbacks=0;
+        master.onGainChanged=[&](float){++callbacks;};
+        master.setColumnReadableScale(true);
+        const auto column=master.createComponentSnapshot(master.getLocalBounds());
+        check(master.isColumnReadableScale() && column.isValid() &&
+              original.isValid() && callbacks==0 &&
+              master.getGainDb()==0.0f,
+              "N5.3 presentation switch touched transport/gain state");
+        bool styledDifferently=false;
+        if(original.isValid() && column.isValid())
+            for(int y=0;y<original.getHeight()&&!styledDifferently;++y)
+                for(int x=0;x<original.getWidth();++x)
+                    if(original.getPixelAt(x,y)!=column.getPixelAt(x,y)){
+                        styledDifferently=true;break;
+                    }
+        check(styledDifferently,
+              "N5.3 native Audio strip readability mode is visually inert");
+        master.setColumnReadableScale(false);
+        const auto restored=master.createComponentSnapshot(master.getLocalBounds());
+        bool unchanged=restored.isValid() && original.isValid();
+        if(unchanged)
+            for(int y=0;y<original.getHeight()&&unchanged;++y)
+                for(int x=0;x<original.getWidth();++x)
+                    if(original.getPixelAt(x,y)!=restored.getPixelAt(x,y)){
+                        unchanged=false;break;
+                    }
+        check(unchanged && callbacks==0,
+              "N5.3 switching back changed the original Master pixels");
+    });
     test("N5.2 flat meter rails retain live stereo signal and readable fader cap",[] {
         using namespace cuelist;
         auto different=[](const juce::Image& a,const juce::Image& b) {
