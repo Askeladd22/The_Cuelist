@@ -576,9 +576,10 @@ void uiRefinementTests() {
         const int next=ui.nextCueIndex();
         const juce::KeyPress menuKey{juce::KeyPress::F10Key,
                                      juce::ModifierKeys::shiftModifier,0};
-        check(ui.keyPressed(menuKey),
-              "Shift+F10 did not open the native selected-column actions");
-        juce::PopupMenu::dismissAllActiveMenus();
+        check(ui.keyPressed(menuKey) &&
+              pinned->getDescription().contains("1 Rename") &&
+              pinned->getDescription().contains("Escape PANIC"),
+              "Shift+F10 did not open the non-modal selected-column actions");
         check(encodeShow(ui.show)==snapshot &&
               ui.selectedColumn==selected && ui.liveCuelistIndex()==live &&
               ui.nextCueIndex()==next,
@@ -588,6 +589,118 @@ void uiRefinementTests() {
         check(ui.keyPressed(juce::KeyPress{juce::KeyPress::escapeKey}) &&
               ui.liveCuelistIndex()==live,
               "Escape no longer reaches PANIC after column menu access");
+    });
+
+    test("UX03C: live Escape and Space survive open keyboard column actions",[] {
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::midi,"MIDI cues");
+        addRow(ui.show,"Second cue");
+        ui.select(0,1);
+        ui.setSize(1180,820);
+        auto* pinned=cueViewFixtures::find<PinnedColumnHeaders>(ui);
+        check(pinned!=nullptr,"UX03C pinned column header missing");
+        if (!pinned) return;
+        const juce::KeyPress actions{juce::KeyPress::F10Key,
+                                      juce::ModifierKeys::shiftModifier,0};
+        const auto doc=encodeShow(ui.show);
+        const int live=ui.liveCuelistIndex();
+        const int selected=ui.selectedColumn;
+        auto initial=pinned->createComponentSnapshot({0,0,80,55});
+        check(ui.keyPressed(actions),"UX03C cannot enter non-modal action strip");
+        auto active=pinned->createComponentSnapshot({0,0,80,55});
+        check(initial.isValid() && active.isValid() &&
+              initial.getPixelAt(1,1)!=active.getPixelAt(1,1) &&
+              pinned->getDescription().contains("Escape PANIC"),
+              "UX03C keyboard mode not visibly differentiated");
+        check(encodeShow(ui.show)==doc && ui.selectedColumn==selected &&
+              ui.liveCuelistIndex()==live,
+              "UX03C action mode unexpectedly modified Show or LIVE");
+        ui.engine.acknowledgedCueId.store(923);
+        check(ui.keyPressed(juce::KeyPress{juce::KeyPress::escapeKey}) &&
+              ui.engine.acknowledgedCueId.load()==0 &&
+              !pinned->getDescription().contains("1 Rename"),
+              "UX03C Escape did not reach panic() with actions showing");
+        ui.engine.connected.store(true);
+        const int beforeGo=ui.nextCueIndex();
+        check(ui.keyPressed(actions) &&
+              ui.keyPressed(juce::KeyPress{juce::KeyPress::spaceKey}) &&
+              ui.nextCueIndex()!=beforeGo &&
+              !pinned->getDescription().contains("1 Rename") &&
+              ui.liveCuelistIndex()==live,
+              "UX03C Space failed global GO while actions were visible");
+    });
+
+    test("UX03C: column keys preserve identity and require D confirmation",[] {
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::midi,"MIDI cues");
+        ui.select(0,1);
+        auto* pinned=cueViewFixtures::find<PinnedColumnHeaders>(ui);
+        check(pinned!=nullptr,"UX03C column headers missing");
+        if (!pinned) return;
+        const juce::KeyPress actions{juce::KeyPress::F10Key,
+                                      juce::ModifierKeys::shiftModifier,0};
+        const int midiId=ui.show.columns[1].id;
+        const int live=ui.liveCuelistIndex();
+        const auto original=encodeShow(ui.show);
+        check(ui.keyPressed(actions) &&
+              ui.keyPressed(juce::KeyPress{'5'}) &&
+              ui.keyPressed(juce::KeyPress{'5'}) &&
+              encodeShow(ui.show)==original &&
+              ui.show.columns.size()==2 &&
+              pinned->getDescription().contains("Press D"),
+              "UX03C repeated Delete arming key removed a column");
+        check(ui.keyPressed(juce::KeyPress{juce::KeyPress::escapeKey}) &&
+              ui.show.columns.size()==2,
+              "UX03C PANIC removed a pending Delete target");
+        check(ui.keyPressed(actions) && ui.keyPressed(juce::KeyPress{'2'}) &&
+              ui.show.columns[0].id==midiId &&
+              ui.liveCuelistIndex()==live,
+              "UX03C keyboard Move left acted on the wrong column or LIVE");
+        check(ui.keyPressed(actions) && ui.keyPressed(juce::KeyPress{'4'}) &&
+              ui.show.columns[0].collapsed,
+              "UX03C keyboard Collapse did not reuse the existing handler");
+        check(ui.keyPressed(actions) && ui.keyPressed(juce::KeyPress{'5'}) &&
+              ui.keyPressed(juce::KeyPress{'D'}) &&
+              ui.show.columns.size()==1 &&
+              ui.show.columns[0].id!=midiId &&
+              ui.liveCuelistIndex()==live,
+              "UX03C confirmed Delete failed or targeted another column");
+    });
+
+    test("UX03C: hidden column targets cannot activate through action hint",[] {
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::midi,"MIDI cues");
+        ui.setSize(1440,900);
+        ui.select(0,1);
+        auto* pinned=cueViewFixtures::find<PinnedColumnHeaders>(ui);
+        check(pinned!=nullptr,"UX03C column overlay is absent");
+        if (!pinned) return;
+        const juce::KeyPress actions{juce::KeyPress::F10Key,
+                                      juce::ModifierKeys::shiftModifier,0};
+        const int beforeId=ui.show.columns[0].id;
+        const auto original=encodeShow(ui.show);
+        check(ui.keyPressed(actions),"UX03C cannot show keyboard actions");
+        // This maps to Delete on the actual underlying column header.
+        // The visible non-modal hint must consume the first mouse click.
+        cueViewFixtures::click(*pinned,(float)CueGrid::columnWidth-12.f,20.f);
+        check(encodeShow(ui.show)==original &&
+              ui.show.columns[0].id==beforeId &&
+              !pinned->getDescription().contains("1 Rename"),
+              "UX03C click-through fired a hidden destructive Delete icon");
+        ui.select(0,0);
+        check(ui.keyPressed(actions) && ui.keyPressed(juce::KeyPress{'1'}) &&
+              ui.isInlineRenaming(),
+              "UX03C keyboard Rename did not invoke the existing inline editor");
+        ui.cancelInlineRename();
+        // A concurrent removal must invalidate the captured model ID.
+        ui.select(0,1);
+        check(ui.keyPressed(actions),"UX03C cannot capture target for stale-ID test");
+        ui.deleteColumn(1);
+        const auto afterRemoval=encodeShow(ui.show);
+        check(ui.keyPressed(juce::KeyPress{'4'}) &&
+              encodeShow(ui.show)==afterRemoval &&
+              !pinned->getDescription().contains("1 Rename"),
+              "UX03C stale target acted upon another column");
     });
 
     test("UX02: neutral audio import does not borrow the transport GO role",[] {

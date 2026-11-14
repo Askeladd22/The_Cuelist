@@ -13,6 +13,23 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.64] - 2026-11-14
+
+**PR:** [#185](https://github.com/Askeladd22/The_Cuelist/pull/185) (draft, senza merge automatico).
+
+**Stato:** UX-03C (Taste + UI/UX Review + Unlazy) — sicurezza dei comandi globali in modalità azioni colonna.
+
+### Corretto
+- La scorciatoia `Shift+F10` non crea più un `juce::PopupMenu` modale: il suo `MenuWindow::keyPressed` interno intercetta `Escape` e chiude il menu prima che l'app riceva PANIC. Il precedente test CTest verificava Escape soltanto dopo aver dismesso il menu.
+- La testata `PinnedColumnHeaders` visualizza per 72px una modalità azioni **non modale**, con colonna identificata per nome, scorciatoie 1–5 e promemoria `Esc PANIC / Space GO`; non chiama `grabKeyboardFocus()`, non aggiunge pulsanti né modifica layout o trasporto.
+- `5` arma l'eliminazione e soltanto il **diverso** tasto `D` la conferma: la ripetizione di 5 non può cancellare una colonna. L'ID colonna viene verificato prima di qualsiasi modifica; 1–4 riusano Rename, Reorder e Collapse senza duplicare la logica.
+- Le normali azioni mouse, le altre scorciatoie e il comportamento dei progetti `.cuelist` schema JSON v10 rimangono invariati.
+
+### QA e limiti
+- Test nativi aggiunti per modalità, Esc/PANIC, Space/GO, rinomina/riordino/collasso, double-key delete e target eliminato. Windows CTest e screenshot della PR sono gate da verificare e non prove già effettuate.
+- Gate Unlazy in `GATES.md` distingue controlli di codice/CI dal banco manuale Windows DPI, Narrator e periferiche hardware.
+- **Rollback:** revert PR; nessun cambio audio callback, MIDI/OSC/LTC o schema JSON.
+
 ## [0.9.63] - 2026-11-13
 
 **PR:** [#184](https://github.com/Askeladd22/The_Cuelist/pull/184) (draft, senza merge automatico).

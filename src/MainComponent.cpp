@@ -46,7 +46,7 @@ MainComponent::MainComponent(bool startAudio) {
     // Static native accessibility metadata. Do not make the entire painted
     // column strip a single focusable button or steal Space from global GO.
     columnHeaders.setTitle("Cue column headers");
-    columnHeaders.setDescription("Select a column; Shift+F10 opens its keyboard actions.");
+    columnHeaders.setDescription("Select a column; Shift+F10 shows non-modal keyboard actions. Escape PANIC; Space GO.");
     for (juce::TextButton* b : std::initializer_list<juce::TextButton*>{&openButton,&saveButton,&newButton,&addRowButton,&addColumnButton,&goButton,&panicButton,&deviceButton,&controlButton,&collapseAllButton,&inspectorSideTab,
                     &cuelistOverflowButton,&addCuelistButton,&cuelistMoveLeft,&cuelistMoveRight,&undoButton,&redoButton,&globalMidiLearn,&globalOscLearn,&helpButton,
                     &importButton,&midiEditButton,&oscEditButton,&playCellButton,&stopCellButton,&clearButton,&applyButton,
@@ -2245,9 +2245,9 @@ void MainComponent::stopAll() {
     status="PANIC / audio, MIDI and OSC playback stopped."; repaint();
 }
 bool MainComponent::keyPressed(const juce::KeyPress& key) {
-    // Standard Windows context-menu shortcut for the currently selected
-    // column. The native popup is keyboard navigable; no hidden GO, STOP or
-    // PANIC focus targets are added to the grid.
+    // Do not use a juce::PopupMenu here. JUCE's modal MenuWindow handles
+    // Escape by dismissing itself, preventing the root PANIC handler from
+    // receiving that key during a show.
     if (key.getKeyCode()==juce::KeyPress::F10Key &&
         key.getModifiers().isShiftDown() &&
         !key.getModifiers().isCommandDown() &&
@@ -2255,8 +2255,27 @@ bool MainComponent::keyPressed(const juce::KeyPress& key) {
         !dynamic_cast<juce::TextEditor*>(
             juce::Component::getCurrentlyFocusedComponent()) &&
         !show.columns.empty()) {
-        showSelectedColumnActionsMenu();
+        toggleSelectedColumnKeyboardActions();
         return true;
+    }
+    if (columnKeyboardActionsOpen) {
+        if (key==juce::KeyPress::escapeKey ||
+            key==juce::KeyPress::spaceKey) {
+            // Dismiss the visual hint, then fall through to PANIC or GO.
+            dismissSelectedColumnKeyboardActions();
+        } else {
+            const bool modified=key.getModifiers().isCommandDown() ||
+                                key.getModifiers().isShiftDown() ||
+                                key.getModifiers().isAltDown();
+            const int code=key.getKeyCode();
+            if (!modified && ((code>='1' && code<='5') ||
+                              code=='D' || code=='d'))
+                return performSelectedColumnKeyboardAction(code);
+            dismissSelectedColumnKeyboardActions();
+            // Unrelated plain keys cancel the mode without executing a
+            // structural command or accidentally deleting a cell.
+            if (!modified && code!=juce::KeyPress::F10Key) return true;
+        }
     }
     // Explicit modifier combination so normal Left/Right arrows and all
     // text editing remain untouched.

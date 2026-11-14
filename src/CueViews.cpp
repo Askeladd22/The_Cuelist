@@ -1082,12 +1082,56 @@ void PinnedColumnHeaders::paint(juce::Graphics& g) {
         -(float)gridXAt(0),0.0f));
     owner.grid.paint(g);
     g.restoreState();
+    if (owner.columnKeyboardActionsOpen) {
+        int index=-1;
+        for (int i=0;i<(int)owner.show.columns.size();++i)
+            if (owner.show.columns[(size_t)i].id==owner.columnKeyboardTargetId) {
+                index=i;break;
+            }
+        const auto name=index<0 ? juce::String("Column unavailable") :
+            owner.show.columns[(size_t)index].name.isNotEmpty() ?
+                owner.show.columns[(size_t)index].name :
+                juce::String("Column ")+juce::String(index+1);
+        // Reuse the native 72px pinned header; never add a modal window
+        // or move the global transport focus while keyboard actions show.
+        g.setColour(palette::panel);
+        g.fillRect(getLocalBounds());
+        g.setColour(owner.columnKeyboardDeleteArmed ? palette::red : palette::teal);
+        g.fillRect(0,0,getWidth(),3);
+        label(g,(owner.columnKeyboardDeleteArmed ? "CONFIRM DELETE  /  " : "COLUMN ACTIONS  /  ")+
+              name,{10,5,getWidth()-20,19},13,palette::text,true);
+        const bool collapsed=index>=0 &&
+            owner.show.columns[(size_t)index].collapsed;
+        const auto fold=collapsed ? juce::String("Expand") : juce::String("Fold");
+        // In compact mode use the same short labels, but explicitly mark
+        // unavailable actions instead of showing a misleading enabled hint.
+        const auto rename=collapsed || index<0 ? juce::String("1 N/A") :
+            juce::String("1 Name");
+        const auto left=index>0 ? juce::String("2 Left") : juce::String("2 N/A");
+        const auto right=index>=0 && index+1<(int)owner.show.columns.size() ?
+            juce::String("3 Right") : juce::String("3 N/A");
+        const auto actions=owner.columnKeyboardDeleteArmed ?
+            juce::String("Press D to delete  /  repeating 5 does nothing") :
+            getWidth()<520 ?
+                rename+"   "+left+"   "+right+"   4 "+fold+"   5 Del" :
+                rename+"   "+left+"   "+right+"   4 "+fold+"   5 Delete";
+        label(g,actions,{10,27,getWidth()-20,19},11,
+              owner.columnKeyboardDeleteArmed ? palette::red : palette::muted,true);
+        label(g,"ESC  PANIC    SPACE  GO    SHIFT+F10  EXIT",
+              {10,49,getWidth()-20,17},10,palette::standby,true);
+    }
     g.setColour(palette::line);
     g.drawHorizontalLine(getHeight()-1,0.0f,(float)getWidth());
 }
 void PinnedColumnHeaders::mouseDown(const juce::MouseEvent& e) {
     if (!e.mods.isLeftButtonDown() || e.mods.isPopupMenu()) return;
     if (e.y<0 || e.y>=CueGrid::headerHeight) return;
+    if (owner.columnKeyboardActionsOpen) {
+        // The visual action strip obscures the underlying icons. A click
+        // here may dismiss it, but MUST NOT fall through to hidden Delete.
+        owner.dismissSelectedColumnKeyboardActions();
+        return;
+    }
     owner.grabKeyboardFocus();
     owner.grid.clickColumnHeader(gridXAt(e.x),e.y,
                                  e.getNumberOfClicks(),e.getScreenPosition());
@@ -1099,6 +1143,10 @@ void PinnedColumnHeaders::mouseDoubleClick(const juce::MouseEvent& e) {
 void PinnedColumnHeaders::mouseMove(const juce::MouseEvent& e) {
     if (e.y<0 || e.y>=CueGrid::headerHeight) {
         setTooltip({});
+        return;
+    }
+    if (owner.columnKeyboardActionsOpen) {
+        setTooltip(getDescription());
         return;
     }
     const int column=owner.grid.columnAt(gridXAt(e.x));
