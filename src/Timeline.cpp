@@ -77,7 +77,11 @@ Timeline::Timeline(MainComponent& p) : owner(p) {
     markerEditor.setColour(juce::TextEditor::textColourId,palette::text);
     markerEditor.setColour(juce::TextEditor::focusedOutlineColourId,palette::teal);
     markerEditor.onReturnKey=[this] { finishMarkerEdit(true); };
-    markerEditor.onEscapeKey=[this] { finishMarkerEdit(false); };
+    markerEditor.onEscapeKey=[this] {
+        // Preserve cancel semantics while routing consumed Escape to PANIC.
+        finishMarkerEdit(false);
+        owner.stopAll();
+    };
     markerEditor.onFocusLost=[this] {
         if (markerEdit!=MarkerEdit::none) finishMarkerEdit(true);
     };
@@ -633,8 +637,8 @@ void Timeline::beginMarkerEdit(int id,MarkerEdit kind) {
         markerEditor.setText(bpm ? juce::String(initialBpm,1) : marker.name,
                              juce::dontSendNotification);
         markerEditor.setTooltip(bpm ?
-            "Tempo Marker BPM (20-400). Enter to save, Esc to cancel." :
-            "Rename Marker. Enter to save, Esc to cancel.");
+            "Tempo Marker BPM (20-400). Enter saves; Esc cancels and activates PANIC." :
+            "Rename Marker. Enter saves; Esc cancels and activates PANIC.");
         const int area=std::max(1,getWidth()-timelineStart-20);
         const int x=timelineStart+(int)std::round(area*(marker.seconds-viewStart)/visibleLength());
         markerEditor.setBounds(juce::jlimit(timelineStart,std::max(timelineStart,getWidth()-195),

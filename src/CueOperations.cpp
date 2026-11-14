@@ -286,7 +286,8 @@ void MainComponent::beginInlineRename(InlineRenameKind kind,int index,bool pinne
     inlineNameEditor.setText(initial,juce::dontSendNotification);
     inlineNameEditor.setInputRestrictions(
         kind==InlineRenameKind::cuelist ? 64 : 120);
-    inlineNameEditor.setTooltip("Rename in place: Enter to save, Esc to cancel.");
+    inlineNameEditor.setTooltip(
+        "Rename in place: Enter saves; Esc cancels editing and activates PANIC.");
     inlineNameEditor.setVisible(true);
     positionInlineNameEditor();
     if (!inlineNameEditor.isVisible()) return;

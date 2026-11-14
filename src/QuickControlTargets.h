@@ -12,6 +12,8 @@ public:
     struct Entry { int functionId=0; juce::String title,detail; };
     std::function<void(int)> onPick;
     std::function<void(int)> onRename;
+    // The containing show owns emergency-stop dispatch, not this list.
+    std::function<void()> onEscapePanic;
     void beginInlineRename(int functionId,const juce::String& current,
                            std::function<void(const juce::String&)> commit) {
         int row=-1;
@@ -22,14 +24,20 @@ public:
         if (!renameEditor) {
             renameEditor=std::make_unique<juce::TextEditor>();
             addAndMakeVisible(*renameEditor);
+            renameEditor->setEscapeAndReturnKeysConsumed(true);
             renameEditor->onReturnKey=[this]{finishRename(true);};
-            renameEditor->onEscapeKey=[this]{finishRename(false);};
+            renameEditor->onEscapeKey=[this] {
+                finishRename(false);
+                if (onEscapePanic) onEscapePanic();
+            };
             renameEditor->onFocusLost=[this]{finishRename(true);};
         }
         renameEditor->setBounds(10,row*getRowHeight()-
             (getViewport()?getViewport()->getViewPositionY():0)+2,
             std::max(60,getWidth()-20),getRowHeight()-4);
         renameEditor->setText(current,false);
+        renameEditor->setTooltip(
+            "Enter saves; Esc cancels function rename and activates PANIC.");
         renameEditor->setVisible(true);renameEditor->toFront(false);
         renameEditor->grabKeyboardFocus();renameEditor->selectAll();
     }

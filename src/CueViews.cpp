@@ -1236,11 +1236,16 @@ CueMetricsOverlay::CueMetricsOverlay(MainComponent& parent):owner(parent) {
     bpmEditor.setColour(juce::TextEditor::textColourId,palette::text);
     bpmEditor.setColour(juce::TextEditor::outlineColourId,palette::teal);
     bpmEditor.setColour(juce::TextEditor::focusedOutlineColourId,palette::teal);
-    bpmEditor.setTooltip("Enter confirms the BPM (20–400); Esc cancels.");
+    bpmEditor.setTooltip("Enter confirms the BPM (20–400); Esc cancels editing and activates PANIC.");
     addAndMakeVisible(bpmEditor);
     bpmEditor.setVisible(false);
     bpmEditor.onReturnKey=[this] { finishBpmEdit(true); };
-    bpmEditor.onEscapeKey=[this] { finishBpmEdit(false); };
+    bpmEditor.onEscapeKey=[this] {
+        // Cancel the uncommitted BPM, then invoke the global PANIC path.
+        // This native TextEditor consumes Escape before the parent sees it.
+        finishBpmEdit(false);
+        owner.stopAll();
+    };
     bpmEditor.onFocusLost=[this] {
         if (editingRowId>0 && !closingBpmEditor) finishBpmEdit(true);
     };

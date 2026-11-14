@@ -222,8 +222,11 @@ MainComponent::MainComponent(bool startAudio) {
         if (commitInlineRename()) grabKeyboardFocus();
     };
     inlineNameEditor.onEscapeKey=[this] {
+        // Escape cancels pending text, but must still mean PANIC during LIVE.
+        // The TextEditor consumes Escape, so the root handler won't see it.
         cancelInlineRename();
         grabKeyboardFocus();
+        stopAll();
     };
     inlineNameEditor.onFocusLost=[this] {
         if (inlineRenameKind!=InlineRenameKind::none && !commitInlineRename())
@@ -409,6 +412,7 @@ MainComponent::MainComponent(bool startAudio) {
         }
     };
     quickControlTargets.onRename=[this](int id){renameQuickLearnFunction(id);};
+    quickControlTargets.onEscapePanic=[this]{stopAll();};
     cancelQuickLearn.setVisible(false);
     quickControlTargets.onPick=[this](int functionId) {chooseQuickLearnTarget(functionId);};
     cancelQuickLearn.onClick=[this] {finishQuickLearn();status="Quick Learn ended.";repaint();};
