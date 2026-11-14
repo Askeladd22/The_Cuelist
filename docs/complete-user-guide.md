@@ -273,13 +273,13 @@ The **Master Audio** strip provides Main Out routing, stereo gain/meter, pan, mu
 
 Master gain/mute/pan act on PCM audio, not MIDI notes or OSC commands. The output stage clamps device PCM samples, but that is not a substitute for physical gain staging and rehearsal.
 
-### 7.4 Generate Click Track (procedural Audio source)
+### 7.4 Generate Click Track (WAV Audio source)
 
-Right-click an **empty Audio cell** and choose **Generate Click Track...**. Choose **Classic Click**, **Woodblock**, **Electronic Beep** or **Rimshot**, turn bar-start **Accent** on or off, select subdivision **1 (quarter notes)**, **2 (eighth notes)**, **3 (triplets)** or **4 (sixteenth notes)**, and set **Duration** from 0.1 to 600 seconds. This duration is the clip's extent; it does not fill the cue automatically. Right-click a generated click clip to choose **Configure Click Track...**. You can also resize its duration in the Timeline.
+Right-click an **empty Audio cell** and choose **Generate Click Track WAV...**. Choose **Classic Click**, **Woodblock**, **Electronic Beep** or **Rimshot**, set bar-start **Accent**, subdivision (quarter notes, eighth notes, triplets or sixteenth notes), and a duration from 0.1 to 600 seconds. The generator writes a **mono 48 kHz / 16-bit PCM WAV** in `Documents/The Cuelist/Generated Click` and loads it into that same Audio cell without selecting another cue or changing NEXT/LIVE. A failed write, decode or preload leaves the cell unchanged and removes the generated file.
 
-The source is generated in memory during playback. The project stores its synthesis parameters in an optional v10 cell field, **not** a WAV path. The click follows the cue's initial BPM and Tempo Markers, including BPM changes between beats. Event positions use the same beat-to-seconds conversion as Timeline, MIDI and OSC; changing the Tempo Map retimes future click pulses without rewinding LIVE. Accents follow the time-signature metadata of the tempo section. No MIDI device, imported sample or external sound file is needed.
+The WAV is an ordinary Audio file: play/stop, loop, gain, routing, Master, Timeline and **Find in Explorer** follow the standard Audio behavior. It captures the cue BPM, Tempo Markers and meter accents **at generation time**. Subsequent BPM/Tempo Marker edits do not retime already written PCM; regenerate the file if the tempo map changes. Keep the generated WAV with the show when transferring machines. To replace a generated WAV, delete or move the cell's audio content before generating again; the generator never overwrites an occupied cell.
 
-Use the **cell Gain**, **Audio track fader**, routing, Master and Mute to control level. There is no duplicate volume control in the generator. Existing normal Audio clips are unchanged. Projects containing procedural click cells must be opened in a version of The Cuelist that supports the optional `click` property; older v10 applications cannot reproduce them.
+Older `.cuelist` JSON v10 projects containing procedural `click` cells remain readable and retain their legacy playback behavior. On a legacy click cell choose **Convert legacy Click to WAV...** to replace its procedural representation with a WAV (a one-way conversion). This does not change the project schema version, but the converted file must remain accessible for future project loads.
 
 ### 7.5 Generate LTC Track (audio source only)
 

@@ -1,7 +1,7 @@
 #pragma once
 #include "ClickTrack.h"
 
-// Procedural audio: independent of WAV media, sharing Timeline's beat-to-time conversion.
+// Legacy v10 playback compatibility plus ordinary offline-rendered WAV clips.
 void clickTrackTests() {
     using namespace cuelist;
     test("Click Track persists as optional JSON v10 Audio cell without a file", [] {
@@ -90,7 +90,39 @@ void clickTrackTests() {
             }
         }
     });
-    test("Click Track presents as a loaded Audio cell without a WAV path", [] {
+    test("New Click Track writes a valid 48 kHz mono 16-bit WAV with pulse timing", [] {
+        const auto file=juce::File::getSpecialLocation(juce::File::tempDirectory)
+            .getChildFile("Click-Test-"+juce::Uuid().toString()+".wav");
+        const ClickTrackConfig config{ClickSound::woodblock,true,1,2.0};
+        check(writeClickTrackWav(file,{{0,120,4,4}},config).wasOk(),
+              "Click Track WAV writing failed");
+        check(file.existsAsFile(),"Generated WAV missing");
+        juce::WavAudioFormat format;
+        std::unique_ptr<juce::AudioFormatReader> reader(format.createReaderFor(file.createInputStream().release(),true));
+        check(reader && reader->sampleRate==48000 && reader->numChannels==1 &&
+              reader->bitsPerSample==16 && reader->lengthInSamples==96000,
+              "Wrong PCM WAV header or duration");
+        std::shared_ptr<const AudioClip> loaded;
+        check(loadClip(file,loaded).wasOk() && loaded,
+              "Generated WAV not loadable through normal Audio path");
+        const auto pulse=makeClickPulseBank(config.sound);
+        check(pulse!=nullptr,"Missing pulse reference");
+        check(std::abs(loaded->samples.getSample(0,120)-pulse->accented[120])<0.002f,
+              "WAV initial downbeat differs from rendered accent");
+        check(std::abs(loaded->samples.getSample(0,24000+120)-pulse->normal[120])<0.002f,
+              "WAV second beat differs from rendered normal click");
+        check(writeClickTrackWav(file,{{0,120,4,4}},config).failed(),
+              "Generating WAV overwrote existing file");
+        file.deleteFile();
+    });
+    test("Invalid Click configuration leaves no file behind", [] {
+        const auto file=juce::File::getSpecialLocation(juce::File::tempDirectory)
+            .getChildFile("Click-Invalid-"+juce::Uuid().toString()+".wav");
+        const ClickTrackConfig bad{ClickSound::classicClick,true,5,2.0};
+        check(writeClickTrackWav(file,{{0,120,4,4}},bad).failed() &&
+              !file.existsAsFile(),"Invalid Click parameters produced a file");
+    });
+    test("Legacy Click Track presents as a loaded Audio cell without a WAV path", [] {
         MainComponent ui(false);
         check(ui.canGenerateClickTrack(0,0),"Empty Audio cell cannot generate Click Track");
         auto& cell=ui.show.rows[0].cells[0];
@@ -134,17 +166,29 @@ void clickTrackTests() {
         const int nextBefore=ui.nextCueIndex();
         const int liveBefore=ui.liveCuelistIndex();
         const ClickTrackConfig click{ClickSound::woodblock,true,3,8.0};
-        check(ui.commitClickTrack(1,0,click),"Valid Click Track configuration rejected");
-        check(ui.show.rows[1].cells[0].click.has_value(),
-              "Click Track was not committed to the requested cell");
+        const auto outputDirectory=juce::File::getSpecialLocation(juce::File::tempDirectory)
+            .getChildFile("Click-UI-Test-"+juce::Uuid().toString());
+        check(ui.commitClickTrack(1,0,click,outputDirectory),
+              "Valid Click Track WAV generation rejected");
+        const auto& generated=ui.show.rows[1].cells[0];
+        const juce::File wav(generated.file);
+        check(!generated.click && wav.existsAsFile() && wav.getParentDirectory()==outputDirectory,
+              "Generated click did not become the requested Audio WAV cell");
+        check(ui.clips.count(generated.id)==1 && ui.audioFileForExplorer(1,0)==wav,
+              "Generated Click WAV not preloaded or visible in Explorer");
+        near(ui.clipDuration(1,0),8.0);
         check(ui.selectedRow==selectedBefore && ui.nextCueIndex()==nextBefore &&
               ui.liveCuelistIndex()==liveBefore,
               "Configuring another cue changed VIEW, NEXT or LIVE");
         ui.engine.processBlock(output.getArrayOfWritePointers(),2,256,48000);
         check(ui.engine.getCellPlayback(originalCell).playing && ui.engine.rowPlaying.load(),
               "Click Track configuration stopped unrelated LIVE audio");
-        check(!ui.commitClickTrack(0,0,click),
+        check(!ui.commitClickTrack(0,0,click,outputDirectory),
               "Click Track overwrote an already occupied Audio cell");
+        check(!ui.commitClickTrack(1,0,click,outputDirectory),
+              "Click Track silently overwrote its generated WAV");
+        wav.deleteFile();
+        outputDirectory.deleteFile();
     });
     test("Click Track Audio engine follows tempo edits without restarting LIVE", [] {
         auto show=makeShow();
