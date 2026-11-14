@@ -252,6 +252,10 @@ public:
     int gridXAt(int localX) const;
 private:
     MainComponent& owner;
+    // Consume the rest of a double/triple-click sequence when its first
+    // press was used to dismiss the non-modal column keyboard actions.
+    // A fresh count=1 press resets this guard so regular rename still works.
+    bool suppressOverlayDismissalMultiClick=false;
 };
 class CueMetricsOverlay final : public juce::Component,
                                 public juce::SettableTooltipClient {
