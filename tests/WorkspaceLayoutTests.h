@@ -83,6 +83,29 @@ void workspaceLayoutTests() {
                   "N4.2 layout-only resize changed Show or VIEW/LIVE/NEXT");
         }
     });
+    test("N4.2 Quick Learn retains native Inspector bounds after form reflow",[] {
+        for(const auto size:std::initializer_list<juce::Point<int>>{
+                {1180,820},{1647,895},{1920,1080}}) {
+            MainComponent ui(false);
+            ui.setSize(size.x,size.y);
+            const auto saved=encodeShow(ui.show);
+            const int live=ui.liveCuelistIndex(),next=ui.nextCueIndex();
+            ui.beginQuickLearn(false);
+            auto* targets=cueViewFixtures::find<QuickControlTargets>(ui);
+            const auto g=calculateWorkspaceLayout({
+                size.x,size.y,0,467,1,72,62,184});
+            check(targets && targets->isVisible() &&
+                  targets->getX()==g.inspectorLeft+4 &&
+                  targets->getWidth()==g.inspectorInnerWidth-8 &&
+                  targets->getY()==235 &&
+                  targets->getBottom()<=g.inspectorPanel.getBottom(),
+                  "N4.2 native Quick Learn list lost its Inspector position");
+            ui.finishQuickLearn();
+            check(encodeShow(ui.show)==saved &&
+                  ui.liveCuelistIndex()==live && ui.nextCueIndex()==next,
+                  "N4.2 Quick Learn layout changed Show, LIVE or NEXT");
+        }
+    });
     test("Timeline header Collapse and View remain synchronized and reopenable",[] {
         MainComponent ui(false);
         auto* timeline=cueViewFixtures::find<Timeline>(ui);
