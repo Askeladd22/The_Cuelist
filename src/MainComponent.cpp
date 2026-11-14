@@ -1612,10 +1612,14 @@ void MainComponent::resized() {
                  &loop,&midiEditButton,&oscEditButton,&importButton,&cueNotes,
                  &cellAutoStop,&rowMute,&rowGain,&rowBehaviour,&behaviour})
             c->setVisible(false);
-        quickLearnMapSelector.setBounds(x+4,145,inner-8,27);
-        cancelQuickLearn.setBounds(x+4,179,inner-8,29);
+        // Quick Learn occupies the same Inspector region but uses its
+        // own controls; do not borrow a removed legacy form local.
+        const int learnX=geometry.inspectorLeft;
+        const int learnWidth=geometry.inspectorInnerWidth;
+        quickLearnMapSelector.setBounds(learnX+4,145,learnWidth-8,27);
+        cancelQuickLearn.setBounds(learnX+4,179,learnWidth-8,29);
         const int top=235;
-        quickControlTargets.setBounds(x+4,top,inner-8,
+        quickControlTargets.setBounds(learnX+4,top,learnWidth-8,
             std::max(60,geometry.inspectorPanel.getBottom()-top-20));
         quickControlTargets.toFront(false);
         quickLearnMapSelector.toFront(false);
