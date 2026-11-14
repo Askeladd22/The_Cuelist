@@ -1,27 +1,55 @@
-# Gates: UX-03C — Non-modal column keyboard actions and PANIC safety
+# Gates: UX-03D — Correct collapsed-column keyboard test
 
-OWNS: GATES.md, src/MainComponent.cpp, src/MainComponent.h, src/CueOperations.cpp, src/CueViews.cpp, tests/UiRefinementTests.h, docs/complete-user-guide.md, CHANGELOG.md, CMakeLists.txt, VERSION.txt
+BASE: `main@0b7a045d4c4eff9e3f045ba2ba81c3b1f8f09b9d`, VERSION.txt=0.9.64.
+SCOPE: Repair the UX-03C test contract and clarify the operator guide.
+OWNS: tests/UiRefinementTests.h, docs/complete-user-guide.md,
+      GATES.md, VERSION.txt, CMakeLists.txt, CHANGELOG.md.
+No changes to application source, UI, transport or JSON schema v10.
 
-Scope: Replace only the Shift+F10-created modal column popup in native JUCE with a keyboard-operable, non-modal header mode; preserve global Esc/PANIC and Space/GO.
+## Incident evidence (carried forward from merged PR #185)
+- Windows CI: https://github.com/Askeladd22/The_Cuelist/actions/runs/43526445383
+- Windows Release compilation passed; CTest FAILED (420393 assertions,
+  1 failed test: UX03C column keys preserve identity and require D confirmation).
+- Screenshot artifact upload skipped after CTest failure.
+- The prior UX-03C GATES.md listed G1-G6 as pending even though #185 merged.
+  Do not infer success from that merge; the independent LIVE gate remains open.
 
-These are **manual evidence gates** rather than executable Unlazy `CHECK:` commands because this connector can inspect GitHub CI but cannot execute arbitrary approved local Windows tests. CI results must be linked to a specific head SHA. No inherited checks or hooks may run.
+## Acceptance gates (manual evidence ledger)
 
-- [ ] G1: Shift+F10 shows an explicit, visible native column action hint, does not create a PopupMenu or change keyboard focus, and a click on the hint cannot activate obscured column controls.
-  EVIDENCE: pending
+This GitHub connector can inspect code and CI but cannot execute local
+Windows/CTest commands. No inherited CHECK is approved.
 
-- [ ] G2: With column actions active, Esc still executes MainComponent::stopAll and Space still executes MainComponent::goNext; no Show/VIEW/LIVE mutation at mode entry.
-  EVIDENCE: pending
+- [x] G1 — Root cause is supported by the checked source and CI log.
+  Collapsing the selected column calls toggleColumnCollapsed(), which can move
+  selectedColumn to the first expanded column. toggleSelectedColumnKeyboardActions()
+  captures the currently selected column ID for each new invocation.
+  EVIDENCE: src/CueOperations.cpp, tests/UiRefinementTests.h,
+  workflow job 132233272048.
 
-- [ ] G3: The selected column is tracked by stable ID, and Delete requires two different keys (5 then D). Repeated 5, a missing target, or cancellation must not delete another column.
-  EVIDENCE: pending
+- [ ] G2 — The regression test asserts selection reassignment, checks the
+  currently targeted column label, explicitly reselects the collapsed MIDI
+  column, then verifies 5 -> D removes only its stable ID and preserves LIVE.
+  EVIDENCE: updated source reviewed; CTest execution on new SHA pending.
 
-- [ ] G4: Rename, Move left/right and Collapse/Expand reuse existing functions; all previous mouse controls, keyboard shortcuts, font and 72px header size stay intact, including JSON v10 compatibility.
-  EVIDENCE: pending
+- [ ] G3 — Windows Release + complete CTest + version/changelog guard pass at
+  the PR head SHA, including earlier Esc PANIC, Space GO, repeated 5 and stale
+  target regressions. The previous #185 CTest was RED.
+  EVIDENCE: pending new GitHub Actions run.
 
-- [ ] G5: Windows Release and CTest (including added mode and regression tests) and version/changelog guards succeed for this exact PR head, with screenshot artifacts reviewed before merge.
-  EVIDENCE: pending
+- [ ] G4 — Review genuine JUCE screenshots (1180x820 and 1920x1080 action
+  strip and armed Delete) for truncation, contrast and false affordances.
+  EVIDENCE: pending artifact; #185 screenshot upload was skipped.
 
-- [ ] G6: Manual Windows 100/125/150% DPI, Narrator, real keyboard with menu open, and external Audio/MIDI/OSC/LTC bench validate PANIC/GO beyond the simulated tests.
-  EVIDENCE: pending — release/live gate; do not claim LIVE readiness from CI
+- [ ] G5 — On real Windows, verify 100/125/150% DPI, actual keyboard / IME,
+  Narrator accessibility, GO/PANIC during active playback and external
+  Audio/MIDI/OSC/LTC hardware. Simulated CI is not readiness-for-LIVE.
+  EVIDENCE: ND, requires operator/hardware verification.
 
-Rollback: revert the small PR; no schema migration, changes limited to native UI and regression tests.
+## Red team and release boundary
+
+The fix changes only a false assumption in a test. It does NOT guarantee
+that other pre-existing JUCE popups allow Esc/PANIC; audit separately.
+If CI remains red, record the exact failing assertion and do not merge.
+Release/live readiness remains blocked by G4/G5 until independently checked.
+
+Rollback: revert UX-03D PR; no schema migration or native UX changes.
