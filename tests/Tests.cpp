@@ -557,6 +557,10 @@ int main() {
             capture(1180,820,"interface-r2-live-view-1180.png");
             capture(1647,895,"interface-r2-live-view-1647.png");
             capture(1920,1080,"interface-r2-live-view-1920.png");
+            // R3: the same native View/LIVE fixture proves the text tier
+            // at compact and desktop widths without a CSS/web mockup.
+            capture(1180,820,"interface-r3-pinned-typography-1180.png");
+            capture(1647,895,"interface-r3-pinned-typography-1647.png");
         });
         test("RQ001 T04: native screenshots of two similarly named hidden LIVE Cuelists", [&] {
             MainComponent t04(false);

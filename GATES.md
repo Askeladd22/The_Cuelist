@@ -1,70 +1,71 @@
-# GATES — R2 native operator LIVE / NEXT GO / VIEW status panel
+# GATES — R3 / pinned Cue Grid and BPM/Auto Stop typography
 
-BASE: verified main@0a2b0b997f0e889ecd6ab2cf0f12e264b6aec0aa;
-VERSION.txt 0.9.71; JUCE 8.0.12; .cuelist schema JSON v10.
-ISSUE: https://github.com/Askeladd22/The_Cuelist/issues/196
-BRANCH: feat/r2-live-view-operator-sidebar-v0972; proposed 0.9.72.
-Never auto-merge, change transport execution semantics, or certify LIVE.
+Baseline: main@2f028502559da351dba665af7ca6f1f2fa75d7e0,
+VERSION.txt 0.9.72, JUCE native 8, schema .cuelist JSON v10.
+Issue #198; feature branch fix/r3-pinned-header-typography-v0973.
+Target version 0.9.73. This is a typography-only UI increment.
 
-## Operator hypothesis / counterexamples
+## Operator problem and falsifiable hypothesis
 
-H-R2: at minimum 1180×820 and desktop 1647×895, the sidebar next
-to GO/PANIC distinctly identifies the live Cuelist locator/name,
-next global GO target, and separately viewed Cuelist locator/name;
-the native GO/PANIC hitboxes, shortcuts, triggering, JSON v10 and
-VIEW/LIVE state transitions remain unchanged. For identical long
-names, L01/L09 disambiguate; on VIEW=LIVE no misleading second active
-transport is painted. No false 'playing' indicator: LIVE marks owning
-transport, not guaranteed audio output.
+User supplied three native crops: Master Audio, BPM/Auto Stop, Cue Grid.
+They ask whether the characters should be justified. Design decision:
+NO full/space-distributed justification; left align scan targets
+(names, titles), centre numbers in their metric lanes and control
+captions over real controls. Do not modify MasterAudioLayout or
+ColumnUtilities::paint; its current alignment already follows this
+rule and it is explicitly protected by canonical V2 feature parity.
 
-Source baseline: MainComponent.cpp painted a 51px ON DECK card
-with only a 94px name. Recent Projects panel filled sidebar until
-height-349; GO/PANIC native controls at height-282 and -228.
-User screenshot and exact source provided visual/operator evidence.
+Source-diagnosed defect: Theme.h clamps point height to
+max(10.0, nominalSize*0.75). Thus labels using 10–13 nominal
+sizes all render as 10pt. The existing Cue Grid LIVE locator/name
+and next GO use nominal 11–12, while BPM/AUTO STOP headings use 13.
+A stronger operative hierarchy requires *actual* size > 13.333
+without a global font-system overhaul.
 
-GStack red-team:
-- hidden LIVE in overflow remains L01; browsing L09 doesn't change GO
-- next GO 'END' must not imply GO will launch a cue
-- 1180x820 may lose one/two recent list rows; all remain accessible
-  via real All control, not hidden when capacity drops
-- 64-character similar names, Unicode, 32:9, collapsed Inspector,
-  12 Cuelists, silence vs playback.
-- avoid relocating GO/PANIC, duplicating clickable status controls,
-  introducing audio-thread or network activity, or changing saved Show.
+H-R3: font(15,true) yields >10pt native Hind Semibold (for labels
+that currently render 10pt Exo 2) and shaped text
+LIVE L12 / GO 12 / BPM / AUTO STOP fits its existing rectangle
+without ellipsis; the second-tier labels remain legible.
+No change to any geometry/hitboxes, transport state, routing, Master,
+Cue row, .cuelist v10 or existing typography fallback contracts.
 
-## Gates, status
-- [x] R2-1 baseline/source/spec reviewed: project docs V2 visual/parity,
-  MainComponent paint/resized, CueGrid LIVE header, functions returning
-  actual LIVE/next; issue #196 published.
-- [ ] R2-2 introduce one shared pure SidebarOperatorLayout for recent
-  boundary, status card and text rectangles; no paint vs resized drift.
-- [ ] R2-3 real JUCE UI: quiet card, larger LIVE name, NEXT GLOBAL GO,
-  distinct VIEW locator/name, proper GO END semantic; original GO/PANIC
-  still same clickable controls and callbacks; recent More fully reachable.
-- [ ] R2-4 pure geometry and native component tests at 1180/1647/1920/
-  3840 with hitboxes and no overlaps; hidden LIVE fixture checks saved
-  Show, LIVE/NEXT, global GO tooltip and returns when VIEW==LIVE.
-- [ ] R2-5 native offscreen JUCE snapshots at 1180 and 1647 with
-  LIVE hidden behind tab overflow and END state; human visual review
-  for heading/ellipsis and transport spacing. Not DPI OS proof.
-- [ ] R2-6 version 0.9.72 in VERSION, CMake and CHANGELOG, Windows
-  version guard SUCCESS on exact final SHA.
-- [ ] R2-7 Windows Release and full CTest on exact final PR SHA:
-  0 failing, screenshot artifact uploaded; log checked.
-- [ ] R2-8 GStack/Matt source diff review: no changes to mixer, master,
-  cue row/grid geometry, Control Mapping, MIDI/OSC/LTC or engine, no
-  silent loss of the Recent Open/All shortcuts or Show state.
-- [ ] R2-9 physical Windows keyboard/IME/Narrator/DPI 100/125/150,
-  user/operator A/B identification time and actual hardware
-  Audio/MIDI/OSC/LTC: ND/NOT RUN; not ready-for-LIVE.
-- [ ] R2-10 modal Esc/PANIC issue #191 separately unresolved.
+## Source and review
 
-## Tests and rollback
+- [x] Matt Pocock: reviewed Theme.h font routing and label function,
+  CueViews.cpp pinned header and metrics, CueGridGeometry.h,
+  MasterAudioLayout.h, ColumnUtilities.cpp, tests UiRefinementTests
+  and canonical design/parity documents. Baseline and issue fixed.
+- [x] GStack/Taste/Emil: screenshot audit; all-justified text or
+  global blanket centering rejected. Master left/centre pattern
+  intentionally preserved. UI output must be inspected at 1180
+  and 1647 in actual JUCE offscreen rendering.
+- [ ] Native C++ code: only pinned Cue Grid LIVE/GO labels and
+  BPM/AUTO STOP headings; no font globals/engine/model changes.
+- [ ] Regression: test the exact shaped string widths, family and
+  point height; ensure header 72, row 62, name lane 318,
+  pinned metrics 184, Master 318 remain original.
+- [ ] Native screenshot: show LIVE L01 while VIEW L09 at 1180/1647,
+  plus at least one normal 1440/1920 view. Inspect PNG,
+  especially no ellipsis on GO/locator or Auto Stop text.
+- [ ] VERSION.txt and CMakeLists.txt=0.9.73, CHANGELOG.md updated,
+  guard on exact PR SHA SUCCESS.
+- [ ] Windows Release & full CTest on exact PR SHA PASS, logs checked,
+  screenshot artifact from that same SHA.
+- [ ] Diff review: no changes to ColumnUtilities/MasterAudioLayout,
+  main GO/STOP/PANIC, VIEW/LIVE, MIDI/OSC/LTC, Quick Learn,
+  Undo/Redo, timeline, Mixer, project v10.
+- [ ] Native Windows DPI 100/125/150%, Narrator/IME, external hardware
+  Audio/MIDI/OSC/LTC, operator A/B task time and accessibility
+  performance: NOT RUN / ND. CI green != ready for LIVE.
+- [ ] Issue #191 modal first Esc/PANIC remains unresolved.
 
-Test seams are pure calculateWorkspaceLayout() for geometry,
-MainComponent paint/native controls and existing RQ001 T03 fixture
-for VIEW/LIVE/GO identity. No untrusted CHECK or inherited scripts
-executed. Candidate CI checks are from repository's existing
-Windows Release / Version workflows, whose pass/fail must be read
-from exact run. Rollback: revert focused draft PR before or after
-manual merge; no persisted schema migration or output behavior change.
+## Red team / rollback
+
+Stress two similarly named 64-character Cuelists and 12 tabs;
+check ellipsis is confined to variable names, not fixed-status
+labels. Check END instead of GO and both Industrial Orange/Legacy.
+If glyph width exceeds a fixed label box, narrow the typography
+locally rather than truncate a safety-relevant status. Keep any
+snapshot updates actual JUCE, no HTML replacement. This entire
+change is reversible by reverting the draft PR, no JSON migration.
+Never auto merge. Do not execute inherited CHECKs/hooks.
