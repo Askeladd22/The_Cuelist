@@ -135,7 +135,11 @@ struct ColumnUtilities::Strip final : juce::Component {
             } else if(output.getSelectedId()==1) owner.setColumnDirectEnabled(index,false);
             else if (output.getSelectedId()>1) owner.setColumnOutput(index,output.getSelectedId()-2);
         };
-        gain.setTooltip("Gain for all clips in this column. Double-click: 0 dB.");
+        gain.setTooltip(
+            "Audio column gain (dB): the fader sets relative gain for all clips. "
+            "The independent L/R bars show signal peaks (dBFS), not the gain setting. "
+            "Wheel: 0.5 dB per step; Shift+wheel: 0.1 dB; "
+            "double-click: reset gain to 0 dB.");
         gain.setMaximumDb(owner.audioFaderCeilingDb());
         pan.setTooltip("Stereo pan/balance. Double-click: center.");
         phase.setTooltip("Invert the polarity of both column channels."); mute.setTooltip("Mute the entire column without stopping clips.");
