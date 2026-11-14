@@ -61,12 +61,15 @@ void uiRefinementTests() {
             check(project->isBeingEdited() && editor!=nullptr,
                   "UX04D JUCE Label did not create its real editor");
             if (!editor) return;
-            // Emil worst-case: long title at narrow viewport must not
-            // interfere with cancellation, stored data or transport.
-            editor->setText(
-                "This is an exceptionally long rehearsal project name that would "
-                "normally be truncated in the compact workspace header",
-                juce::dontSendNotification);
+            // Emil worst-case: a valid (<=120-char) title still overflows
+            // the 132px header at 1180px. If Escape accidentally commits,
+            // validation must NOT mask that regression by rejecting the name.
+            const juce::String pendingName=
+                "Extended rehearsal project name for stage-right cues, "
+                "Sunday matinee, alternate sound and early cue checks";
+            check(pendingName.length()<=120 && pendingName!=ui.show.name,
+                  "UX04D fixture must be a valid, changed project name");
+            editor->setText(pendingName,juce::dontSendNotification);
             ui.engine.acknowledgedCueId.store(923);
             project->textEditorEscapeKeyPressed(*editor);
             check(!project->isBeingEdited() &&
