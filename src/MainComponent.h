@@ -62,6 +62,25 @@ private:
     bool inspectorOpen=true;
 };
 
+// One-click navigation to the Cuelist owning LIVE. This is intentionally
+// NOT a transport button: the existing activateCuelist() only changes VIEW.
+// Vector arrow avoids a missing-glyph fallback at Windows high DPI.
+class ReturnToLiveButton final : public juce::TextButton {
+public:
+    void paintButton(juce::Graphics& g,bool hovered,bool pressed) override {
+        const auto area=getLocalBounds().toFloat().reduced(.5f);
+        const IconButtonState state{isEnabled(),hovered,pressed,false,
+                                    hasKeyboardFocus(false)};
+        drawIconButtonSurface(g,area,palette::red,state,4.0f);
+        const float cx=area.getCentreX(),cy=area.getCentreY();
+        g.setColour(isEnabled() ? palette::red : palette::muted.withAlpha(.55f));
+        g.drawLine(cx-7.f,cy-6.f,cx-7.f,cy+6.f,1.3f);
+        g.drawLine(cx+7.f,cy,cx-4.f,cy,1.8f);
+        g.drawLine(cx-4.f,cy,cx+0.5f,cy-4.5f,1.8f);
+        g.drawLine(cx-4.f,cy,cx+0.5f,cy+4.5f,1.8f);
+    }
+};
+
 class CuelistTabButton final : public juce::TextButton {
 public:
     void setActiveVisual(bool active) {
@@ -629,6 +648,7 @@ private:
     std::array<std::unique_ptr<CuelistTabButton>,12> cuelistTabs;
     std::array<std::unique_ptr<juce::TextButton>,12> cuelistCloseButtons;
     juce::TextButton cuelistOverflowButton{"..."},addCuelistButton{"+"};
+    ReturnToLiveButton returnToLiveButton;
     juce::TextButton cuelistMoveLeft{"<"},cuelistMoveRight{">"};
     int cuelistDragSource=-1,cuelistDragTarget=-1;
     void updateCuelistDropTarget(int rootX);

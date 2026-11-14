@@ -40,7 +40,7 @@ MainComponent::MainComponent(bool startAudio) {
     setLookAndFeel(&theme); setWantsKeyboardFocus(true); setSize(1440,900);
     for (juce::Component* c : std::initializer_list<juce::Component*>{&openButton,&saveButton,&newButton,&addRowButton,&addColumnButton,
          &goButton,&panicButton,&deviceButton,&controlButton,&collapseAllButton,&inspectorSideTab,
-         &cuelistOverflowButton,&addCuelistButton,&cuelistMoveLeft,&cuelistMoveRight,&undoButton,&redoButton,&globalMidiLearn,&globalOscLearn,&quickControlTargets,&quickLearnMapSelector,&cancelQuickLearn,&goLearnHotspot,&panicLearnHotspot,&helpButton,&dockResize,&timelineResize,&importButton,&midiEditButton,&oscEditButton,&playCellButton,&stopCellButton,&clearButton,&applyButton,
+         &cuelistOverflowButton,&addCuelistButton,&returnToLiveButton,&cuelistMoveLeft,&cuelistMoveRight,&undoButton,&redoButton,&globalMidiLearn,&globalOscLearn,&quickControlTargets,&quickLearnMapSelector,&cancelQuickLearn,&goLearnHotspot,&panicLearnHotspot,&helpButton,&dockResize,&timelineResize,&importButton,&midiEditButton,&oscEditButton,&playCellButton,&stopCellButton,&clearButton,&applyButton,
          &cellTab,&rowTab,&rowGain,&rowBehaviour,&rowMute,&rowLoop,&rowName,&cellName,&bpm,&cueNotes,&behaviour,&follow,&loop,&cellAutoStop,&gainDb,&viewport,&timeline,&timelineCollapseButton,&utilities,
          &clipCollapseButton,&clipCloseButton,&editorDivider,&cueHeaders,&columnHeaders,&cueMetrics,&preflightButton,&diagnosticsButton,&preferencesButton,&projectNameLabel,&inlineNameEditor}) addAndMakeVisible(c);
     // Static native accessibility metadata. Do not make the entire painted
@@ -48,7 +48,7 @@ MainComponent::MainComponent(bool startAudio) {
     columnHeaders.setTitle("Cue column headers");
     columnHeaders.setDescription("Select a column; Shift+F10 shows non-modal keyboard actions. Escape PANIC; Space GO.");
     for (juce::TextButton* b : std::initializer_list<juce::TextButton*>{&openButton,&saveButton,&newButton,&addRowButton,&addColumnButton,&goButton,&panicButton,&deviceButton,&controlButton,&collapseAllButton,&inspectorSideTab,
-                    &cuelistOverflowButton,&addCuelistButton,&cuelistMoveLeft,&cuelistMoveRight,&undoButton,&redoButton,&globalMidiLearn,&globalOscLearn,&helpButton,
+                    &cuelistOverflowButton,&addCuelistButton,&returnToLiveButton,&cuelistMoveLeft,&cuelistMoveRight,&undoButton,&redoButton,&globalMidiLearn,&globalOscLearn,&helpButton,
                     &importButton,&midiEditButton,&oscEditButton,&playCellButton,&stopCellButton,&clearButton,&applyButton,
                     &preflightButton,&diagnosticsButton,&preferencesButton}) b->setWantsKeyboardFocus(false);
     // Native V2 menus reuse the original operator handlers and shortcuts.
@@ -387,6 +387,15 @@ MainComponent::MainComponent(bool startAudio) {
     cuelistOverflowButton.setName("cuelistOverflow");
     cuelistOverflowButton.setTooltip("Other Cuelists that do not fit in the tab bar.");
     cuelistOverflowButton.onClick=[this] {showCuelistOverflowMenu();};
+    returnToLiveButton.setName("returnToLiveCuelist");
+    returnToLiveButton.setTitle("Return to LIVE Cuelist");
+    returnToLiveButton.setDescription(
+        "Switch only the viewed Cuelist to LIVE. Does not GO or change playback.");
+    returnToLiveButton.onClick=[this] {
+        // Reuse exactly the normal VIEW-only navigation: never transfer
+        // LIVE or trigger/stop any show output.
+        if (show.activeCuelist!=liveCuelist) activateCuelist(liveCuelist);
+    };
     addCuelistButton.setName("newCuelist");
     addCuelistButton.setTooltip("Create another Cuelist in this show.");
     addCuelistButton.onClick=[this] {createCuelist();};
@@ -838,21 +847,8 @@ void MainComponent::paint(juce::Graphics& g) {
           sidebar.nextValue,15,
           nextGlobalGo=="END" ? palette::muted : palette::go,true,
           juce::Justification::centredRight);
-    g.setColour(palette::line.withAlpha(.56f));
-    g.drawHorizontalLine(sidebar.dividerY,
-                         (float)sidebar.card.getX()+8.f,
-                         (float)sidebar.card.getRight()-8.f);
-    const bool viewingLive=show.activeCuelist==liveCuelist;
-    label(g,viewingLive ? "VIEW = LIVE" : "VIEW / BROWSING",
-          sidebar.viewHeading,11,palette::muted,true);
-    label(g,"L"+juce::String(show.activeCuelist+1).paddedLeft('0',2),
-          sidebar.viewLocator,10,palette::muted,true,
-          juce::Justification::centredRight);
-    const auto viewedName=show.cuelists.empty()
-        ? juce::String("Cuelist 1")
-        : show.cuelists[(size_t)show.activeCuelist].name;
-    label(g,viewingLive ? "Same Cuelist" : viewedName,
-          sidebar.viewName,12,palette::text);
+    // The browsed VIEW now appears beside the enlarged Cuelist title.
+    // Keep only the LIVE owner and global next GO beside transport here.
     // Output meter removed from the sidebar; audio peak telemetry remains
     // available in the Master and channel meters.
     // Continue the non-scrollable metrics surface beneath the mixer. This
@@ -1049,8 +1045,21 @@ void MainComponent::refreshCuelistTabs() {
     // setSize() can call resized() before dynamic tab allocation in the ctor.
     if (!cuelistTabs[0]) return;
 
-    constexpr int left=190,slot=84,buttonHeight=27;
+    // A real return-to-LIVE icon sits immediately before the tab strip.
+    // Shift only tab slots; the telemetry/overflow boundary is unchanged.
+    constexpr int returnLeft=190,returnWidth=32,returnGap=6;
+    constexpr int left=returnLeft+returnWidth+returnGap,slot=84,buttonHeight=27;
     const int count=(int)show.cuelists.size();
+    returnToLiveButton.setBounds(returnLeft,43,returnWidth,buttonHeight);
+    const bool browsing=show.activeCuelist!=liveCuelist;
+    returnToLiveButton.setEnabled(browsing);
+    const auto liveLocator="L"+
+        juce::String(liveCuelist+1).paddedLeft('0',2);
+    returnToLiveButton.setTooltip(browsing
+        ? "Return VIEW to LIVE "+liveLocator+" / "+liveCuelistNameForUi()+
+          ". View only; no GO, STOP or LIVE transfer."
+        : "Already viewing LIVE "+liveLocator+" / "+liveCuelistNameForUi()+
+          ". Global GO remains armed independently.");
     // Stop tabs before the fixed clock/CPU panels. This gives nine real tabs
     // at 1647px, three at 1180px, and overflows only when space runs out.
     // Tab overflow follows the same monitor boundary as the top menus.
@@ -1596,10 +1605,12 @@ void MainComponent::resized() {
         ? viewport.getScrollBarThickness() : 0;
     cueHeaders.setBounds(geometry.cueHeaders.translated(leftScrollInset,0));
     cueHeaders.toFront(false);
+    // Move only the view-tab ordering arrows into the now-free lower
+    // header tier; no change to their movement/shortcut callbacks.
     cuelistMoveLeft.setBounds(
-        cueHeaders.getX()+CueGrid::nameWidth-146,cueHeaders.getY()+10,24,22);
+        cueHeaders.getX()+CueGrid::nameWidth-100,cueHeaders.getY()+40,24,22);
     cuelistMoveRight.setBounds(
-        cueHeaders.getX()+CueGrid::nameWidth-116,cueHeaders.getY()+10,24,22);
+        cueHeaders.getX()+CueGrid::nameWidth-70,cueHeaders.getY()+40,24,22);
     cuelistMoveLeft.toFront(false);
     cuelistMoveRight.toFront(false);
     // Place an independent 72px-high heading over every visible column.

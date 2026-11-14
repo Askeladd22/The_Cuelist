@@ -566,6 +566,21 @@ int main() {
             // at compact and desktop widths without a CSS/web mockup.
             capture(1180,820,"interface-r3-pinned-typography-1180.png");
             capture(1647,895,"interface-r3-pinned-typography-1647.png");
+            // R5: real JUCE screenshot comparison with LIVE hidden while
+            // browsing Emergency, then one-click returning VIEW to LIVE.
+            capture(1180,820,"interface-r5-view-1180.png");
+            capture(1647,895,"interface-r5-view-1647.png");
+            capture(1920,1080,"interface-r5-view-1920.png");
+            auto* returnLive=dynamic_cast<juce::TextButton*>(
+                controlsV3::named(t03,"returnToLiveCuelist"));
+            check(returnLive && returnLive->isEnabled(),
+                  "R5 snapshot fixture missing enabled return-to-LIVE control");
+            if (returnLive) cueViewFixtures::click(*returnLive,
+                returnLive->getWidth()*.5f,returnLive->getHeight()*.5f);
+            check(t03.show.activeCuelist==t03.liveCuelistIndex(),
+                  "R5 screenshot fixture did not navigate to LIVE");
+            capture(1180,820,"interface-r5-live-1180.png");
+            capture(1647,895,"interface-r5-live-1647.png");
         });
         test("RQ001 T04: native screenshots of two similarly named hidden LIVE Cuelists", [&] {
             MainComponent t04(false);

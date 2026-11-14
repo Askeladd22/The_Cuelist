@@ -42,8 +42,6 @@ struct SidebarOperatorLayout {
     juce::Rectangle<int> card;
     juce::Rectangle<int> liveHeading,liveLocator,liveName;
     juce::Rectangle<int> nextHeading,nextValue;
-    juce::Rectangle<int> viewHeading,viewLocator,viewName;
-    int dividerY=0;
 };
 struct WorkspaceLayout {
     int editorX=0;

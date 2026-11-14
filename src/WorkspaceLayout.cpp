@@ -44,22 +44,19 @@ WorkspaceLayout calculateWorkspaceLayout(const WorkspaceLayoutInput& input) {
     result.inspectorLeft=result.editorX+16;
     result.inspectorInnerWidth=inspectorInnerWidth;
     result.inspectorScale=std::clamp((float)(input.height-232)/730.0f,0.72f,0.92f);
-    // R2 sidebar: the live status is larger and the recent-list height
-    // yields first. Global GO/PANIC controls remain at their original
-    // height-relative coordinates, with a six-pixel safety gap.
+    // R5: VIEW now belongs to the pinned Cuelist title, not the sidebar.
+    // Retain the original LIVE and global NEXT GO content, but reclaim
+    // the old duplicate VIEW space for Recent Projects. GO/PANIC remain
+    // exactly where they were, six pixels below the status card.
     auto& sidebar=result.sidebarOperator;
-    const int statusY=input.height-402;
-    sidebar.card={12,statusY,156,114};
+    const int statusY=input.height-368;
+    sidebar.card={12,statusY,156,80};
     sidebar.recentBottom=statusY-10;
-    sidebar.liveHeading={20,statusY+7,101,16};
-    sidebar.liveLocator={125,statusY+7,35,16};
-    sidebar.liveName={20,statusY+25,140,22};
-    sidebar.nextHeading={20,statusY+51,87,17};
-    sidebar.nextValue={108,statusY+48,52,22};
-    sidebar.dividerY=statusY+76;
-    sidebar.viewHeading={20,statusY+80,108,16};
-    sidebar.viewLocator={132,statusY+80,28,16};
-    sidebar.viewName={20,statusY+96,140,17};
+    sidebar.liveHeading={20,statusY+8,101,16};
+    sidebar.liveLocator={125,statusY+8,35,16};
+    sidebar.liveName={20,statusY+26,140,22};
+    sidebar.nextHeading={20,statusY+53,87,17};
+    sidebar.nextValue={108,statusY+50,52,22};
 
     // The resized dock is a user preference, not an unconditional demand for
     // screen space. At the minimum 820px window height a 400px editor would
