@@ -32,6 +32,19 @@ and the optional top +6 is omitted when it conflicts with 0 dB.
 Other labels are filled by priority; secondary text has stronger
 contrast. The Master continues drawing identical pixels.
 
+## Intermediate evidence and red-team correction
+
+First candidate `9674b722`: Windows build/CTest
+[run 43603342673](https://github.com/Askeladd22/The_Cuelist/actions/runs/43603342673)
+passed (420872 assertions, 0 failures) and screenshots uploaded.
+Baseline 0.9.73 vs this candidate at 1180: **Master 0 changed pixels,
+Audio column 241 changed pixels**. Human visual inspection found the
+new terminal `−∞` caption near/overlapping the Audio MUTE heading.
+A subsequent patch raises only that label 11px and adds a rectangle
+collision test against MUTE and PAN. **Intermediate CI is not evidence
+for the subsequent patch.** Re-run exact final head and inspect
+before/after again before closing N5.3-5, N5.3-7.
+
 ## Gates
 - [x] N5.3-1 verified main/SHA/version, read user screenshots (full
   and enlarged), GainMeterFader h/cpp, ColumnUtilities, Master layout,
