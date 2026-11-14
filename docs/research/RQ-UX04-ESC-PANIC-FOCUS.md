@@ -4,9 +4,9 @@
 
 The CUElist 0.9.67; baseline main@99b3f77ff3805c5f4580c576cf48b46fabe34aa2.
 The operator is editing the name of a Cuelist/cue/column/cell, a pinned
-cue BPM, or a Timeline marker while a LIVE show may be playing.
-Pressing Esc is documented as global PANIC, but these three child
-TextEditors currently consume Esc and only close their local edit.
+cue BPM, a Timeline marker, or a Quick Learn function while a LIVE show
+may be playing. Pressing Esc is documented as global PANIC, but these
+four native child TextEditors consume Esc and only close their local edit.
 Requirement: a single Esc cancels the pending value *and* invokes the
 existing global stopAll() path once; Enter must keep its existing commit
 behavior. The toolbar, focus hierarchy, persisted JSON v10, VIEW/LIVE
@@ -20,8 +20,12 @@ selection, timing, audio thread and MIDI/OSC output routing are out of scope.
    grabKeyboardFocus(). `src/CueViews.cpp` has the consumed
    `bpmEditor` which only calls finishBpmEdit(false);
    `src/Timeline.cpp` has the consumed `markerEditor` which only
-   calls finishMarkerEdit(false). Their shared owner MainComponent
-   declares `stopAll()`; its implementation calls engine.panic(),
+   calls finishMarkerEdit(false). Red-team review also found a fourth
+   native `QuickControlTargets::renameEditor` in
+   `src/QuickControlTargets.h`: it inherits JUCE TextEditor's
+   consumed-Escape default, and its callback originally only called
+   finishRename(false). The owner MainComponent declares `stopAll()`;
+   its implementation calls engine.panic(),
    clears control output and resets active mapping.
 2. **JUCE official API manual (not an executed test):**
    https://docs.juce.com/master/classjuce_1_1TextEditor.html —
@@ -46,6 +50,7 @@ selection, timing, audio thread and MIDI/OSC output routing are out of scope.
 | Name inline TextEditor | Esc -> cancel only | Esc -> cancel then stopAll() | Windows IME tests |
 | Pinned BPM inline TextEditor | Esc -> cancel only | Esc -> cancel then stopAll() | DPI and visual focus |
 | Timeline marker name/BPM editor | Esc -> cancel only | Esc -> cancel then stopAll() | External LTC sync |
+| Quick Learn function rename editor | Esc -> cancel only | Esc -> cancel and call owner-provided panic callback | Quick Learn state resets on global PANIC |
 | PopupMenu/showMenuAsync or modal dialogs | Escape typically dismisses popup | Unchanged | Modal Esc/PANIC is a separate high-risk RQ |
 | Notes editor | Esc propagation explicitly enabled | Unchanged | Native focus/HID test |
 
@@ -54,7 +59,7 @@ selection, timing, audio thread and MIDI/OSC output routing are out of scope.
 H-UX04A: forwarding consumed Esc to `MainComponent::stopAll()` after
 rolling back the edit preserves the existing edit cancellation and
 causes PANIC on one keypress. This is falsified by any native test where
-(a) an uncommitted name/BPM/marker change survives or (b) a seeded
+(a) an uncommitted name/BPM/marker/Quick Learn rename survives or (b) a seeded
 `engine.acknowledgedCueId` remains nonzero after Esc. Test must verify
 VIEW/LIVE and NEXT unaffected.
 
@@ -68,13 +73,17 @@ Counterexamples:
   event reaches the text field; tests also call TextEditor::keyPressed
   with Escape, but physical Windows/hardware still require a real bench.
 - Replacing all PopupMenus is a separate architectural change, and
-  this PR does not solve their modal key interception.
+  this PR does not solve their modal key interception. The high-risk
+  follow-up is tracked as GitHub issue #191.
+- QuickControlTargets is a reusable list independent of MainComponent;
+  passing an owner-side panic callback avoids hard-coding the transport
+  into the list. stopAll() also ends Quick Learn's transient state.
 - No work occurs in the realtime audio callback. A reset synthetic
   acknowledgment is not a timing measurement for downstream MIDI/OSC/LTC.
 
 ## Test and acceptance plan
 
-1. Native CTest regression: initialize each editor; edit an
+1. Native CTest regression: initialize all four editors; edit an
    unsaved value; seed engine acknowledgedCueId; call TextEditor::keyPressed
    (Esc). Assert editor hidden, encoded Show and selected NEXT/LIVE
    unchanged, ack reset. Existing Enter tests must remain green.
@@ -97,8 +106,9 @@ Counterexamples:
 - Manual Windows/editor focus: ND.
 - Audio/MIDI/OSC/LTC hardware latency, downstream timing: ND.
 - Accessibility Narrator and native window scaling: ND.
-- Recommendation: scoped explicit forwarding for the 3 inline TextEditor
-  callbacks, retaining the current root stopAll and no global keyboard
+- Recommendation: scoped explicit forwarding for 3 inline TextEditor
+  callbacks plus the Quick Learn owner's panic callback, retaining the
+  current root stopAll and no global keyboard
   hooks. No claim of ready-for-LIVE until hardware verification.
 - Rollback: revert UX-04A PR; no project data migration or schema change.
 
