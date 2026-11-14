@@ -77,7 +77,11 @@ Timeline::Timeline(MainComponent& p) : owner(p) {
     markerEditor.setColour(juce::TextEditor::textColourId,palette::text);
     markerEditor.setColour(juce::TextEditor::focusedOutlineColourId,palette::teal);
     markerEditor.onReturnKey=[this] { finishMarkerEdit(true); };
-    markerEditor.onEscapeKey=[this] { finishMarkerEdit(false); };
+    markerEditor.onEscapeKey=[this] {
+        // Preserve cancel semantics while routing consumed Escape to PANIC.
+        finishMarkerEdit(false);
+        owner.stopAll();
+    };
     markerEditor.onFocusLost=[this] {
         if (markerEdit!=MarkerEdit::none) finishMarkerEdit(true);
     };
