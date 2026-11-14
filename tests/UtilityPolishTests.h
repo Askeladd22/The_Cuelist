@@ -255,7 +255,12 @@ void utilityPolishTests() {
             controlsV3::named(*first,"columnGainDb"));
         auto* pan=controlsV3::named(*first,"columnPan");
         auto* mute=controlsV3::named(*first,"columnMute");
+        auto* master=dynamic_cast<GainMeterFader*>(
+            controlsV3::named(*utility,"masterAudioDb"));
         check(fader && pan && mute,"Expanded Audio strip controls missing");
+        check(master && fader && fader->isColumnReadableScale() &&
+              !master->isColumnReadableScale(),
+              "N5.3 native Audio column scale or original Master default lost");
         check(CueGrid::columnWidth==152 && first->getWidth()==152 &&
               fader->getX()==7 && fader->getWidth()==92 &&
               pan->getWidth()==49 && pan->getX()==92 &&
