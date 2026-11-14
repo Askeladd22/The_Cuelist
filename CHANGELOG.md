@@ -13,6 +13,18 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.69] - 2026-11-14
+
+**PR:** UX-04C — correzione del falso negativo CTest nell'audit Esc/PANIC della PR #190 (Matt Pocock debugging + GStack red team + Unlazy).
+
+### QA native JUCE
+- Il workflow Windows della PR #190, integrata in `main`, compilava correttamente ma falliva con **420.418 asserzioni e un test non superato**: `UX04A inline name Esc cancelled editing but missed PANIC`. Riferimento: [Windows workflow #43575358390](https://github.com/Askeladd22/The_Cuelist/actions/runs/43575358390).
+- Diagnosi dal sorgente JUCE: `TextEditor::escapePressed()` invia `postCommandMessage`, quindi la callback `onEscapeKey` è **asincrona**. Il test invocava `TextEditor::keyPressed(Esc)` e controllava lo stato immediatamente, senza un message loop in esecuzione.
+- Modificato il test per verificare direttamente i **quattro contratti `onEscapeKey`** della versione 0.9.68 (nome, BPM, marker Timeline, Quick Learn), inclusi annullamento del testo, invarianti Show/NEXT/LIVE e indicatore interno di PANIC. Questo è un test **di callback**, non una prova del percorso fisico Windows Escape.
+- **Nessuna modifica al codice dell'applicazione:** handler, trasporto, audio thread, MIDI/OSC/LTC e schema JSON v10 invariati. Risultati della CI su questa PR ancora da verificare; hardware, focus, timing e popup modali restano **ND**.
+- Aggiornato `docs/research/RQ-UX04-ESC-PANIC-FOCUS.md` con i limiti della prova. Per Esc in `PopupMenu`/dialoghi resta aperta l'[issue #191](https://github.com/Askeladd22/The_Cuelist/issues/191).
+- **Rollback:** revert della PR, senza migrazione dei progetti; nessun merge automatico.
+
 ## [0.9.68] - 2026-11-14
 
 **PR:** [#190](https://github.com/Askeladd22/The_Cuelist/pull/190) (draft, senza merge automatico) — UX-04A Esc/PANIC nei quattro editor JUCE inline; Taste + UI/UX Review, Matt Pocock, Context Engineering, GStack Review, CCteam, SkillRoster, Unlazy.
