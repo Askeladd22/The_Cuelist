@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.67] - 2026-11-14
+
+**PR:** UX-03F / [issue #188](https://github.com/Askeladd22/The_Cuelist/issues/188) (Taste + UI/UX Review + Unlazy; PR in bozza).
+
+### Leggibilità della conferma Delete
+- I veri screenshot JUCE Windows a 1180×820 mostravano troncato `Press D to delete / repeating 5 does nothing` nella testata bloccata, larga circa 210 unità logiche in quella configurazione. Rischio: avviso operativo incompleto nello stato distruttivo.
+- Nella modalità Delete armata, la seconda riga usa la dicitura completa `D DELETE / 5 IGNORED` (con spaziatura coerente) quando entra nel rettangolo disponibile; sotto la larghezza necessaria usa `D DELETE` e infine `D`. La misura avviene con `juce::GlyphArrangement::getStringWidth` e il font JUCE di rendering, senza ridurre il carattere o alterare la testata da 72 px.
+- L'intestazione e il promemoria Esc/PANIC e Space/GO restano immutati; il nome lungo non influenza la riga di conferma. La descrizione accessibile e la guida conservano la spiegazione estesa di `5` ripetuto.
+- Aggiunti test JUCE per larghezza effettiva 1180/1920 e valori stretti sintetici, descrizione completa, gestione `5` ripetuto, Esc/PANIC e Delete per ID stabile; screenshot nativi aggiuntivi dello stato armato con nome colonna lungo.
+
+### Compatibilità e verifica
+- Nessuna modifica ai callback di tastiera, GO/STOP/PANIC, VIEW/LIVE, Control Map, Undo/Redo, Mixer, Timeline, Audio/MIDI/OSC/LTC o schema file `.cuelist` JSON v10.
+- CI Windows Release/CTest e revisione dei nuovi screenshot **da eseguire** su questa PR; DPI/Narrator, misure operatori e banco hardware restano ND. Nessuna dichiarazione ready-for-LIVE.
+- **Rollback:** revert della piccola PR, senza migrazione dati né modifica degli shortcut.
+
 ## [0.9.66] - 2026-11-14
 
 **PR:** UX-03E — protezione del gesto multi-click sulla barra di azioni colonna (Taste + UI/UX Review + Unlazy).
