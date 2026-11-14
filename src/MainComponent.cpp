@@ -222,8 +222,11 @@ MainComponent::MainComponent(bool startAudio) {
         if (commitInlineRename()) grabKeyboardFocus();
     };
     inlineNameEditor.onEscapeKey=[this] {
+        // Escape cancels pending text, but must still mean PANIC during LIVE.
+        // The TextEditor consumes Escape, so the root handler won't see it.
         cancelInlineRename();
         grabKeyboardFocus();
+        stopAll();
     };
     inlineNameEditor.onFocusLost=[this] {
         if (inlineRenameKind!=InlineRenameKind::none && !commitInlineRename())
