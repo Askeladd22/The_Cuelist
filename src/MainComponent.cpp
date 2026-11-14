@@ -1535,33 +1535,25 @@ void MainComponent::resized() {
     timelineResize.setBounds(geometry.timelineResize);
     timelineResize.setVisible(timelineVisible);
     if (timelineVisible) timelineResize.toFront(false);
-    const int x=geometry.inspectorLeft, inner=geometry.inspectorInnerWidth;
+    // Text and controls share geometry.inspector; editing no longer shrinks
+    // below its requested font size on short but supported 820px windows.
+    const auto& i=geometry.inspector;
     cellTab.setVisible(false);rowTab.setVisible(false);
     rowBehaviour.setVisible(false);rowMute.setVisible(false);rowGain.setVisible(false);
     behaviour.setVisible(false);cellAutoStop.setVisible(false);
     clearButton.setVisible(false);applyButton.setVisible(false);
     playCellButton.setVisible(false);stopCellButton.setVisible(false);
-    rowName.setBounds(x,225,inner,33);
-    bpm.setBounds(x,293,inner,32);
-    rowLoop.setBounds(x-3,374,inner,25);
-    cellName.setBounds(x,475,inner,31);
-    gainDb.setBounds(x+57,528,99,27);
-    follow.setBounds(x-3,564,inner,25);
-    loop.setBounds(x-3,597,inner,25);
-    midiEditButton.setBounds(x,648,inner,33);
-    oscEditButton.setBounds(x,648,inner,33);
-    importButton.setBounds(x,691,inner,33);
-    // Place notes below the existing Inspector actions at every supported
-    // height, without changing the safe minimum hitboxes of those actions.
-    const int notesAfterActions=geometry.scaleInspectorControl({0,728,1,25}).getBottom()+8;
-    const int notesTop=std::max(notesAfterActions,geometry.inspectorPanel.getBottom()-167);
-    cueNotes.setBounds(x,notesTop+27,inner,
-        std::max(38,geometry.inspectorPanel.getBottom()-notesTop-38));
-    // Compact inspector on smaller displays, keeping all actions reachable.
-    {
-        for (juce::Component* c : std::initializer_list<juce::Component*>{&rowLoop,&rowName,&bpm,&cellName,&follow,&loop,&gainDb,&importButton,&midiEditButton,&oscEditButton})
-            c->setBounds(geometry.scaleInspectorControl(c->getBounds()));
-    }
+    rowName.setBounds(i.cueNameField);
+    bpm.setBounds(i.bpmField);
+    rowLoop.setBounds(i.rowLoop);
+    cellName.setBounds(i.cellNameField);
+    gainDb.setBounds(i.gainField);
+    follow.setBounds(i.followToggle);
+    loop.setBounds(i.loopToggle);
+    midiEditButton.setBounds(i.editAction);
+    oscEditButton.setBounds(i.editAction);
+    importButton.setBounds(i.importAction);
+    cueNotes.setBounds(i.notesField);
     goButton.setBounds(14,h-282,152,48);
     panicButton.setBounds(14,h-228,152,48);
     const bool learning=quickLearnMode!=QuickLearnMode::off;
