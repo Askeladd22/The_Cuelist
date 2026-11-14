@@ -169,6 +169,10 @@ struct ColumnUtilities::Strip final : juce::Component {
         directMode.setButtonText(col.directPostFader ? "POST" : "PRE");
         directMode.setEnabled(col.directOutputEnabled);
         gain.setCompact(col.collapsed);
+        // Sync the presentation to the real column type as well as size:
+        // existing MIDI/OSC/Control strips must never display an Audio scale.
+        // Master is a separate GainMeterFader and keeps the default mode.
+        gain.setColumnReadableScale(col.type==ColumnType::audio);
         gain.setVisible(col.type==ColumnType::audio);
         mute.setVisible(col.type==ColumnType::audio);
         pan.setVisible(col.type==ColumnType::audio && !col.collapsed);

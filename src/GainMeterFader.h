@@ -44,6 +44,21 @@ public:
     }
     bool isCompact() const noexcept {return compact;}
     void setCompact(bool value) {if(compact!=value){compact=value;repaint();}}
+    // Optional *column strip* rendering. Default stays exactly the original
+    // pinned Master appearance required by UI V2 feature parity.
+    bool isColumnReadableScale() const noexcept {return columnReadableScale;}
+    void setColumnReadableScale(bool enabled) {
+        if(columnReadableScale!=enabled){columnReadableScale=enabled;repaint();}
+    }
+    // Move the column's terminal silence caption just above its bottom
+    // tick so it clears the neighbouring native MUTE caption at short heights.
+    // Only label ink moves; the calibrated tick, slider and peak rails do not.
+    static constexpr float columnSilenceCaptionLift=11.0f;
+    // Order matches the fixed scale ticks in paint(): +6, 0, -6, -12,
+    // -18, -24, -36, -48, -60 (last label is mathematical -infinity).
+    // No allocations or mutable global state during a JUCE repaint.
+    static std::array<bool,9> columnTickLabelMask(
+        float top,float bottom,float ceilingDb) noexcept;
     float getGainDb() const noexcept { return gainDb; }
     // Programmatic sync preserves historical gain even above the selected
     // ceiling. Only an operator edit is constrained to the visible range.
@@ -98,6 +113,7 @@ private:
     std::array<Peak,2> peaks {};
     float gainDb=0.0f;
     bool compact=false;
+    bool columnReadableScale=false;
     float ceilingDb=6.0f;
     float wheelAccumulator=0.0f;
     float topY() const noexcept { return compact ? 7.0f : 12.0f; }

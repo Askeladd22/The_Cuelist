@@ -1,6 +1,32 @@
 #include "GainMeterFader.h"
 
 namespace cuelist {
+std::array<bool,9> GainMeterFader::columnTickLabelMask(
+    float top,float bottom,float ceilingDb) noexcept {
+    constexpr int ticks[]={6,0,-6,-12,-18,-24,-36,-48,-60};
+    // Two mandatory reference points: 0 dB gain and digital silence.
+    // Intermediate labels can never displace either one. A short strip
+    // may show the +6 top tick without a second overlapping caption.
+    constexpr int priority[]={1,8,0,4,6,3,5,2,7};
+    constexpr float minSpacing=13.5f;
+    std::array<bool,9> result {};
+    for(const int index:priority) {
+        if(ticks[index]>ceilingDb) continue;
+        const auto captionY=[&](int tick) {
+            const float y=yForDb((float)tick,top,bottom,ceilingDb);
+            return tick==-60 ? y-columnSilenceCaptionLift : y;
+        };
+        const float candidate=captionY(ticks[index]);
+        bool fits=true;
+        for(int j=0;j<9;++j)
+            if(result[(size_t)j] &&
+               std::abs(candidate-captionY(ticks[j]))<minSpacing) {
+                fits=false;break;
+            }
+        if(fits)result[(size_t)index]=true;
+    }
+    return result;
+}
 void GainMeterFader::paint(juce::Graphics& g) {
     const float top=topY(),bottom=bottomY();
     const float length=bottom-top;
@@ -68,25 +94,40 @@ void GainMeterFader::paint(juce::Graphics& g) {
     }
 
     constexpr int ticks[]={6,0,-6,-12,-18,-24,-36,-48,-60};
+    const auto visibleColumnLabels=columnReadableScale
+        ? columnTickLabelMask(top,bottom,ceilingDb)
+        : std::array<bool,9> {};
     float previousLabel=-10000.0f;
-    for (const int tick:ticks) {
-        if (tick>ceilingDb) continue;
+    for(int index=0;index<9;++index) {
+        const int tick=ticks[index];
+        if(tick>ceilingDb) continue;
         const float y=yForDb((float)tick,top,bottom,ceilingDb);
         const bool major=tick==(int)ceilingDb || tick==0 || tick==-12 || tick==-24
             || tick==-36 || tick==-48 || tick==-60;
-        // Unity gain is a readable reference, not another signal status
-        // colour. Reserve teal/amber/red for real meter states and focus.
+        // Keep the exact pre-existing calibrated scale and tick locations.
         g.setColour(tick==0 ? palette::text.withAlpha(.85f)
                             : palette::muted.withAlpha(.66f));
         g.drawHorizontalLine((int)std::round(y),42.0f,major ? 50.0f : 46.0f);
-        // Retain all tick marks but skip conflicting labels in short strips.
-        if (y-previousLabel>=13.0f || previousLabel<0) {
+        // For per-column strips, labels are picked by semantic importance
+        // rather than highest-to-lowest order: 0 dB and -infinity remain
+        // visible at supported compact heights. Master uses the unchanged
+        // legacy order/copy/colour below (columnReadableScale defaults off).
+        const bool showLabel=columnReadableScale ? visibleColumnLabels[(size_t)index]
+            : (y-previousLabel>=13.0f || previousLabel<0);
+        if(showLabel) {
+            if(columnReadableScale)
+                g.setColour(tick==0 ? palette::text.withAlpha(.96f)
+                    : tick==-60 ? palette::text.withAlpha(.81f)
+                    : palette::muted.withAlpha(.91f));
             g.setFont(tick==-60 ? mathFont(10.0f) : font(10.0f));
             const auto minusInfinity=juce::String::charToString((juce::juce_wchar)0x2212)
                                     +juce::String::charToString((juce::juce_wchar)0x221e);
+            const float captionY=columnReadableScale && tick==-60
+                ? y-columnSilenceCaptionLift : y;
             g.drawText(tick==-60 ? minusInfinity :
                        tick>0 ? "+"+juce::String(tick) : juce::String(tick),
-                       52,(int)std::round(y-7),27,14,juce::Justification::centredLeft,false);
+                       52,(int)std::round(captionY-7),27,14,
+                       juce::Justification::centredLeft,false);
             previousLabel=y;
         }
     }
