@@ -1,5 +1,31 @@
 # RQ-UX04A — Esc/PANIC and native inline TextEditor focus
 
+## UX-04C correction — 2026-11-14 / PR following #190
+
+**Observed failure:** the merged PR #190 compiled on Windows but its CTest
+failed with `420418 assertions, 1 failed test`:
+https://github.com/Askeladd22/The_Cuelist/actions/runs/43575358390
+(`UX04A inline name Esc cancelled editing but missed PANIC`).
+
+**Source-level diagnosis:** JUCE `TextEditor::keyPressed(Escape)` invokes
+`escapePressed()`, which calls `postCommandMessage` to enqueue an
+asynchronous escape callback. The failing CTest checked `onEscapeKey` side
+effects before any GUI message-loop dispatch. This is a **false-negative
+test timing pattern**, not evidence that physical Windows Esc never calls
+PANIC. JUCE source:
+https://github.com/juce-framework/JUCE/blob/master/modules/juce_gui_basics/widgets/juce_TextEditor.cpp
+
+**Corrected test scope:** call the configured `onEscapeKey` callback
+directly for each of the four native inline editors to assert the
+Cancel + `MainComponent::stopAll()` contract. This is a **unit-level
+callback test**, NOT a real Escape key delivery test; it cannot measure
+queuing delay or behavior in a focused modal popup. We do not enable
+nested JUCE modal loops (`JUCE_MODAL_LOOPS_PERMITTED=0` in CMake).
+Real Windows/HID delivery and external audio/MIDI/OSC/LTC stop time:
+**NOT RUN**, follow-up issue #191. The production code in the merged
+PR #190 is preserved unchanged in this corrective PR.
+
+
 ## Scenario, operator and scope
 
 The CUElist 0.9.67; baseline main@99b3f77ff3805c5f4580c576cf48b46fabe34aa2.
@@ -70,8 +96,10 @@ Counterexamples:
 - Running `stopAll` BEFORE cancellation can trigger UI state changes
   while the TextEditor still owns focus; cancel first.
 - Calling `onEscapeKey` in isolation does not prove a physical key
-  event reaches the text field; tests also call TextEditor::keyPressed
-  with Escape, but physical Windows/hardware still require a real bench.
+  event reaches the text field. PR #190 tried `TextEditor::keyPressed`
+  with an immediate assertion and failed because JUCE dispatch is
+  asynchronous. The UX-04C callback-contract test avoids the false
+  failure and explicitly leaves physical delivery NOT RUN.
 - Replacing all PopupMenus is a separate architectural change, and
   this PR does not solve their modal key interception. The high-risk
   follow-up is tracked as GitHub issue #191.
@@ -83,10 +111,12 @@ Counterexamples:
 
 ## Test and acceptance plan
 
-1. Native CTest regression: initialize all four editors; edit an
-   unsaved value; seed engine acknowledgedCueId; call TextEditor::keyPressed
-   (Esc). Assert editor hidden, encoded Show and selected NEXT/LIVE
-   unchanged, ack reset. Existing Enter tests must remain green.
+1. Native CTest callback-contract regression: initialize all four
+   editors; edit an unsaved value; seed engine acknowledgedCueId; call
+   each configured `TextEditor::onEscapeKey` callback directly. Assert
+   editor hidden, encoded Show and selected NEXT/LIVE unchanged, ack
+   reset. Existing Enter tests must remain green. This does **not**
+   exercise JUCE's queued physical keyboard dispatch.
 2. Keep root Esc/PANIC and non-modal Shift+F10 tests green.
 3. Windows Release + full CTest and version/changelog guard must pass
    at the exact PR commit SHA.
@@ -101,8 +131,9 @@ Counterexamples:
 
 - Baseline code diagnosis: VERIFIED from fetched source; no real hardware
   reproduction.
-- UX-04A patch and tests: see the PR diff; **new CI status must be checked**
-  after creation. Do not mark passed in advance.
+- UX-04A production patch in PR #190: merged, Windows Release compilation
+  passed but the original immediate-assert CTest FAILED on the async path.
+  The UX-04C callback test fix requires its own Windows CI verification.
 - Manual Windows/editor focus: ND.
 - Audio/MIDI/OSC/LTC hardware latency, downstream timing: ND.
 - Accessibility Narrator and native window scaling: ND.
