@@ -13,6 +13,20 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.73] - 2026-11-14
+
+**RQ:** [#198](https://github.com/Askeladd22/The_Cuelist/issues/198) — R3: gerarchia tipografica dei titoli LIVE/GO e BPM/AUTO STOP in componenti JUCE reali.
+
+### Interfaccia
+- I tre ritagli forniti dall'operatore mostrano Master Audio, metrica BPM/Auto Stop e intestazione Cue Grid. Non è stata applicata una giustificazione tipografica a tutta larghezza: titoli e nomi restano allineati a sinistra, valori BPM e intestazioni di colonna restano centrati, stato GO a destra.
+- Risolto l'appiattimento visivo causato dalla dimensione minima di 10pt di `Theme::font`: i titoli `BPM` / `AUTO STOP` e `LIVE Lxx`, nome LIVE e `GO NN` / `END` della testata Cue Grid passano al livello nominale 15 (Hind semibold 11,25pt), anziché usare etichette nominali 11–13 che venivano tutte rese a 10pt (Exo 2).
+- **Master Audio non modificato**, comprese didascalie, fader, PAN, MUTE, LIMITER, Meter, geometria originale a 318px e callback. Non cambiano Cue Grid 318×72, righe 62px, colonna BPM/Auto Stop 184px, scrolling, tooltips e hitbox.
+- Non cambia la logica VIEW/LIVE, la destinazione GO, STOP/PANIC, Audio/MIDI/OSC/LTC, Undo/Redo, Timeline, Mixer o formato `.cuelist` schema v10.
+
+### QA
+- Nuovo test `R3 pinned operator headings grow beyond the ten-point clamp and fit` che verifica dimensioni font effettive, famiglia Hind, larghezze del testo JUCE e invarianti geometriche. Nuove snapshot native JUCE 1180×820 e 1647×895 con LIVE diversa da VIEW. **Risultati Windows Release/CTest e guard: ND fino alla CI sul commit finale.**
+- Reale Windows DPI 100/125/150, IME/Narrator, operatori A/B e banco hardware Audio/MIDI/OSC/LTC non eseguiti. Nessuna certificazione LIVE; PR draft senza merge automatico e rollback mediante revert.
+
 ## [0.9.72] - 2026-11-14
 
 **RQ:** [#196](https://github.com/Askeladd22/The_Cuelist/issues/196) — R2 / redesign strutturale della gerarchia LIVE/NEXT/VIEW nella sidebar operatore.
