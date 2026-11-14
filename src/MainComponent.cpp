@@ -349,6 +349,8 @@ MainComponent::MainComponent(bool startAudio) {
     saveButton.onClick=[this] { saveProject(); };
     addRowButton.onClick=[this] { addCue(); };
     addColumnButton.onClick=[this] { showColumnMenu(addColumnButton.getScreenBounds().getCentre()); };
+    goButton.setName("globalGo");
+    panicButton.setName("globalPanic");
     goButton.onClick=[this] { goNext(); }; panicButton.onClick=[this] { stopAll(); };
     deviceButton.setButtonText("Settings");
     deviceButton.onClick=[this] {preferencesButton.triggerClick();};
@@ -691,7 +693,7 @@ void MainComponent::paint(juce::Graphics& g) {
     g.drawVerticalLine(180,73,(float)h);
     // Replace the otherwise empty sidebar void with a responsive, usable
     // recent-project launcher underneath Workspace.
-    const int recentTop=218,recentBottom=h-349;
+    const int recentTop=218,recentBottom=geometry.sidebarOperator.recentBottom;
     if(recentBottom>recentTop+62) {
         const auto panel=juce::Rectangle<float>(
             10.f,(float)recentTop,160.f,(float)(recentBottom-recentTop));
@@ -814,23 +816,43 @@ void MainComponent::paint(juce::Graphics& g) {
         g.fillEllipse(20.0f,181.0f,7.0f,7.0f);
         label(g,"UNSAVED CHANGES",{34,174,130,21},10,palette::amber,true);
     }
-    g.setColour(palette::amber.withAlpha(.11f));
-    g.fillRoundedRectangle(12.0f,(float)h-339,156.0f,51.0f,8.0f);
-    // Keep the established 51px ON DECK panel and its adjacent GO/PANIC
-    // hitboxes. The actual LIVE name remains on-screen even when its tab
-    // is hidden behind the Cuelist overflow menu.
-    // The numeric locator is the LIVE Cuelist's CURRENT tab position,
-    // not a persistent project ID. It disambiguates long names that render
-    // identically after ellipsis in the fixed 94px name field.
-    label(g,"ON DECK / LIVE",{20,h-333,106,16},11,palette::amber,true);
+    // R2: read-only transport identity panel beside the original GO/PANIC
+    // buttons. LIVE owns global GO regardless of the selected VIEW. It is
+    // not a 'playing' lamp: a LIVE owner may be silent or at END.
+    const auto& sidebar=geometry.sidebarOperator;
+    g.setColour(palette::background.withAlpha(.52f));
+    g.fillRoundedRectangle(sidebar.card.toFloat(),8.f);
+    g.setColour(palette::line.withAlpha(.61f));
+    g.drawRoundedRectangle(sidebar.card.toFloat(),8.f,.8f);
+    g.setColour(palette::standby);
+    g.fillRoundedRectangle((float)sidebar.card.getX(),
+                           (float)sidebar.card.getY()+9.f,3.f,36.f,1.5f);
+    label(g,"LIVE / ON DECK",sidebar.liveHeading,11,palette::standby,true);
     label(g,"L"+juce::String(liveCuelist+1).paddedLeft('0',2),
-          {129,h-333,31,16},10,palette::amber,true,
+          sidebar.liveLocator,11,palette::standby,true,
           juce::Justification::centredRight);
-    label(g,liveCuelistNameForUi(),{20,h-314,94,24},15,palette::text,true);
-    const auto nextLiveGo=nextLiveGoCueForUi();
-    label(g,nextLiveGo=="END" ? "END" : "GO "+nextLiveGo,
-          {115,h-314,45,24},12,palette::text,true,
+    label(g,liveCuelistNameForUi(),sidebar.liveName,17,palette::text,true);
+    const auto nextGlobalGo=nextLiveGoCueForUi();
+    label(g,"NEXT GLOBAL",sidebar.nextHeading,11,palette::muted,true);
+    label(g,nextGlobalGo=="END" ? "END" : "GO "+nextGlobalGo,
+          sidebar.nextValue,15,
+          nextGlobalGo=="END" ? palette::muted : palette::go,true,
           juce::Justification::centredRight);
+    g.setColour(palette::line.withAlpha(.56f));
+    g.drawHorizontalLine(sidebar.dividerY,
+                         (float)sidebar.card.getX()+8.f,
+                         (float)sidebar.card.getRight()-8.f);
+    const bool viewingLive=show.activeCuelist==liveCuelist;
+    label(g,viewingLive ? "VIEW = LIVE" : "VIEW / BROWSING",
+          sidebar.viewHeading,11,palette::muted,true);
+    label(g,"L"+juce::String(show.activeCuelist+1).paddedLeft('0',2),
+          sidebar.viewLocator,10,palette::muted,true,
+          juce::Justification::centredRight);
+    const auto viewedName=show.cuelists.empty()
+        ? juce::String("Cuelist 1")
+        : show.cuelists[(size_t)show.activeCuelist].name;
+    label(g,viewingLive ? "Same Cuelist" : viewedName,
+          sidebar.viewName,12,palette::text);
     // Output meter removed from the sidebar; audio peak telemetry remains
     // available in the Master and channel meters.
     // Continue the non-scrollable metrics surface beneath the mixer. This
@@ -1379,7 +1401,7 @@ void MainComponent::resized() {
     // setSize() in the MainComponent constructor runs resized() before
     // optional recent-project child controls have been constructed.
     if(recentProjectButtons[0]) {
-    const int recentTop=218,recentBottom=h-349;
+    const int recentTop=218,recentBottom=geometry.sidebarOperator.recentBottom;
     const bool recentVisible=recentBottom>recentTop+62;
     recentOpenButton.setVisible(recentVisible);
     if(recentVisible) {

@@ -1,95 +1,70 @@
-# GATES — N4.2 Native Inspector Structural Layout (RQ-UI-R1)
+# GATES — R2 native operator LIVE / NEXT GO / VIEW status panel
 
-**Baseline:** main@48c69fff872028f3efafecca86a4c1a55f98772c,
-official VERSION.txt 0.9.69, JUCE 8.0.12, schema .cuelist JSON v10.
-**Scope:** first structural UI/UX increment of issue #193;
-Inspector Cue/Cell/Notes visual hierarchy and native component bounds.
-Feature branch feat/n42-inspector-layout-v0970; target version 0.9.70.
-Do not change GO/STOP/PANIC, LIVE/VIEW, Undo/Redo, Control Mappings,
-MIDI/OSC, LTC, playback, CueGridGeometry 62/72/318/152, fixed BPM/Auto
-Stop 184, original Master Audio 318, mixer/timeline/transport geometry,
-Project JSON v10 or any audio-thread callback.
+BASE: verified main@0a2b0b997f0e889ecd6ab2cf0f12e264b6aec0aa;
+VERSION.txt 0.9.71; JUCE 8.0.12; .cuelist schema JSON v10.
+ISSUE: https://github.com/Askeladd22/The_Cuelist/issues/196
+BRANCH: feat/r2-live-view-operator-sidebar-v0972; proposed 0.9.72.
+Never auto-merge, change transport execution semantics, or certify LIVE.
 
-## Evidence / constraints
+## Operator hypothesis / counterexamples
 
-- User screenshot of 1647×895 Windows application: Inspector uses small
-  scaled text, large vertical gaps and notes pushed toward bottom.
-- Source: WorkspaceLayout::inspectorScale goes to 0.72; MainComponent
-  paint scales labels via AffineTransform while resized() scales child
-  controls separately. The current interface still has historical
-  pixel locations.
-- Canonical docs: docs/UI_V2_VISUAL_DESIGN_PRINCIPLES.md explicitly
-  allows later Inspector N4.2 with screenshot/keyboard regression,
-  and documents "one surface per functional region", embedded Hind/
-  Exo 2 >=10pt. docs/UI_V2_FEATURE_PARITY.md prohibits removing
-  features and redesigning Master.
-- Main.cpp Window::setResizeLimits(1180,820,3840,2160): 820 is
-  production minimum height (NOT a proposed 720px layout).
-- Baseline Windows CI of PR #192 at final head completed success
-  (run 43578069868); this does not validate N4.2.
+H-R2: at minimum 1180×820 and desktop 1647×895, the sidebar next
+to GO/PANIC distinctly identifies the live Cuelist locator/name,
+next global GO target, and separately viewed Cuelist locator/name;
+the native GO/PANIC hitboxes, shortcuts, triggering, JSON v10 and
+VIEW/LIVE state transitions remain unchanged. For identical long
+names, L01/L09 disambiguate; on VIEW=LIVE no misleading second active
+transport is painted. No false 'playing' indicator: LIVE marks owning
+transport, not guaranteed audio output.
 
-## User stories and falsifiable hypothesis
+Source baseline: MainComponent.cpp painted a 51px ON DECK card
+with only a 94px name. Recent Projects panel filled sidebar until
+height-349; GO/PANIC native controls at height-282 and -228.
+User screenshot and exact source provided visual/operator evidence.
 
-Operator: "when I select a cue and cell, I can read and edit the
-cue name, BPM, loop, cell name, gain, follows-row, loop, MIDI/OSC edit,
-audio/MIDI import and cue notes without scanning a tiny transformed
-form or losing critical controls".
+GStack red-team:
+- hidden LIVE in overflow remains L01; browsing L09 doesn't change GO
+- next GO 'END' must not imply GO will launch a cue
+- 1180x820 may lose one/two recent list rows; all remain accessible
+  via real All control, not hidden when capacity drops
+- 64-character similar names, Unicode, 32:9, collapsed Inspector,
+  12 Cuelists, silence vs playback.
+- avoid relocating GO/PANIC, duplicating clickable status controls,
+  introducing audio-thread or network activity, or changing saved Show.
 
-H-N4.2: pure shared InspectorContentLayout uses **one source of
-rectangles** for text and real child widgets. At 1180×820 and
-1647×895: (1) all visible fields have stable >=26px controls;
-(2) no overlaps between captions, active controls and Notes;
-(3) Cue Notes textbox has >=70px height at 820, grows at 895;
-(4) no inspector-wide affine scale (text remains 12–14pt);
-(5) existing per-type visibility, operations, toggle state,
-keyboard callbacks, LIVE/VIEW and JSON v10 unchanged.
+## Gates, status
+- [x] R2-1 baseline/source/spec reviewed: project docs V2 visual/parity,
+  MainComponent paint/resized, CueGrid LIVE header, functions returning
+  actual LIVE/next; issue #196 published.
+- [ ] R2-2 introduce one shared pure SidebarOperatorLayout for recent
+  boundary, status card and text rectangles; no paint vs resized drift.
+- [ ] R2-3 real JUCE UI: quiet card, larger LIVE name, NEXT GLOBAL GO,
+  distinct VIEW locator/name, proper GO END semantic; original GO/PANIC
+  still same clickable controls and callbacks; recent More fully reachable.
+- [ ] R2-4 pure geometry and native component tests at 1180/1647/1920/
+  3840 with hitboxes and no overlaps; hidden LIVE fixture checks saved
+  Show, LIVE/NEXT, global GO tooltip and returns when VIEW==LIVE.
+- [ ] R2-5 native offscreen JUCE snapshots at 1180 and 1647 with
+  LIVE hidden behind tab overflow and END state; human visual review
+  for heading/ellipsis and transport spacing. Not DPI OS proof.
+- [ ] R2-6 version 0.9.72 in VERSION, CMake and CHANGELOG, Windows
+  version guard SUCCESS on exact final SHA.
+- [ ] R2-7 Windows Release and full CTest on exact final PR SHA:
+  0 failing, screenshot artifact uploaded; log checked.
+- [ ] R2-8 GStack/Matt source diff review: no changes to mixer, master,
+  cue row/grid geometry, Control Mapping, MIDI/OSC/LTC or engine, no
+  silent loss of the Recent Open/All shortcuts or Show state.
+- [ ] R2-9 physical Windows keyboard/IME/Narrator/DPI 100/125/150,
+  user/operator A/B identification time and actual hardware
+  Audio/MIDI/OSC/LTC: ND/NOT RUN; not ready-for-LIVE.
+- [ ] R2-10 modal Esc/PANIC issue #191 separately unresolved.
 
-## Review routing
+## Tests and rollback
 
-- Matt Pocock: test seam = existing pure calculateWorkspaceLayout
-  and actual JUCE MainComponent fields; standards/spec review after.
-- GStack Engineering: inspect ownership and modal/focus/LIVE regressions.
-- Taste + UI/UX Pro Max: hierarchy/content over decoration; no
-  website-only patterns, not another palette pass.
-- Emil Design Engineering/Break UI: long names, 1180/1647/1920/3840,
-  empty project, MIDI dual actions, OSC/Control single action,
-  Inspector collapsed, short 820px height.
-- Unlazy: mark PASS only with exact commit-bound GitHub CI/log output;
-  never execute inherited CHECK scripts/hook without explicit approval.
-
-## Gates
-
-- [x] R1 baseline, canonical visual spec, feature parity, window min
-  size and current Inspector source examined; issue #193 opened.
-- [ ] R2 document inventory of every visible native editor/callback/
-  tooltip and conditional type/action; preserve in new bounds.
-- [ ] R3 native implementation: one pure layout model with no
-  duplicate paint/resized coordinates, no blanket inspector scale,
-  accessible label and textbox sizes; no new UI shell/HTML.
-- [ ] R4 tests: new pure rectangle assertions at 1180x820, 1440x900,
-  1647x895, 1920x1080, ultrawide plus JUCE component bounds,
-  visibility/selection/non-overlap, collapsed rail, v10 state.
-  Expected: fail on old layout because fields are scaled and notes
-  short; pass on new layout (actual red/green run required for TDD claim).
-- [ ] R5 screenshot output: native JUCE off-screen snapshots at
-  1180x820 and 1647x895 with each type (audio/MIDI/OSC/Control),
-  plus a compact project and heavy cue matrix. Compare to user-supplied
-  baseline and inspect PNGs; these do NOT prove Windows DPI.
-- [ ] R6 Windows Release + all CTest on exact PR SHA: SUCCESS, 0 failed,
-  diagnostics for specific N4.2 tests, screenshots artifact uploaded.
-- [ ] R7 VERSION.txt and CMakeLists.txt 0.9.70 and CHANGELOG entry,
-  version guard SUCCESS on exact head.
-- [ ] R8 source diff review: Master and Cue Grid geometry unchanged,
-  no lost functionality, selection, focus/IME/keyboard and cue notes
-  persistence; links to exact PR patch.
-- [ ] R9 Windows DPI 100/125/150 with physical mouse/keyboard,
-  Narrator, long Unicode names, external Audio/MIDI/OSC/LTC,
-  timing and operator A/B latency: **NOT RUN** until human bench.
-- [ ] R10 unresolved issue #191 modal PopupMenu Esc/PANIC remains
-  separate; no certified readiness LIVE.
-
-## Rollback
-
-Small draft PR, no automatic merge. Revert the PR or revert the
-InspectorContentLayout call sites, restoring the previous coordinates.
-No JSON migrations or changes to external device behavior.
+Test seams are pure calculateWorkspaceLayout() for geometry,
+MainComponent paint/native controls and existing RQ001 T03 fixture
+for VIEW/LIVE/GO identity. No untrusted CHECK or inherited scripts
+executed. Candidate CI checks are from repository's existing
+Windows Release / Version workflows, whose pass/fail must be read
+from exact run. Rollback: revert focused draft PR before or after
+manual merge; no persisted schema migration or output behavior change.

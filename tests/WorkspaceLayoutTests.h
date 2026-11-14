@@ -2,6 +2,67 @@
 #include "WorkspaceLayout.h"
 
 void workspaceLayoutTests() {
+    test("R2 sidebar LIVE/VIEW status clears recent list and transport hitboxes",[] {
+        for(const auto size:std::initializer_list<juce::Point<int>>{
+                {1180,820},{1440,900},{1647,895},{1920,1080},
+                {3840,1080}}) {
+            WorkspaceLayoutInput input;
+            input.width=size.x;input.height=size.y;
+            const auto g=calculateWorkspaceLayout(input);
+            const auto& s=g.sidebarOperator;
+            const juce::Rectangle<int> go{14,size.y-282,152,48};
+            const juce::Rectangle<int> panic{14,size.y-228,152,48};
+            check(s.card==juce::Rectangle<int>(12,size.y-402,156,114) &&
+                  s.recentBottom<=s.card.getY()-10 &&
+                  s.recentBottom>=218+62 &&
+                  s.card.getBottom()+6<=go.getY() &&
+                  go.getBottom()<=panic.getY() &&
+                  s.card.getRight()<=180,
+                  "R2 status overlaps Recent Projects, GO/PANIC, or sidebar edge");
+            check(s.liveHeading.getRight()<s.liveLocator.getX() &&
+                  s.liveHeading.getY()>=s.card.getY() &&
+                  s.liveName.getWidth()>=140 &&
+                  s.liveName.getBottom()<=s.nextHeading.getY() &&
+                  s.nextHeading.getRight()<=s.nextValue.getX() &&
+                  s.nextValue.getBottom()<s.dividerY &&
+                  s.viewHeading.getY()>s.dividerY &&
+                  s.viewHeading.getRight()<s.viewLocator.getX() &&
+                  s.viewName.getY()>=s.viewHeading.getBottom() &&
+                  s.viewName.getBottom()<=s.card.getBottom(),
+                  "R2 LIVE/GO/VIEW hierarchy overlaps or clips");
+        }
+    });
+    test("R2 native sidebar retains GO/PANIC and independent LIVE/VIEW state",[] {
+        MainComponent ui(false);
+        check(ui.setCuelistName(0,"Emergency Lighting - Live Control"),
+              "R2 LIVE fixture could not set its name");
+        ui.createCuelist();
+        check(ui.setCuelistName(1,"Emergency Lighting - Browse"),
+              "R2 VIEW fixture could not set its name");
+        check(ui.liveCuelistIndex()==0 && ui.show.activeCuelist==1 &&
+              ui.liveCuelistNameForUi()=="Emergency Lighting - Live Control",
+              "R2 viewing another Cuelist transferred LIVE ownership");
+        for(const auto size:std::initializer_list<juce::Point<int>>{
+                {1180,820},{1647,895},{1920,1080}}) {
+            ui.setSize(size.x,size.y);
+            auto* go=controlsV3::named(ui,"globalGo");
+            auto* panic=controlsV3::named(ui,"globalPanic");
+            auto* open=controlsV3::named(ui,"recentProjectOpen");
+            const auto g=calculateWorkspaceLayout({
+                size.x,size.y,0,467,1,72,62,184});
+            check(go && panic && open,
+                  "R2 native GO/PANIC or Recent Projects actions missing");
+            if(!go || !panic || !open)return;
+            check(go->getBounds()==juce::Rectangle<int>(14,size.y-282,152,48) &&
+                  panic->getBounds()==juce::Rectangle<int>(14,size.y-228,152,48) &&
+                  open->isVisible() &&
+                  open->getBottom()<=g.sidebarOperator.recentBottom &&
+                  ui.liveCuelistIndex()==0 &&
+                  ui.show.activeCuelist==1 &&
+                  ui.nextLiveGoCueForUi()=="01",
+                  "R2 resizing changed native transport targets or LIVE/VIEW/GO");
+        }
+    });
     test("N4.2 Inspector structural form is unscaled and non-overlapping",[] {
         for (const auto dimensions:std::initializer_list<juce::Point<int>>{
                 {1180,820},{1440,900},{1647,895},{1920,1080},

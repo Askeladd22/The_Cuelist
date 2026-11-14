@@ -13,6 +13,22 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.72] - 2026-11-14
+
+**RQ:** [#196](https://github.com/Askeladd22/The_Cuelist/issues/196) — R2 / redesign strutturale della gerarchia LIVE/NEXT/VIEW nella sidebar operatore.
+
+### UI/UX nativa JUCE
+- Sostituita la vecchia card ON DECK da 51px con una superficie di stato non interattiva da 114px: **LIVE / ON DECK** con nome e locator Lxx, **NEXT GLOBAL** con GO NN oppure END, e **VIEW / BROWSING** con locator separato quando la Cuelist visibile è diversa. Quando coincidono, mostra **VIEW = LIVE**.
+- Il nome LIVE passa da 94px a 140px utili; il nome VIEW ha la propria riga. Nessuna nuova azione di trasferimento LIVE e nessuna indicazione fittizia di playback.
+- Creato SidebarOperatorLayout nella geometria pura di WorkspaceLayout, riutilizzato in paint e resized per panel, label e margine dei Recent Projects. I progetti recenti mostrano meno righe inline alle altezze minime ma conservano **Open...** e **All**.
+- Conservati inalterati i pulsanti nativi GO/PANIC e le relative hitbox, lo stato VIEW/LIVE, il motore Audio/MIDI/OSC/LTC, schema JSON v10, Cue Grid, Master, Mixer, Inspector e Timeline.
+- Aggiunti nomi JUCE stabili **globalGo** e **globalPanic** agli stessi controlli esistenti per verifiche e accessibilità.
+
+### Prove e gate
+- Nuovi test geometrici e test dei reali controlli JUCE a 1180/1440/1647/1920/3840. Aggiornate le acquisizioni T03B e T04 ai rettangoli condivisi, evitando coordinate legacy; snapshot nativi T03 con LIVE hidden a 1180, 1647 e 1920.
+- Baseline: main 0.9.71, PR #195 integrata. **Windows Release/CTest e guard della PR 0.9.72 ancora ND fino al workflow sullo SHA finale.**
+- **ND:** DPI fisici Windows, Narrator/IME, prove operatore A/B, Audio/MIDI/OSC/LTC con hardware esterno e issue #191 Esc/PANIC modale. Nessuna certificazione ready-for-LIVE.
+- **Rollback:** revert della PR R2; nessuna migrazione del formato di progetto e nessun merge automatico.
 ## [0.9.71] - 2026-11-14
 
 **Correzione regressione test N4.2** della PR [#194](https://github.com/Askeladd22/The_Cuelist/pull/194), già integrata in `main` v0.9.70.

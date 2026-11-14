@@ -552,6 +552,11 @@ int main() {
             // side-by-side inspection of the revised native JUCE labels.
             capture(1180,820,"interface-rq001-t03b-live-hidden-1180.png");
             capture(1920,1080,"interface-rq001-t03b-live-visible-1920.png");
+            // R2: same real JUCE state, three logical workspace sizes.
+            // LIVE=L01, VIEW=L09 and global NEXT GO=02 are distinct.
+            capture(1180,820,"interface-r2-live-view-1180.png");
+            capture(1647,895,"interface-r2-live-view-1647.png");
+            capture(1920,1080,"interface-r2-live-view-1920.png");
         });
         test("RQ001 T04: native screenshots of two similarly named hidden LIVE Cuelists", [&] {
             MainComponent t04(false);

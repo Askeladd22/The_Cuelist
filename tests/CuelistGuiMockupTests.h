@@ -482,11 +482,13 @@ void cuelistGuiMockupTests() {
               ui.liveCuelistNameForUi()=="Pre-show" &&
               ui.nextLiveGoCueForUi()=="02",
               "T03B: VIEW switched the LIVE label or the armed GO target");
-        const auto snapshot=ui.createComponentSnapshot(
-            {12,ui.getHeight()-339,156,51});
-        check(snapshot.isValid() && snapshot.getWidth()==156 &&
-              snapshot.getHeight()==51,
-              "T03B: native ON DECK surface cannot be rendered");
+        const auto sidebar=calculateWorkspaceLayout({
+            ui.getWidth(),ui.getHeight()}).sidebarOperator;
+        const auto snapshot=ui.createComponentSnapshot(sidebar.card);
+        check(snapshot.isValid() &&
+              snapshot.getWidth()==sidebar.card.getWidth() &&
+              snapshot.getHeight()==sidebar.card.getHeight(),
+              "T03B: native LIVE/NEXT/VIEW status surface cannot be rendered");
         ui.goNext();
         ui.engine.collectRetired();
         ui.engine.processBlock(nullptr,0,1,100);
@@ -495,6 +497,22 @@ void cuelistGuiMockupTests() {
               ui.liveCuelistNameForUi()=="Pre-show" &&
               ui.nextLiveGoCueForUi()=="END",
               "T03B: GO from VIEW failed to refresh LIVE target/end-of-sequence");
+        // R2: verify the rendered NEXT GLOBAL region actually changes
+        // from GO 02 to END, not only the underlying source-of-truth value.
+        const auto ended=ui.createComponentSnapshot(sidebar.card);
+        const auto nextLocal=sidebar.nextValue.translated(
+            -sidebar.card.getX(),-sidebar.card.getY());
+        bool nextPaintChanged=false;
+        if(ended.isValid() && snapshot.isValid()) {
+            for(int y=nextLocal.getY();y<nextLocal.getBottom() &&
+                                  !nextPaintChanged;++y)
+                for(int x=nextLocal.getX();x<nextLocal.getRight();++x)
+                    if(snapshot.getPixelAt(x,y)!=ended.getPixelAt(x,y)) {
+                        nextPaintChanged=true;break;
+                    }
+        }
+        check(nextPaintChanged,
+              "R2 sidebar still paints the old global GO after END");
         check(ui.setCuelistName(0,"Pre-show renamed") &&
               ui.liveCuelistNameForUi()=="Pre-show renamed" &&
               overflow->getTooltip().contains("Pre-show renamed"),
@@ -647,7 +665,8 @@ void cuelistGuiMockupTests() {
         check(ui.liveCuelistNameForUi()==left &&
               overflow->getTooltip().contains(left),
               "T04: long LIVE name A lost its full operator identity");
-        const auto bounds=juce::Rectangle<int>(129,ui.getHeight()-333,31,16);
+        const auto bounds=calculateWorkspaceLayout({
+            ui.getWidth(),ui.getHeight()}).sidebarOperator.liveLocator;
         const auto imageA=ui.createComponentSnapshot(bounds);
         check(imageA.isValid(),"T04: first native locator cannot be rendered");
 
