@@ -2,7 +2,7 @@
 #include "WorkspaceLayout.h"
 
 void workspaceLayoutTests() {
-    test("R2 sidebar LIVE/VIEW status clears recent list and transport hitboxes",[] {
+    test("R5 compact sidebar LIVE/NEXT status clears recent list and transport hitboxes",[] {
         for(const auto size:std::initializer_list<juce::Point<int>>{
                 {1180,820},{1440,900},{1647,895},{1920,1080},
                 {3840,1080}}) {
@@ -12,24 +12,20 @@ void workspaceLayoutTests() {
             const auto& s=g.sidebarOperator;
             const juce::Rectangle<int> go{14,size.y-282,152,48};
             const juce::Rectangle<int> panic{14,size.y-228,152,48};
-            check(s.card==juce::Rectangle<int>(12,size.y-402,156,114) &&
+            check(s.card==juce::Rectangle<int>(12,size.y-368,156,80) &&
                   s.recentBottom<=s.card.getY()-10 &&
                   s.recentBottom>=218+62 &&
                   s.card.getBottom()+6<=go.getY() &&
                   go.getBottom()<=panic.getY() &&
                   s.card.getRight()<=180,
-                  "R2 status overlaps Recent Projects, GO/PANIC, or sidebar edge");
+                  "R5 compact LIVE/NEXT overlaps Recent, GO/PANIC or sidebar edge");
             check(s.liveHeading.getRight()<s.liveLocator.getX() &&
                   s.liveHeading.getY()>=s.card.getY() &&
                   s.liveName.getWidth()>=140 &&
                   s.liveName.getBottom()<=s.nextHeading.getY() &&
                   s.nextHeading.getRight()<=s.nextValue.getX() &&
-                  s.nextValue.getBottom()<s.dividerY &&
-                  s.viewHeading.getY()>s.dividerY &&
-                  s.viewHeading.getRight()<s.viewLocator.getX() &&
-                  s.viewName.getY()>=s.viewHeading.getBottom() &&
-                  s.viewName.getBottom()<=s.card.getBottom(),
-                  "R2 LIVE/GO/VIEW hierarchy overlaps or clips");
+                  s.nextValue.getBottom()<=s.card.getBottom(),
+                  "R5 compact LIVE owner or global next GO overlaps/clips");
         }
     });
     test("R2 native sidebar retains GO/PANIC and independent LIVE/VIEW state",[] {
