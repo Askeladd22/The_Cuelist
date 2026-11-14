@@ -377,6 +377,19 @@ private:
     int scrollX=0;
     int masterRoutingChannels=-1, masterRoutingOutput=-1;
 };
+// The project name keeps JUCE Label's native double-click editor, Enter
+// commit and focus-loss behavior. Label itself consumes Esc only to cancel;
+// override its real TextEditor::Listener callback to preserve global PANIC.
+class PanicAwareProjectLabel final : public juce::Label {
+public:
+    std::function<void()> onEscapePanic;
+    void textEditorEscapeKeyPressed(juce::TextEditor& editor) override {
+        const bool wasEditing=isBeingEdited();
+        juce::Label::textEditorEscapeKeyPressed(editor);
+        // The base class may destroy the editor; never access it afterwards.
+        if (wasEditing && onEscapePanic) onEscapePanic();
+    }
+};
 class MainComponent final : public juce::Component, private juce::Timer {
 public:
     explicit MainComponent(bool startAudio = true);
@@ -598,7 +611,7 @@ private:
     void dispatchOperatorDeviceChoice(int choice,
         const juce::Array<juce::MidiDeviceInfo>& inputs,
         const juce::Array<juce::MidiDeviceInfo>& outputs);
-    juce::Label projectNameLabel;
+    PanicAwareProjectLabel projectNameLabel;
     enum class InlineRenameKind {none,cuelist,cue,column,cell};
     InlineRenameKind inlineRenameKind=InlineRenameKind::none;
     int inlineRenameIndex=-1,inlineRenameModelId=-1;
