@@ -1240,7 +1240,12 @@ CueMetricsOverlay::CueMetricsOverlay(MainComponent& parent):owner(parent) {
     addAndMakeVisible(bpmEditor);
     bpmEditor.setVisible(false);
     bpmEditor.onReturnKey=[this] { finishBpmEdit(true); };
-    bpmEditor.onEscapeKey=[this] { finishBpmEdit(false); };
+    bpmEditor.onEscapeKey=[this] {
+        // Cancel the uncommitted BPM, then invoke the global PANIC path.
+        // This native TextEditor consumes Escape before the parent sees it.
+        finishBpmEdit(false);
+        owner.stopAll();
+    };
     bpmEditor.onFocusLost=[this] {
         if (editingRowId>0 && !closingBpmEditor) finishBpmEdit(true);
     };
