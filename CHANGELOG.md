@@ -16,6 +16,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 ## [0.9.77] - 2026-11-14
 
 **Click Track crash mitigation — generated WAV Audio instead of new procedural playback.**
+
+### Audio e comportamento
 - The Click Track action renders a standard **mono 48 kHz / 16-bit WAV** into `Documents/The Cuelist/Generated Click`, loads it as regular Audio, and attaches it to the original cell. It no longer creates a new procedural `click` source.
 - Generate and preload before changing the model: invalid configuration, disk write, decode and 512 MB show-memory failures leave the original cell unchanged; incomplete/rejected WAV files are deleted. Existing file/cell content is never overwritten.
 - No selection or NEXT/LIVE ownership change is needed for generation; other running voices are preserved. Generated WAVs retain the tempo/accent pattern sampled at creation, not realtime retiming after later BPM edits.
