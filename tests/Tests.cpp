@@ -611,7 +611,19 @@ int main() {
             check(keyboard.keyPressed(juce::KeyPress{'5'}),
                   "UX03C visual fixture could not arm Delete");
             capture(1180,820,"interface-ux03c-delete-armed-1180.png");
-            check(keyboard.keyPressed(actions) && keyboard.keyPressed(actions),
+            capture(1920,1080,"interface-ux03f-delete-armed-1920.png");
+            check(keyboard.keyPressed(actions),
+                  "UX03F visual fixture could not exit armed Delete");
+            keyboard.show.columns[1].name=
+                "Very long MIDI control column name for legibility testing";
+            check(keyboard.keyPressed(actions) &&
+                  keyboard.keyPressed(juce::KeyPress{'5'}),
+                  "UX03F visual fixture could not arm long-name Delete");
+            capture(1180,820,"interface-ux03f-delete-long-1180.png");
+            check(keyboard.keyPressed(actions),
+                  "UX03F visual fixture could not exit long-name Delete");
+            keyboard.show.columns[1].name="MIDI cues";
+            check(keyboard.keyPressed(actions),
                   "UX03C visual fixture could not restore normal actions");
             capture(1920,1080,"interface-ux03c-actions-1920.png");
         });
