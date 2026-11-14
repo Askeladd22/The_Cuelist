@@ -22,9 +22,49 @@ callback test**, NOT a real Escape key delivery test; it cannot measure
 queuing delay or behavior in a focused modal popup. We do not enable
 nested JUCE modal loops (`JUCE_MODAL_LOOPS_PERMITTED=0` in CMake).
 Real Windows/HID delivery and external audio/MIDI/OSC/LTC stop time:
-**NOT RUN**, follow-up issue #191. The production code in the merged
-PR #190 is preserved unchanged in this corrective PR.
+**NOT RUN**, follow-up issue #191. Existing PR #190 production handlers
+remain unchanged; UX-04D adds only the native project-name Label Escape
+forwarding described below.
 
+
+## UX-04D: project-name native Label Escape gap (same draft PR #192)
+
+**Verified against project main@55a75314c512840d3bedc64a92e4442b6d8bf67a
+and pinned JUCE 8.0.12:**
+- `MainComponent::projectNameLabel` was a standard `juce::Label` with
+  `setEditable(false,true,false)`. Its internal editor is modal and
+  handles Esc through Label's virtual `textEditorEscapeKeyPressed`.
+- Exact [JUCE 8.0.12 Label implementation](https://github.com/juce-framework/JUCE/blob/8.0.12/modules/juce_gui_basics/widgets/juce_Label.cpp)
+  resets the pending text and calls `hideEditor(true)`, **without
+  forwarding Esc to MainComponent**. `onEditorHide` fires for Enter,
+  Esc and focus loss, so attaching PANIC there would cause spurious
+  emergency stops on ordinary project rename.
+- `onTextChange` fires for committed text, not Escape cancellation.
+  The `onEscapeKey` callback of the nested TextEditor is too late to
+  rely upon because Label's listener can destroy that editor first.
+- The safe intervention preserves the native JUCE Label's UI and
+  existing commit logic: a small derived `PanicAwareProjectLabel`
+  overrides the virtual TextEditor::Listener Escape method, calls
+  the base cancellation, then invokes the existing parent
+  `MainComponent::stopAll()` through a callback.
+- Source-derived hypothesis: a single first physical Escape while
+  this Label editor owns focus will now cancel the name and call PANIC;
+  the test proves only the **actual Label listener callback contract**.
+  A Windows OS-delivered key and audio/MIDI/OSC/LTC bench are **ND**.
+
+**Red-team and test plan:** a native test opens the real Label editor at
+1180/1920, enters a long unsaved name, seeds the engine PANIC indicator,
+calls the listener callback and asserts cancellation, Show/NEXT/LIVE
+stability, cleared indicator and no lingering editor; an ordinary
+focus-loss confirm must commit the name without stopping the show.
+The test does not replace an OS key event, Narrator/IME interaction,
+DPI scaling screenshots or downstream hardware measurement.
+
+**Compatibility:** double-click editing, project file path, schema JSON
+v10, audio callback and all existing control/transport semantics remain
+unchanged. Rollback: revert the UX-04D commit or PR; no migration.
+The modal `PopupMenu` and other DialogWindow focus risks remain in
+[issue #191](https://github.com/Askeladd22/The_Cuelist/issues/191).
 
 ## Scenario, operator and scope
 
