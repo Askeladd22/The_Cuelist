@@ -1605,10 +1605,12 @@ void MainComponent::resized() {
         ? viewport.getScrollBarThickness() : 0;
     cueHeaders.setBounds(geometry.cueHeaders.translated(leftScrollInset,0));
     cueHeaders.toFront(false);
+    // Move only the view-tab ordering arrows into the now-free lower
+    // header tier; no change to their movement/shortcut callbacks.
     cuelistMoveLeft.setBounds(
-        cueHeaders.getX()+CueGrid::nameWidth-146,cueHeaders.getY()+10,24,22);
+        cueHeaders.getX()+CueGrid::nameWidth-100,cueHeaders.getY()+40,24,22);
     cuelistMoveRight.setBounds(
-        cueHeaders.getX()+CueGrid::nameWidth-116,cueHeaders.getY()+10,24,22);
+        cueHeaders.getX()+CueGrid::nameWidth-70,cueHeaders.getY()+40,24,22);
     cuelistMoveLeft.toFront(false);
     cuelistMoveRight.toFront(false);
     // Place an independent 72px-high heading over every visible column.
