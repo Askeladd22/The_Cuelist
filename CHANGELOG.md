@@ -15,7 +15,7 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.65] - 2026-11-14
 
-**PR:** UX-03D — correzione della regressione CTest dopo la PR #185 (Taste + UI/UX Review + Unlazy).
+**PR:** [#186](https://github.com/Askeladd22/The_Cuelist/pull/186) (draft, senza merge automatico) — UX-03D dopo la PR #185 (Taste + UI/UX Review + Unlazy).
 
 ### Corretto
 - Il workflow Windows [#43526445383](https://github.com/Askeladd22/The_Cuelist/actions/runs/43526445383) della 0.9.64 ha compilato l'applicazione, ma CTest è fallito con **420.393 assertions, 1 failed test**: "UX03C: column keys preserve identity and require D confirmation".
