@@ -15,7 +15,7 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.67] - 2026-11-14
 
-**PR:** UX-03F / [issue #188](https://github.com/Askeladd22/The_Cuelist/issues/188) (Taste + UI/UX Review + Unlazy; PR in bozza).
+**PR:** [#189](https://github.com/Askeladd22/The_Cuelist/pull/189) (draft, senza merge automatico) / [issue #188](https://github.com/Askeladd22/The_Cuelist/issues/188) — UX-03F (Taste + UI/UX Review + Unlazy).
 
 ### Leggibilità della conferma Delete
 - I veri screenshot JUCE Windows a 1180×820 mostravano troncato `Press D to delete / repeating 5 does nothing` nella testata bloccata, larga circa 210 unità logiche in quella configurazione. Rischio: avviso operativo incompleto nello stato distruttivo.
