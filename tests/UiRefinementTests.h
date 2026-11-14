@@ -822,6 +822,10 @@ void uiRefinementTests() {
                   shaped<=(float)artificialWidth-24.0f,
                   "UX03F narrow-width hint is missing D or still clipped");
         }
+        // Panic and the final ID-specific confirmation are also exercised
+        // with the actual 1180px compact pinned-header geometry.
+        ui.setSize(1180,820);
+        ui.resized();
         ui.engine.acknowledgedCueId.store(923);
         check(ui.keyPressed(juce::KeyPress{juce::KeyPress::escapeKey}) &&
               ui.engine.acknowledgedCueId.load()==0 &&
