@@ -467,6 +467,15 @@ int main() {
             }
         };
         savePreview("interface-preview.png");
+        // N4.2: snapshots of the real native Inspector and child controls.
+        // Off-screen JUCE rasterization is NOT a Windows DPI test.
+        preview.setSize(1180,820);
+        savePreview("interface-n42-inspector-audio-1180.png");
+        preview.setSize(1647,895);
+        savePreview("interface-n42-inspector-audio-1647.png");
+        preview.setSize(1920,1080);
+        savePreview("interface-n42-inspector-audio-1920.png");
+        preview.setSize(1440,900);
         std::cerr << "VISUAL QA: initial snapshot" << std::endl;
         addColumn(preview.show,ColumnType::midi,"MIDI");
         addColumn(preview.show,ColumnType::osc,"OSC");
@@ -487,6 +496,11 @@ int main() {
         savePreview("interface-row-small.png");
         preview.setSize(1440,900);
         preview.select(0,1);
+        preview.setSize(1180,820);
+        savePreview("interface-n42-inspector-midi-1180.png");
+        preview.setSize(1647,895);
+        savePreview("interface-n42-inspector-midi-1647.png");
+        preview.setSize(1440,900);
         preview.editMidiClip();
         savePreview("interface-midi-editor.png");
         preview.closeMidiClip();
