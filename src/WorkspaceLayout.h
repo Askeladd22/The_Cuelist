@@ -21,6 +21,19 @@ struct WorkspaceLayoutInput {
     bool timelineVisible=true; // independent View toggle; no persisted Show change
 };
 
+// N4.2: one geometry contract for native Inspector labels and widgets.
+// All rectangles use MainComponent coordinates; no paint-only affine
+// transformation or second independent component scaling is required.
+struct InspectorContentLayout {
+    juce::Rectangle<int> inspectorTitle, cueIdentity, cellType;
+    juce::Rectangle<int> cueSection, cueNameCaption, cueNameField;
+    juce::Rectangle<int> bpmCaption, bpmField, rowLoop;
+    juce::Rectangle<int> cellSection, selectedColumn, cellNameCaption;
+    juce::Rectangle<int> cellNameField, gainCaption, gainField, dbSuffix;
+    juce::Rectangle<int> followToggle, loopToggle, editAction, importAction;
+    juce::Rectangle<int> oscDestinationHint, notesTitle, notesField;
+    int cueDividerY=0, cellDividerY=0, notesDividerY=0;
+};
 struct WorkspaceLayout {
     int editorX=0;
     int inspectorLeft=0;
@@ -46,6 +59,7 @@ struct WorkspaceLayout {
     // vertical transformation is applied to labels and component bounds.
     juce::Rectangle<int> inspectorCueCard;
     juce::Rectangle<int> inspectorCellCard;
+    InspectorContentLayout inspector;
     juce::Point<int> gridSize;
 
     juce::AffineTransform inspectorTransform() const noexcept;
