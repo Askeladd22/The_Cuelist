@@ -44,6 +44,22 @@ WorkspaceLayout calculateWorkspaceLayout(const WorkspaceLayoutInput& input) {
     result.inspectorLeft=result.editorX+16;
     result.inspectorInnerWidth=inspectorInnerWidth;
     result.inspectorScale=std::clamp((float)(input.height-232)/730.0f,0.72f,0.92f);
+    // R2 sidebar: the live status is larger and the recent-list height
+    // yields first. Global GO/PANIC controls remain at their original
+    // height-relative coordinates, with a six-pixel safety gap.
+    auto& sidebar=result.sidebarOperator;
+    const int statusY=input.height-402;
+    sidebar.card={12,statusY,156,114};
+    sidebar.recentBottom=statusY-10;
+    sidebar.liveHeading={20,statusY+7,101,16};
+    sidebar.liveLocator={125,statusY+7,35,16};
+    sidebar.liveName={20,statusY+25,140,22};
+    sidebar.nextHeading={20,statusY+51,87,17};
+    sidebar.nextValue={108,statusY+48,52,22};
+    sidebar.dividerY=statusY+76;
+    sidebar.viewHeading={20,statusY+80,108,16};
+    sidebar.viewLocator={125,statusY+80,35,16};
+    sidebar.viewName={20,statusY+96,140,17};
 
     // The resized dock is a user preference, not an unconditional demand for
     // screen space. At the minimum 820px window height a 400px editor would
