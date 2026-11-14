@@ -412,6 +412,7 @@ MainComponent::MainComponent(bool startAudio) {
         }
     };
     quickControlTargets.onRename=[this](int id){renameQuickLearnFunction(id);};
+    quickControlTargets.onEscapePanic=[this]{stopAll();};
     cancelQuickLearn.setVisible(false);
     quickControlTargets.onPick=[this](int functionId) {chooseQuickLearnTarget(functionId);};
     cancelQuickLearn.onClick=[this] {finishQuickLearn();status="Quick Learn ended.";repaint();};
