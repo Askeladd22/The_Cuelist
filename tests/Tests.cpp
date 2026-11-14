@@ -575,7 +575,8 @@ int main() {
                 controlsV3::named(t03,"returnToLiveCuelist"));
             check(returnLive && returnLive->isEnabled(),
                   "R5 snapshot fixture missing enabled return-to-LIVE control");
-            if (returnLive) returnLive->triggerClick();
+            if (returnLive) cueViewFixtures::click(*returnLive,
+                returnLive->getWidth()*.5f,returnLive->getHeight()*.5f);
             check(t03.show.activeCuelist==t03.liveCuelistIndex(),
                   "R5 screenshot fixture did not navigate to LIVE");
             capture(1180,820,"interface-r5-live-1180.png");
