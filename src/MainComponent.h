@@ -250,6 +250,9 @@ public:
     void mouseMove(const juce::MouseEvent&) override;
     void mouseWheelMove(const juce::MouseEvent&,const juce::MouseWheelDetails&) override;
     int gridXAt(int localX) const;
+    // Actual JUCE glyph widths select a complete, non-ellipsized Delete
+    // instruction for the narrow pinned header; also used by native tests.
+    static juce::String armedDeleteHintForWidth(int headerWidth);
 private:
     MainComponent& owner;
     // Consume the rest of a double/triple-click sequence when its first

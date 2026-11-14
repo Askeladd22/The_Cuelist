@@ -769,6 +769,78 @@ void uiRefinementTests() {
               "UX03E direct mouseDoubleClick bypassed visible action strip");
     });
 
+    test("UX03F: armed Delete copy fits compact and wide native headers",[] {
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::midi,
+                  "Very long MIDI output column with an unusually long name");
+        ui.setSize(1180,820);
+        ui.resized();
+        check(ui.select(0,1),"UX03F could not select long-named MIDI target");
+        auto* pinned=cueViewFixtures::find<PinnedColumnHeaders>(ui);
+        check(pinned!=nullptr,"UX03F pinned column headers missing");
+        if (!pinned) return;
+        const juce::KeyPress actions{juce::KeyPress::F10Key,
+                                      juce::ModifierKeys::shiftModifier,0};
+        const int targetId=ui.show.columns[1].id;
+        const int live=ui.liveCuelistIndex();
+        const auto original=encodeShow(ui.show);
+        check(ui.keyPressed(actions) && ui.keyPressed(juce::KeyPress{'5'}),
+              "UX03F cannot arm Delete in the compact native header");
+
+        const auto checkLegible=[&](const char* context) {
+            const int width=pinned->getWidth();
+            const auto text=PinnedColumnHeaders::armedDeleteHintForWidth(width);
+            const auto shaped=juce::GlyphArrangement::getStringWidth(
+                font(11.0f,true),text);
+            const bool complete=text.startsWith("D DELETE") &&
+                                text.contains("5 IGNORED");
+            const bool fits=shaped<=(float)width-24.0f;
+            const auto diagnostic=juce::String(context)+": width="+
+                juce::String(width)+", shaped="+juce::String(shaped)+
+                ", hint=["+text+"]";
+            check(complete && fits,diagnostic.toRawUTF8());
+        };
+        checkLegible("UX03F compact 1180");
+        check(pinned->getDescription().contains("Press D") &&
+              pinned->getDescription().contains("not 5 again"),
+              "UX03F complete Delete safety instructions are not accessible");
+        check(ui.keyPressed(juce::KeyPress{'5'}) &&
+              encodeShow(ui.show)==original &&
+              ui.show.columns.size()==2 &&
+              ui.liveCuelistIndex()==live,
+              "UX03F repeating 5 removed a column or changed LIVE");
+
+        ui.setSize(1920,1080);
+        ui.resized();
+        checkLegible("UX03F wide 1920");
+        for (int artificialWidth : {130,170,210}) {
+            const auto hint=PinnedColumnHeaders::armedDeleteHintForWidth(
+                artificialWidth);
+            const auto shaped=juce::GlyphArrangement::getStringWidth(
+                font(11.0f,true),hint);
+            check(hint.startsWith("D") &&
+                  shaped<=(float)artificialWidth-24.0f,
+                  "UX03F narrow-width hint is missing D or still clipped");
+        }
+        // Panic and the final ID-specific confirmation are also exercised
+        // with the actual 1180px compact pinned-header geometry.
+        ui.setSize(1180,820);
+        ui.resized();
+        ui.engine.acknowledgedCueId.store(923);
+        check(ui.keyPressed(juce::KeyPress{juce::KeyPress::escapeKey}) &&
+              ui.engine.acknowledgedCueId.load()==0 &&
+              encodeShow(ui.show)==original &&
+              ui.liveCuelistIndex()==live,
+              "UX03F compact Delete state blocked Esc/PANIC");
+        check(ui.keyPressed(actions) &&
+              ui.keyPressed(juce::KeyPress{'5'}) &&
+              ui.keyPressed(juce::KeyPress{'D'}) &&
+              ui.show.columns.size()==1 &&
+              ui.show.columns[0].id!=targetId &&
+              ui.liveCuelistIndex()==live,
+              "UX03F D failed to delete the captured ID safely");
+    });
+
     test("UX02: neutral audio import does not borrow the transport GO role",[] {
         MainComponent ui(false);
         ui.setAppearanceTheme(palette::Appearance::industrialOrange);
