@@ -261,6 +261,11 @@ void utilityPolishTests() {
         check(master && fader && fader->isColumnReadableScale() &&
               !master->isColumnReadableScale(),
               "N5.3 native Audio column scale or original Master default lost");
+        check(fader && fader->getTooltip().contains("gain (dB)") &&
+              fader->getTooltip().contains("peaks (dBFS)") &&
+              fader->getTooltip().contains("Shift+wheel") &&
+              master && master->getTooltip().contains("MASTER AUDIO"),
+              "N5.4 Audio fader lost gain-vs-peak guidance or altered Master tooltip");
         check(CueGrid::columnWidth==152 && first->getWidth()==152 &&
               fader->getX()==7 && fader->getWidth()==92 &&
               pan->getWidth()==49 && pan->getX()==92 &&

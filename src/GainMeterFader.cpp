@@ -108,6 +108,16 @@ void GainMeterFader::paint(juce::Graphics& g) {
         g.setColour(tick==0 ? palette::text.withAlpha(.85f)
                             : palette::muted.withAlpha(.66f));
         g.drawHorizontalLine((int)std::round(y),42.0f,major ? 50.0f : 46.0f);
+        if(columnReadableScale && tick==-60 && visibleColumnLabels[8]) {
+            // The caption is lifted clear of MUTE. A quiet L-shaped leader
+            // ties it back to the *actual* silence tick, outside the -48
+            // intermediate tick (which ends at x=50). This is an annotation,
+            // not a new gain/meter rail or a change in dB calibration.
+            constexpr float leaderX=51.5f;
+            g.setColour(palette::muted.withAlpha(.70f));
+            g.drawLine(50.0f,y,leaderX,y,1.0f);
+            g.drawLine(leaderX,y-columnSilenceCaptionLift,leaderX,y,1.0f);
+        }
         // For per-column strips, labels are picked by semantic importance
         // rather than highest-to-lowest order: 0 dB and -infinity remain
         // visible at supported compact heights. Master uses the unchanged

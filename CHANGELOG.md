@@ -13,6 +13,20 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.75] - 2026-11-14
+
+**N5.4 — Annotazione del silenzio digitale e terminologia audio:** [issue #202](https://github.com/Askeladd22/The_Cuelist/issues/202).
+
+### UI/UX nativa JUCE
+- La prima implementazione N5.3 ha mantenuto la tacca `−∞` ma ha sollevato il testo di 11px per evitare la collisione con MUTE. Aggiunto un piccolo **collegamento a L** dalla tacca effettiva alla didascalia `−∞`, visibile esclusivamente nelle strip di colonna Audio e collocato oltre le tacche intermedie: non rappresenta un nuovo meter.
+- Il tooltip del fader di colonna chiarisce che il cursore regola il **gain relativo (dB)**, mentre i meter stereo L/R indicano i **picchi del segnale (dBFS)**. Specificati wheel a passi di 0,5 dB, Shift+wheel a 0,1 dB e reset con doppio clic.
+- **Il Master Audio mantiene disegno e tooltip originali**. Non cambiano fader/cursore, posizione delle tacche, dB↔Y, peak hold, MUTE/PAN, routing, Quick Learn, GO/PANIC/VIEW/LIVE o .cuelist JSON v10.
+
+### QA e rollback
+- Aggiunti test del tooltip reale della colonna rispetto al Master e dell'annotazione nella modalità expand, assicurando lo stesso rendering della modalità compact. Snapshot JUCE 1180×820, 1647×895, 1920×1080 per confronto pixel col Master precedente.
+- **Da verificare sul commit finale:** Windows Release/CTest, screenshot e guard VERSION/CMake/CHANGELOG. **ND** per DPI fisici, Narrator/IME, test operatori e banco hardware audio/MIDI/OSC/LTC; verde CI ≠ ready-for-LIVE.
+- Rollback mediante revert della PR draft v0.9.75, nessuna migrazione di progetti o merge automatico.
+
 ## [0.9.74] - 2026-11-14
 
 **N5.3 — Scala fader/meter delle sole colonne Audio:** [issue #200](https://github.com/Askeladd22/The_Cuelist/issues/200).

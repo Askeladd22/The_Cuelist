@@ -165,6 +165,41 @@ void gainMeterFaderTests() {
         check(unchanged && callbacks==0,
               "N5.3 switching back changed the original Master pixels");
     });
+    test("N5.4 silence caption leader renders only on expanded Audio columns",[] {
+        using namespace cuelist;
+        GainMeterFader fader;
+        fader.setSize(92,195);
+        const auto master=fader.createComponentSnapshot(fader.getLocalBounds());
+        fader.setColumnReadableScale(true);
+        const auto column=fader.createComponentSnapshot(fader.getLocalBounds());
+        const int silenceY=fader.getHeight()-48;
+        bool connected=false;
+        if(master.isValid() && column.isValid()) {
+            // At x=51 the leader lies outside the intermediate scale
+            // ticks (which end at x=50). Its 1px stroke should be new
+            // ink between the raised label and the actual bottom tick.
+            for(int y=silenceY-8;y<silenceY-2;++y)
+                connected=connected ||
+                    master.getPixelAt(51,y)!=column.getPixelAt(51,y);
+        }
+        check(connected && fader.getGainDb()==0.0f &&
+              fader.getNumChildComponents()==0,
+              "N5.4 silence endpoint is still visually detached from its tick");
+        fader.setCompact(true);
+        fader.setSize(34,195);
+        const auto compactColumn=fader.createComponentSnapshot(fader.getLocalBounds());
+        fader.setColumnReadableScale(false);
+        const auto compactDefault=fader.createComponentSnapshot(fader.getLocalBounds());
+        bool unchanged=compactColumn.isValid() && compactDefault.isValid();
+        if(unchanged)
+            for(int y=0;y<compactColumn.getHeight()&&unchanged;++y)
+                for(int x=0;x<compactColumn.getWidth();++x)
+                    if(compactColumn.getPixelAt(x,y)!=compactDefault.getPixelAt(x,y)){
+                        unchanged=false;break;
+                    }
+        check(unchanged,
+              "N5.4 added decorative ink to the compact fader or Master path");
+    });
     test("N5.2 flat meter rails retain live stereo signal and readable fader cap",[] {
         using namespace cuelist;
         auto different=[](const juce::Image& a,const juce::Image& b) {
