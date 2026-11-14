@@ -103,6 +103,12 @@ void gainMeterFaderTests() {
                       "N5.3 a middle tick displaced 0 dB or -infinity");
                 check((ceiling!=0.f || !labels[0]),
                       "N5.3 a +6 dB caption was drawn above a zero ceiling");
+                const auto captionY=[&](int tick) {
+                    const float y=GainMeterFader::yForDb(
+                        (float)tick,top,bottom,ceiling);
+                    return tick==-60
+                        ? y-GainMeterFader::columnSilenceCaptionLift : y;
+                };
                 for(int i=0;i<9;++i) {
                     if(!labels[(size_t)i]) continue;
                     check((float)ticks[i]<=ceiling &&
@@ -114,10 +120,7 @@ void gainMeterFaderTests() {
                     for(int j=i+1;j<9;++j) {
                         if(!labels[(size_t)j]) continue;
                         const float delta=std::abs(
-                            GainMeterFader::yForDb((float)ticks[i],
-                                                      top,bottom,ceiling)-
-                            GainMeterFader::yForDb((float)ticks[j],
-                                                      top,bottom,ceiling));
+                            captionY(ticks[i])-captionY(ticks[j]));
                         check(delta>=13.49f,
                               "N5.3 two compact scale captions overlap");
                     }
