@@ -1127,18 +1127,33 @@ void PinnedColumnHeaders::mouseDown(const juce::MouseEvent& e) {
     if (!e.mods.isLeftButtonDown() || e.mods.isPopupMenu()) return;
     if (e.y<0 || e.y>=CueGrid::headerHeight) return;
     if (owner.columnKeyboardActionsOpen) {
-        // The visual action strip obscures the underlying icons. A click
-        // here may dismiss it, but MUST NOT fall through to hidden Delete.
+        // The action strip visually covers the underlying columns. Consume
+        // the entire multi-click gesture, not just its first mouseDown:
+        // JUCE may deliver a separate mouseDoubleClick on the second press.
+        suppressOverlayDismissalMultiClick=true;
         owner.dismissSelectedColumnKeyboardActions();
         return;
+    }
+    if (suppressOverlayDismissalMultiClick) {
+        if (e.getNumberOfClicks()>1) return; // same double/triple click
+        suppressOverlayDismissalMultiClick=false; // fresh click gesture
     }
     owner.grabKeyboardFocus();
     owner.grid.clickColumnHeader(gridXAt(e.x),e.y,
                                  e.getNumberOfClicks(),e.getScreenPosition());
 }
 void PinnedColumnHeaders::mouseDoubleClick(const juce::MouseEvent& e) {
-    if (e.mods.isLeftButtonDown() && !e.mods.isPopupMenu())
-        owner.grid.doubleClickColumnHeader(gridXAt(e.x),e.y);
+    if (!e.mods.isLeftButtonDown() || e.mods.isPopupMenu()) return;
+    if (owner.columnKeyboardActionsOpen) {
+        // Defensive for a native double-click arriving without an earlier
+        // mouseDown callback (and for direct test event injection).
+        suppressOverlayDismissalMultiClick=true;
+        owner.dismissSelectedColumnKeyboardActions();
+        return;
+    }
+    if (suppressOverlayDismissalMultiClick && e.getNumberOfClicks()>1)
+        return;
+    owner.grid.doubleClickColumnHeader(gridXAt(e.x),e.y);
 }
 void PinnedColumnHeaders::mouseMove(const juce::MouseEvent& e) {
     if (e.y<0 || e.y>=CueGrid::headerHeight) {
