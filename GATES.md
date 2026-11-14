@@ -2,10 +2,11 @@
 
 BASE: `main@99b3f77ff3805c5f4580c576cf48b46fabe34aa2`,
 VERSION.txt `0.9.67`, JSON file schema v10.
-SCOPE: Three existing native TextEditor inline flows; no new controls,
+SCOPE: Four existing native TextEditor inline flows; no new controls,
 modal workarounds, changes to root keyboard handler or audio thread.
 OWNS: `GATES.md`, `src/MainComponent.cpp`,
 `src/CueOperations.cpp`, `src/CueViews.cpp`, `src/Timeline.cpp`,
+`src/QuickControlTargets.h`,
 `tests/UiRefinementTests.h`, `docs/complete-user-guide.md`,
 `docs/research/RQ-UX04-ESC-PANIC-FOCUS.md`,
 `VERSION.txt`, `CMakeLists.txt`, `CHANGELOG.md`.
@@ -27,35 +28,39 @@ OWNS: `GATES.md`, `src/MainComponent.cpp`,
 ## Problem and falsifiable hypothesis
 
 The parent MainComponent::keyPressed(Escape) calls stopAll(), which invokes
-engine.panic() and clears MIDI/OSC output. But three inline TextEditors have
-setEscapeAndReturnKeysConsumed(true) and their onEscapeKey handlers only
-cancel local editing:
+engine.panic() and clears MIDI/OSC output. Three explicit inline
+TextEditors setEscapeAndReturnKeysConsumed(true) and only cancel on Esc;
+a fourth Quick Learn editor inherits JUCE TextEditor's consumed-Escape
+default and also cancels without panic:
 - MainComponent::inlineNameEditor for Cuelist/cue/column/cell names;
 - CueMetricsOverlay::bpmEditor;
-- Timeline::markerEditor for name, BPM and conversions.
+- Timeline::markerEditor for name, BPM and conversions;
+- QuickControlTargets::renameEditor for Quick Learn function names.
+The fourth path was surfaced by the GStack counterexample audit.
 According to official JUCE TextEditor documentation, consumed Escape
 does not propagate to parent. These specific paths are source-verified;
 physical Windows playback reproduction is ND.
 
 H-UX04A: calling the same MainComponent::stopAll() *after* cancelling the
-three edits sends one PANIC without committing any pending name/tempo
+four edits sends one PANIC without committing any pending name/tempo
 changes. A regression test must assert editor closed, unsaved edits
 discarded, unchanged saved Show and LIVE, and acknowledgedCueId cleared.
 Contrast against normal Enter still committing the same editors.
 
 ## Gates
 
-- [x] G1 source+spec: confirmed 3 callbacks, root stopAll,
+- [x] G1 source+spec: confirmed 4 consumed inline-edit paths, root stopAll,
   test fixtures and official JUCE TextEditor reference;
   https://docs.juce.com/master/classjuce_1_1TextEditor.html
 - [ ] G2 regression: test actual TextEditor::keyPressed(Escape) for
-  name/BPM/timeline marker, assert no pending changes, ack cleared,
+  name/BPM/timeline marker/Quick Learn, assert no pending changes, ack cleared,
   stable LIVE and model; Enter remains unaffected. Tests would
   fail on old main because ack stays nonzero.
   CHECK: GitHub Windows Release CTest for PR head (no local check approved).
   EXPECT: CuelistTests PASS and zero failed tests.
-- [ ] G3 implementation: only three escape handlers forward stopAll,
-  after cancel; no duplicate PANIC and no audio-thread changes;
+- [ ] G3 implementation: three existing handlers forward stopAll;
+  QuickControlTargets forwards via an explicit owner callback; all after
+  cancel, no duplicate PANIC and no audio-thread changes;
   tooltip/user guide accurately documents Esc cancel+PANIC.
   EVIDENCE: reviewed diff and CTest.
 - [ ] G4 code review: standards/spec and GStack red-team, no
@@ -70,7 +75,7 @@ Contrast against normal Enter still committing the same editors.
   EVIDENCE: ND; CI green != ready-for-LIVE.
 - [ ] G7 related-modal audit: document remaining PopupMenu/LaunchOptions
   paths and do NOT claim Esc/PANIC fixed in native modal windows.
-  EVIDENCE: docs/research RQ, unresolved follow-up issue if needed.
+  EVIDENCE: docs/research RQ and issue #191 (modal focus audit).
 
 ## Stop conditions, counterexamples and rollback
 
