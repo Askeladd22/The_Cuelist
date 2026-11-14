@@ -35,6 +35,9 @@ void workspaceLayoutTests() {
                   i.importAction.getBottom()<i.notesDividerY &&
                   i.notesTitle.getBottom()<=i.notesField.getY(),
                   "N4.2 Inspector Cue, Cell, action and notes sections overlap");
+            check(i.cellSection.getRight()<=i.selectedColumn.getX() &&
+                  i.selectedColumn.getRight()<=g.inspectorPanel.getRight(),
+                  "N4.2 Inspector column heading overlaps section title");
             check(i.notesField.getHeight()>=70 &&
                   i.notesField.getBottom()<=g.inspectorPanel.getBottom() &&
                   i.notesField.getX()>=g.inspectorPanel.getX() &&
