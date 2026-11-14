@@ -85,7 +85,7 @@ void gainMeterFaderTests() {
         near(peak[0],.68f);near(peak[1],.68f); // mono duplicates to stereo
         near(engine.consumeColumnStereoPeak(columnId)[0],0);
     });
-    test("Fader wheel steps are calibrated, precise and respect silence"[] {
+    test("Fader wheel steps are calibrated, precise and respect silence",[] {
         GainMeterFader fader;
         near(GainMeterFader::wheelTargetDb(-12.0f,1,false),-11.5);
         near(GainMeterFader::wheelTargetDb(-12.0f,-1,false),-12.5);
