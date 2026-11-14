@@ -472,10 +472,13 @@ int main() {
         preview.setSize(1180,820);
         savePreview("interface-n42-inspector-audio-1180.png");
         savePreview("interface-n53-audio-meter-1180.png");
+        savePreview("interface-n54-annotated-gain-1180.png");
         preview.setSize(1647,895);
         savePreview("interface-n42-inspector-audio-1647.png");
         savePreview("interface-n53-audio-meter-1647.png");
+        savePreview("interface-n54-annotated-gain-1647.png");
         preview.setSize(1920,1080);
+        savePreview("interface-n54-annotated-gain-1920.png");
         savePreview("interface-n42-inspector-audio-1920.png");
         preview.setSize(1440,900);
         std::cerr << "VISUAL QA: initial snapshot" << std::endl;
