@@ -920,6 +920,38 @@ void uiRefinementTests() {
                   ui.engine.acknowledgedCueId.load()==0,
                   "UX04A marker Esc discarded text but missed PANIC");
         }
+
+        // Red-team counterexample: Quick Learn's inline function rename
+        // does not share MainComponent's inlineNameEditor. Its TextEditor
+        // consumes Escape by default and must also reach global PANIC.
+        {
+            MainComponent ui(false);
+            ui.beginQuickLearn(false);
+            auto* targets=cueViewFixtures::find<QuickControlTargets>(ui);
+            check(targets && targets->isVisible(),
+                  "UX04A Quick Learn native targets missing");
+            if (!targets) return;
+            targets->setEntries({{42,"Fixture function","MIDI / OSC target"}});
+            bool committed=false;
+            targets->beginInlineRename(42,"Original function",
+                [&committed](const juce::String&) {committed=true;});
+            auto* editor=cueViewFixtures::find<juce::TextEditor>(*targets);
+            check(editor && editor->isVisible(),
+                  "UX04A Quick Learn rename editor did not open");
+            if (!editor) return;
+            const auto saved=encodeShow(ui.show);
+            const int live=ui.liveCuelistIndex();
+            const int next=ui.nextCueIndex();
+            editor->setText("Pending function",juce::dontSendNotification);
+            ui.engine.acknowledgedCueId.store(923);
+            editor->keyPressed(esc);
+            check(!editor->isVisible() && !committed &&
+                  encodeShow(ui.show)==saved &&
+                  ui.liveCuelistIndex()==live && ui.nextCueIndex()==next &&
+                  ui.engine.acknowledgedCueId.load()==0,
+                  "UX04A Quick Learn rename Esc intercepted PANIC");
+            ui.finishQuickLearn();
+        }
     });
 
     test("UX02: neutral audio import does not borrow the transport GO role",[] {
