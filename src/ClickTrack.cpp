@@ -1,4 +1,5 @@
 #include "ClickTrack.h"
+#include <juce_audio_formats/juce_audio_formats.h>
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -88,5 +89,76 @@ std::shared_ptr<const ClickPulseBank> makeClickPulseBank(ClickSound sound) {
         pulse->accented[(size_t)i]=pulseAt(sound,time,(unsigned)i,true);
     }
     return pulse;
+}
+// Stream a standard 48 kHz / 16-bit mono WAV, never synthesise click
+// samples on the real-time callback for newly generated Audio cells.
+juce::Result writeClickTrackWav(const juce::File& destination,
+                                const std::vector<TempoPoint>& tempo,
+                                const ClickTrackConfig& config) {
+    if (tempo.empty() || !std::isfinite(config.durationSeconds) ||
+        config.durationSeconds<0.1 || config.durationSeconds>600 ||
+        config.subdivision<1 || config.subdivision>4 ||
+        (int)config.sound<0 || (int)config.sound>3)
+        return juce::Result::fail("Invalid Click Track configuration.");
+    for (const auto& p:tempo)
+        if (!std::isfinite(p.beat) || !std::isfinite(p.bpm) || p.bpm<=0 ||
+            p.numerator<1 || p.denominator<1)
+            return juce::Result::fail("Invalid Click Track tempo map.");
+    const auto events=makeClickEvents(tempo,config);
+    const auto pulses=makeClickPulseBank(config.sound);
+    if (events.empty() || !pulses)
+        return juce::Result::fail("Could not prepare Click Track audio.");
+    for (const auto& event:events)
+        if (!std::isfinite(event.seconds) || event.seconds<0 ||
+            event.seconds>=config.durationSeconds)
+            return juce::Result::fail("Invalid Click Track event time.");
+    if (destination.exists())
+        return juce::Result::fail("Click WAV already exists; existing audio was not overwritten.");
+    if (const auto result=destination.getParentDirectory().createDirectory();result.failed())
+        return result;
+    auto stream=destination.createOutputStream();
+    if (!stream) return juce::Result::fail("Cannot create the Click Track WAV.");
+    juce::WavAudioFormat format;
+    auto writer=format.createWriterFor(std::move(stream),
+        juce::AudioFormatWriterOptions()
+            .withSampleRate(ClickPulseBank::sampleRate)
+            .withNumChannels(1).withBitsPerSample(16));
+    if (!writer) {
+        destination.deleteFile();
+        return juce::Result::fail("Cannot initialise Click Track PCM WAV output.");
+    }
+    constexpr int blockSize=4096;
+    const auto totalSamples=(int64_t)std::llround(config.durationSeconds*ClickPulseBank::sampleRate);
+    juce::AudioBuffer<float> block(1,blockSize);
+    size_t firstEvent=0;
+    bool written=true;
+    for (int64_t offset=0;offset<totalSamples && written;offset+=blockSize) {
+        const int count=(int)std::min((int64_t)blockSize,totalSamples-offset);
+        block.clear();
+        while (firstEvent<events.size() &&
+               (int64_t)std::llround(events[firstEvent].seconds*ClickPulseBank::sampleRate)
+                   +(int64_t)pulses->normal.size()<=offset)
+            ++firstEvent;
+        for (size_t i=firstEvent;i<events.size();++i) {
+            const auto start=(int64_t)std::llround(events[i].seconds*ClickPulseBank::sampleRate);
+            if (start>=offset+count) break;
+            const auto& pulse=events[i].accent ? pulses->accented : pulses->normal;
+            const auto from=std::max(offset,start);
+            const auto to=std::min(offset+count,start+(int64_t)pulse.size());
+            for (int64_t frame=from;frame<to;++frame) {
+                const int at=(int)(frame-offset);
+                block.setSample(0,at,block.getSample(0,at)+pulse[(size_t)(frame-start)]);
+            }
+        }
+        for (int i=0;i<count;++i)
+            block.setSample(0,i,juce::jlimit(-1.0f,1.0f,block.getSample(0,i)));
+        written=writer->writeFromAudioSampleBuffer(block,0,count);
+    }
+    writer.reset(); // Finalise the WAV header before loadClip tries to read it.
+    if (!written) {
+        destination.deleteFile();
+        return juce::Result::fail("Writing Click Track WAV failed; incomplete file removed.");
+    }
+    return juce::Result::ok();
 }
 } // namespace cuelist

@@ -596,8 +596,8 @@ juce::PopupMenu CueGrid::createCellContextMenu(int row,int column) const {
     if (col.type==ColumnType::audio &&
         (owner.canGenerateClickTrack(row,column) || cell.click)) {
         if (!owner.canGenerateLtcTrack(row,column)) menu.addSeparator();
-        menu.addItem(11,cell.click ? "Configure Click Track..." :
-                                    "Generate Click Track...");
+        menu.addItem(11,cell.click ? "Convert legacy Click to WAV..." :
+                                    "Generate Click Track WAV...");
     }
     return menu;
 }

@@ -420,8 +420,10 @@ public:
     bool select(int row,int column);
     void importFile(const juce::File&);
     bool canGenerateClickTrack(int row,int column) const;
-    // Transactional, no selection or NEXT changes. Also used by native dialog.
-    bool commitClickTrack(int row,int column,const ClickTrackConfig& config);
+    // Render a WAV, preload and attach transactionally without changing NEXT/VIEW/LIVE.
+    // Optional directory is an isolated, user-data-free test seam.
+    bool commitClickTrack(int row,int column,const ClickTrackConfig& config,
+                          const juce::File& outputDirectory={});
     void generateClickTrack(int row,int column);
     bool canGenerateLtcTrack(int row,int column) const;
     void generateLtcTrack(int row,int column);

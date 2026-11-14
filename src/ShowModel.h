@@ -10,7 +10,8 @@ namespace cuelist {
 enum class ColumnType { audio, midi, osc, control };
 enum class Behaviour { retrigger, pauseRestart, pauseResume, continuePlaying, stop };
 struct TempoPoint { double beat = 0, bpm = 120; int numerator = 4, denominator = 4; };
-// Procedural source: no WAV path or PCM buffer persisted in the project.
+// Legacy v10 procedural source retained for backward-compatible project loading.
+// Newly generated clicks are standard WAV audio and leave Cell::click empty.
 enum class ClickSound { classicClick, woodblock, electronicBeep, rimshot };
 struct ClickTrackConfig {
     ClickSound sound = ClickSound::classicClick;
@@ -58,7 +59,7 @@ struct Cell {
     std::optional<OscClip> osc;
     std::optional<ControlSet> controlSet;
     int assignedMapId=0; // 0 = local/none; otherwise a reusable Control Map in controls.templates
-    std::optional<ClickTrackConfig> click; // Audio only, mutually exclusive with file/MIDI/OSC
+    std::optional<ClickTrackConfig> click; // Legacy v10; mutually exclusive with file/MIDI/OSC
 };
 inline bool hasControlMapAssignment(const Cell& cell) noexcept {
     return cell.assignedMapId>0 || cell.controlSet.has_value();

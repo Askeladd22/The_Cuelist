@@ -1781,32 +1781,53 @@ bool MainComponent::canGenerateClickTrack(int row,int column) const {
            !hasClip(row,column);
 }
 bool MainComponent::commitClickTrack(int row,int column,
-                                     const ClickTrackConfig& config) {
+                                     const ClickTrackConfig& config,
+                                     const juce::File& outputDirectory) {
     if (!applyInspector() || row<0 || row>=(int)show.rows.size() ||
         column<0 || column>=(int)show.columns.size())
         return false;
     const auto& existing=show.rows[(size_t)row].cells[(size_t)column];
-    const bool editing=existing.click.has_value();
+    const bool convertingLegacy=existing.click.has_value();
     if (show.columns[(size_t)column].type!=ColumnType::audio ||
         show.columns[(size_t)column].collapsed ||
-        (!editing && !canGenerateClickTrack(row,column)) ||
-        (editing && (existing.file.isNotEmpty() || existing.midi || existing.osc)))
+        (!convertingLegacy && !canGenerateClickTrack(row,column)) ||
+        (convertingLegacy && (existing.file.isNotEmpty() || existing.midi || existing.osc)))
         return false;
-    // Build the validated candidate AFTER applying unsaved Inspector edits.
-    // Never call select(): selecting a cue changes NEXT in the LIVE tab.
+    // The WAV uses a snapshot of this row's Tempo Map. Only the target Audio
+    // cell is replaced; neither selection nor global NEXT/LIVE is modified.
+    const auto directory=outputDirectory==juce::File{} ?
+        juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+            .getChildFile("The Cuelist").getChildFile("Generated Click") : outputDirectory;
+    const auto file=directory.getChildFile("Click-"+juce::Uuid().toString()+".wav");
     auto candidate=show;
     auto& target=candidate.rows[(size_t)row].cells[(size_t)column];
-    target.click=config;
+    target.click.reset();
+    target.file=file.getFullPathName();
     if (target.name.trim().isEmpty()) target.name="Click Track";
-    const auto valid=validateShow(candidate);
-    if (valid.failed()) {
-        status=valid.getErrorMessage();
-        repaint();
-        return false;
+    if (const auto valid=validateShow(candidate);valid.failed()) {
+        status=valid.getErrorMessage();repaint();return false;
     }
+    if (const auto generated=writeClickTrackWav(file,
+            candidate.rows[(size_t)row].tempo,config);generated.failed()) {
+        status=generated.getErrorMessage();repaint();return false;
+    }
+    std::shared_ptr<const AudioClip> clip;
+    if (const auto decoded=loadClip(file,clip);decoded.failed() || !clip) {
+        file.deleteFile();
+        status=decoded.failed()?decoded.getErrorMessage():"Generated WAV could not be decoded.";
+        repaint();return false;
+    }
+    auto updated=clips;
+    updated[target.id]=std::move(clip);
+    if (!memoryFits(updated)) {
+        file.deleteFile();
+        status="Click Track rejected: 512 MB show PCM preload limit exceeded.";
+        repaint();return false;
+    }
+    clips=std::move(updated);
     show=std::move(candidate);
-    changed(editing ? "Click Track updated. LIVE continues." :
-        "Click Track generated. LIVE continues.",false,true);
+    changed(convertingLegacy ? "Legacy click converted to WAV. Other LIVE audio continues." :
+        "Click Track WAV added to Audio cell. LIVE continues.",false);
     return true;
 }
 void MainComponent::generateClickTrack(int row,int column) {
@@ -1826,8 +1847,8 @@ void MainComponent::generateClickTrack(int row,int column) {
     const auto current=cell.click.value_or(ClickTrackConfig{});
     auto* dialog=new juce::AlertWindow(editing ? "Configure Click Track" :
         "Generate Click Track",
-        "Procedural Audio source. Tempo Markers retime pulses without stopping LIVE. "
-        "Use cell gain and track fader for level.",
+        "Create a mono 48 kHz WAV in Documents/The Cuelist/Generated Click. "
+        "Tempo and accents are fixed when generated; later tempo edits do not retime WAV audio.",
         juce::MessageBoxIconType::NoIcon,this);
     dialog->setLookAndFeel(&theme);
     dialog->addComboBox("sound",{"Classic Click","Woodblock","Electronic Beep",
@@ -1843,7 +1864,7 @@ void MainComponent::generateClickTrack(int row,int column) {
                                                         juce::dontSendNotification);
     dialog->getComboBoxComponent("subdivision")->setSelectedId(current.subdivision,
                                                              juce::dontSendNotification);
-    dialog->addButton(editing ? "Update Click Track" : "Generate Click Track",1);
+    dialog->addButton(editing ? "Convert to WAV" : "Generate Click Track WAV",1);
     dialog->addButton("Cancel",0);
     auto safe=juce::Component::SafePointer<MainComponent>(this);
     dialog->enterModalState(true,juce::ModalCallbackFunction::create(
@@ -1886,7 +1907,7 @@ void MainComponent::generateClickTrack(int row,int column) {
             ClickTrackConfig config{(ClickSound)(sound->getSelectedId()-1),
                 accent->getSelectedId()==1,subdivision->getSelectedId(),seconds};
             if (!safe->commitClickTrack(r,c,config))
-                safe->message("Click Track was not updated. Check the current cell and settings.");
+                safe->message("Click Track was not generated: "+safe->status);
         }),false); // async; no nested modal loop or audio callback dependency
 }
 bool MainComponent::canGenerateLtcTrack(int row,int column) const {

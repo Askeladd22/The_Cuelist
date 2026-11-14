@@ -13,6 +13,15 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.77] - 2026-11-14
+
+**Click Track crash mitigation — generated WAV Audio instead of new procedural playback.**
+- The Click Track action renders a standard **mono 48 kHz / 16-bit WAV** into `Documents/The Cuelist/Generated Click`, loads it as regular Audio, and attaches it to the original cell. It no longer creates a new procedural `click` source.
+- Generate and preload before changing the model: invalid configuration, disk write, decode and 512 MB show-memory failures leave the original cell unchanged; incomplete/rejected WAV files are deleted. Existing file/cell content is never overwritten.
+- No selection or NEXT/LIVE ownership change is needed for generation; other running voices are preserved. Generated WAVs retain the tempo/accent pattern sampled at creation, not realtime retiming after later BPM edits.
+- Keep legacy JSON v10 `click` loading and playback for existing projects; the legacy configure action now converts to WAV. Schema remains v10, no migration is forced.
+- Added WAV format/PCM timing, invalid-input, file-preservation, and target-cell/LIVE regression checks; **Windows CTest, runtime crash reproduction and hardware playback not yet verified**.
+
 ## [0.9.76] - 2026-11-14
 
 **RQ-UI-R5 — Gerarchia LIVE/VIEW e navigazione Cuelist:** [issue #204](https://github.com/Askeladd22/The_Cuelist/issues/204).

@@ -20,4 +20,9 @@ struct ClickPulseBank {
 std::vector<ClickEvent> makeClickEvents(const std::vector<TempoPoint>&,
                                        const ClickTrackConfig&);
 std::shared_ptr<const ClickPulseBank> makeClickPulseBank(ClickSound);
+// Offline WAV rendering. New Click Tracks are ordinary, durable PCM Audio files;
+// the event/pulse helpers remain for reading existing v10 procedural projects.
+juce::Result writeClickTrackWav(const juce::File& destination,
+                                const std::vector<TempoPoint>& tempo,
+                                const ClickTrackConfig& config);
 }
