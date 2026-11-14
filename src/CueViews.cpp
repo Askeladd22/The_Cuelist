@@ -213,12 +213,15 @@ void CueGrid::paint(juce::Graphics& g) {
     // Both are labels, never controls: no new transfer of LIVE ownership.
     // The L01–L12 locator disambiguates long names that may ellipsize.
     const auto liveGo=owner.nextLiveGoCueForUi();
+    // font(10..13) would all clamp to 10pt in Theme.h. Use a true
+    // 11.25pt Hind Semibold tier for LIVE identity and next global GO,
+    // leaving names left-aligned and GO right-aligned in the same boxes.
     label(g,"LIVE L"+juce::String(owner.liveCuelistIndex()+1).paddedLeft('0',2),
-          {24,33,72,19},11,palette::standby,true);
+          {24,33,72,19},15,palette::standby,true);
     label(g,owner.liveCuelistNameForUi(),{98,32,121,20},
-          12,palette::text,true);
+          15,palette::text,true);
     label(g,liveGo=="END" ? "END" : "GO "+liveGo,
-          {224,33,70,19},12,palette::standby,true,
+          {224,33,70,19},15,palette::standby,true,
           juce::Justification::centredRight);
     // Preserve both VIEW counts in the existing 72px header.
     const int viewCues=(int)show.rows.size();
@@ -1484,9 +1487,12 @@ void CueMetricsOverlay::paint(juce::Graphics& g) {
     // Lean two-column strip: no redundant "Cue Metrics" caption.
     g.setColour(palette::teal.withAlpha(.65f));
     g.fillRect(3,0,getWidth()-3,2);
-    label(g,"BPM",{13,23,76,26},13,palette::text,true,
+    // Keep headings centered in their real BPM/Auto Stop lanes. At 13
+    // they had the same 10pt point height as all secondary text.
+    // 15 maps to the first genuinely larger pinned-header tier.
+    label(g,"BPM",{13,23,76,26},15,palette::text,true,
           juce::Justification::centred);
-    label(g,"AUTO STOP",{99,23,81,26},13,palette::text,true,
+    label(g,"AUTO STOP",{99,23,81,26},15,palette::text,true,
           juce::Justification::centred);
     g.setColour(palette::line.withAlpha(.26f));
     g.drawVerticalLine(94,8.f,(float)CueGrid::headerHeight-9);
