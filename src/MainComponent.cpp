@@ -234,9 +234,12 @@ MainComponent::MainComponent(bool startAudio) {
     };
     projectNameLabel.setName("projectName");
     projectNameLabel.setEditable(false,true,false);
+    projectNameLabel.onEscapePanic=[this] { stopAll(); };
     projectNameLabel.setColour(juce::Label::textColourId,palette::text);
     projectNameLabel.setFont(font(16.0f,true));
-    projectNameLabel.setTooltip("Double-click to rename the project. The file path is unchanged.");
+    projectNameLabel.setTooltip(
+        "Double-click to rename the project. Enter saves; Esc cancels and "
+        "activates PANIC. The file path is unchanged.");
     projectNameLabel.onTextChange=[this] {
         const auto name=projectNameLabel.getText().trim();
         if(name.isEmpty() || name.length()>120) {
