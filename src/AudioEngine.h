@@ -23,6 +23,22 @@ struct CellPlaybackTelemetry {
     CellPlaybackInfo read() const noexcept;
     void write(CellPlaybackInfo) noexcept;
 };
+// A single RT producer retains the highest peak until one UI consumer takes it.
+// Separate from instantaneous per-block telemetry, so existing readers/tests keep
+// their semantics. Atomic float must never invoke a hidden lock on Windows x64.
+static_assert(std::atomic<float>::is_always_lock_free,
+              "Audio peak capture requires lock-free float atomics");
+struct PeakCapture {
+    std::atomic<float> pending {0.0f};
+    void observe(float samplePeak) noexcept {
+        float previous=pending.load(std::memory_order_relaxed);
+        while (samplePeak>previous &&
+               !pending.compare_exchange_weak(previous,samplePeak,
+                                              std::memory_order_relaxed)) {}
+    }
+    float take() noexcept { return pending.exchange(0.0f,std::memory_order_relaxed); }
+    void clear() noexcept { pending.store(0.0f,std::memory_order_relaxed); }
+};
 // Column meter receives post-strip, pre-master peak samples from the audio callback.
 // No allocations, locks, or UI lookups occur on the real-time thread.
 struct ColumnPeakTelemetry {
@@ -33,6 +49,7 @@ struct ColumnPeakTelemetry {
     std::array<std::vector<float>,2> mix;
     std::array<float,2> oversizeVoicePeak {{0,0}};
     std::atomic<float> peak {0}, left {0}, right {0};
+    std::array<PeakCapture,2> guiPeaks;
     ColumnPeakTelemetry() {
         for (auto& channel:mix) channel.resize(maxMeterFrames,0.0f);
     }
@@ -151,6 +168,9 @@ public:
     float getColumnPeak(int columnId) const noexcept;
     // Returns post-cell/row/strip, pre-master L/R peaks (linear amplitude).
     std::array<float,2> getColumnStereoPeak(int columnId) const noexcept;
+    // UI-only peak captures across all callbacks since the preceding UI read.
+    std::array<float,2> consumeColumnStereoPeak(int columnId) noexcept;
+    std::array<float,2> consumeMasterStereoPeak() noexcept;
     uint64_t getMidiColumnSent(int columnId) {return midiRouter.getColumnSent(columnId);}
     uint64_t getOscColumnSent(int columnId) {return oscRouter.getColumnSent(columnId);}
     std::atomic<bool> limiterActive{false};
@@ -189,6 +209,7 @@ private:
     };
     std::map<int, PlaybackEntry> playback; // UI-thread owned; no callback map access
     std::map<int,std::shared_ptr<ColumnPeakTelemetry>> columnPeaks; // UI-thread owned
+    std::array<PeakCapture,2> masterGuiPeaks;
     struct Command { int id = 0; bool row = false, stop = false; uint64_t revision = 0, epoch = 0; bool seek = false; double seconds = 0; bool pauseToggle=false; };
     std::array<Command, 256> commands;
     std::atomic<unsigned> writeIndex {0}, readIndex {0};

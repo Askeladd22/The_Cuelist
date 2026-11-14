@@ -435,6 +435,10 @@ void RenderState::render(float* const* outputs,int channels,int frames,double sa
         t.left.store(peaks[0],std::memory_order_relaxed);
         t.right.store(peaks[1],std::memory_order_relaxed);
         t.peak.store(std::max(peaks[0],peaks[1]),std::memory_order_relaxed);
+        // Latch the maximum across callbacks until the next GUI poll.
+        // No per-sample atomics or allocations on the RT thread.
+        t.guiPeaks[0].observe(peaks[0]);
+        t.guiPeaks[1].observe(peaks[1]);
     }
     for (auto& row:rows) {
         const bool wasPlaying=row.playing;
@@ -659,6 +663,16 @@ std::array<float,2> AudioEngine::getColumnStereoPeak(int columnId) const noexcep
     return {{it->second->left.load(std::memory_order_relaxed),
              it->second->right.load(std::memory_order_relaxed)}};
 }
+std::array<float,2> AudioEngine::consumeColumnStereoPeak(int columnId) noexcept {
+    // Message thread only. Column identities are stable across published
+    // RenderState snapshots; the audio callback only touches the atomics.
+    const auto it=columnPeaks.find(columnId);
+    if (it==columnPeaks.end()) return {{0.0f,0.0f}};
+    return {{it->second->guiPeaks[0].take(),it->second->guiPeaks[1].take()}};
+}
+std::array<float,2> AudioEngine::consumeMasterStereoPeak() noexcept {
+    return {{masterGuiPeaks[0].take(),masterGuiPeaks[1].take()}};
+}
 CellPlaybackInfo AudioEngine::getCellPlayback(int cellId) const noexcept {
     const auto found=playback.find(cellId);
     return found==playback.end() ? CellPlaybackInfo{} : found->second.telemetry->read();
@@ -701,11 +715,14 @@ void AudioEngine::panic() noexcept {
     midiRouter.emergencyStop(); oscRouter.emergencyStop();
 }
 void AudioEngine::audioDeviceAboutToStart(juce::AudioIODevice* device) {
+    masterGuiPeaks[0].clear(); masterGuiPeaks[1].clear();
     deviceSampleRate=device->getCurrentSampleRate(); connected.store(true); panic();
 }
 void AudioEngine::audioDeviceStopped() {
     connected.store(false); activeVoices.store(0); peak.store(0);
-    masterPeakLeft.store(0); masterPeakRight.store(0); panic();
+    masterPeakLeft.store(0); masterPeakRight.store(0);
+    masterGuiPeaks[0].clear(); masterGuiPeaks[1].clear();
+    panic();
 }
 void AudioEngine::audioDeviceIOCallbackWithContext(const float* const*,int,float* const* outputs,int channels,int frames,
                                                   const juce::AudioIODeviceCallbackContext&) {
@@ -830,7 +847,14 @@ void AudioEngine::processBlock(float* const* outputs,int channels,int frames,dou
         acknowledgedCueId.store(0,std::memory_order_release);
         limiterActive.store(false,std::memory_order_relaxed);
         limiterReduction.store(0.0f,std::memory_order_relaxed);
-        if (current) current->panic();
+        if (current) {
+            current->panic();
+            // PANIC silences output immediately; do not show a peak from the
+            // discarded pre-PANIC render at the next GUI refresh.
+            for (auto& meter:current->columnMeters) if (meter.second)
+                for (auto& held:meter.second->guiPeaks) held.clear();
+        }
+        masterGuiPeaks[0].clear(); masterGuiPeaks[1].clear();
         for (int ch=0; ch<channels; ++ch) if (outputs[ch]) juce::FloatVectorOperations::clear(outputs[ch],frames);
     }
     if (current) current->updateTelemetry();
@@ -843,8 +867,14 @@ void AudioEngine::processBlock(float* const* outputs,int channels,int frames,dou
         }
     if (current) for (const auto& v : current->voices) if (v.playing) ++active;
     peak.store(level); activeVoices.store(active);
-    masterPeakLeft.store(current && !emergencyStop ? current->preLimiterPeakLeft : 0.0f,std::memory_order_relaxed);
-    masterPeakRight.store(current && !emergencyStop ? current->preLimiterPeakRight : 0.0f,std::memory_order_relaxed);
+    const float masterLeft=current && !emergencyStop ? current->preLimiterPeakLeft : 0.0f;
+    const float masterRight=current && !emergencyStop ? current->preLimiterPeakRight : 0.0f;
+    masterPeakLeft.store(masterLeft,std::memory_order_relaxed);
+    masterPeakRight.store(masterRight,std::memory_order_relaxed);
+    if (!emergencyStop) {
+        masterGuiPeaks[0].observe(masterLeft);
+        masterGuiPeaks[1].observe(masterRight);
+    }
     const int monitored=monitoredRowId.load();
     double seconds=0; bool playing=false;
     if (current) for (const auto& row:current->rows) if (row.id==monitored) {

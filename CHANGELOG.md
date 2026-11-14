@@ -13,6 +13,18 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.78] - 2026-11-14
+
+**RQ-AUDIO-METER: affidabilita dei transienti brevi nel meter Audio.**
+
+### Corretto
+- Il meter di colonna e Master accumula i massimi di blocco per ciascun canale L/R fino alla lettura della GUI (25 Hz). Una lettura atomica preleva e azzera i picchi, evitando che blocchi silenziosi cancellino un impulso prima del refresh.
+- Il calcolo Peak resta post-strip/pre-master per le colonne e pre-limiter per il Master; il playback PCM, il routing, la generazione WAV Click Track, la forma d'onda e lo schema JSON v10 sono invariati.
+
+### Test
+- Regressione con transienti stereo a distanza di piu callback, successivi blocchi silenziosi, acquisizione una sola volta e disegno JUCE; preservate le API istantanee per gli altri consumatori.
+- Build/CTest Windows via CI, test su dispositivo fisico e screenshot nativi da registrare separatamente nella PR prima del merge.
+
 ## [0.9.77] - 2026-11-14
 
 **Click Track crash mitigation — generated WAV Audio instead of new procedural playback.**

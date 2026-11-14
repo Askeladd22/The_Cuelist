@@ -3,6 +3,88 @@
 #include "MixerControls.h"
 
 void gainMeterFaderTests() {
+    test("RQ-METER atomic peak latch retains the interval maximum and resets once", [] {
+        PeakCapture peak;
+        peak.observe(0.43f);
+        peak.observe(0.81f);
+        peak.observe(0.10f);
+        near(peak.take(),0.81f);
+        near(peak.take(),0);
+        peak.observe(0.35f);
+        near(peak.take(),0.35f);
+        peak.observe(0.90f);
+        peak.clear(); // PANIC/disconnect path
+        near(peak.take(),0);
+    });
+
+    test("RQ-METER peak capture survives a brief stereo transient followed by silent audio blocks", [] {
+        auto show=makeShow();
+        auto clip=std::make_shared<AudioClip>();
+        clip->sampleRate=48000;
+        constexpr int frames=512;
+        clip->samples.setSize(2,frames*7);
+        clip->samples.clear();
+        clip->samples.setSample(0,11,0.82f);            // A brief L impulse.
+        clip->samples.setSample(1,frames*2+9,0.57f);    // Later R impulse.
+        clip->samples.setSample(0,frames*3+7,0.23f);    // Lower subsequent L.
+        const int id=show.columns[0].id;
+        const int cellId=show.rows[0].cells[0].id;
+        ClipMap clips;
+        clips[cellId]=clip;
+        AudioEngine engine;
+        engine.publish(makeRenderState(show,clips));
+        check(engine.send(cellId,false),"Pulse PCM cue could not be triggered");
+        juce::AudioBuffer<float> out(2,frames);
+        for(int n=0;n<6;++n) {
+            engine.processBlock(out.getArrayOfWritePointers(),2,frames,48000);
+            if(n==0) {
+                near(out.getSample(0,11),.82);
+                near(engine.getColumnStereoPeak(id)[0],.82);
+            }
+            if(n==2) near(out.getSample(1,9),.57);
+        }
+        // The instantaneous API deliberately remains last-block-only.
+        near(engine.getColumnStereoPeak(id)[0],0);
+        near(engine.masterPeakLeft.load(),0);
+        const auto strip=engine.consumeColumnStereoPeak(id);
+        const auto master=engine.consumeMasterStereoPeak();
+        near(strip[0],.82); near(strip[1],.57);
+        near(master[0],.82); near(master[1],.57);
+        // Exactly-once handoff; a second GUI poll must not redisplay stale peaks.
+        const auto spentStrip=engine.consumeColumnStereoPeak(id);
+        const auto spentMaster=engine.consumeMasterStereoPeak();
+        near(spentStrip[0],0);near(spentStrip[1],0);
+        near(spentMaster[0],0);near(spentMaster[1],0);
+        GainMeterFader fader;
+        fader.setStereoPeaks(strip[0],strip[1]);
+        check(fader.getDisplayedPeakDb(0)>fader.getDisplayedPeakDb(1) &&
+              fader.getDisplayedPeakDb(1)>-6.0f,
+              "An acquired short transient is not visibly retained in the L/R meter");
+    });
+    test("RQ-METER republished RenderState retains an unconsumed column peak", [] {
+        auto show=makeShow();
+        auto clip=std::make_shared<AudioClip>();
+        clip->sampleRate=48000;
+        clip->samples.setSize(1,2048);
+        clip->samples.clear();
+        clip->samples.setSample(0,20,0.68f);
+        const int cellId=show.rows[0].cells[0].id;
+        const int columnId=show.columns[0].id;
+        ClipMap clips; clips[cellId]=clip;
+        AudioEngine engine;
+        engine.publish(makeRenderState(show,clips));
+        check(engine.send(cellId,false),"Source PCM pulse was not scheduled");
+        juce::AudioBuffer<float> out(2,256);
+        engine.processBlock(out.getArrayOfWritePointers(),2,256,48000);
+        near(engine.getColumnPeak(columnId),.68f);
+        // An unrelated edit can republish a snapshot before the UI's 25 Hz poll.
+        engine.publish(makeRenderState(show,clips));
+        for(int n=0;n<3;++n)
+            engine.processBlock(out.getArrayOfWritePointers(),2,256,48000);
+        const auto peak=engine.consumeColumnStereoPeak(columnId);
+        near(peak[0],.68f);near(peak[1],.68f); // mono duplicates to stereo
+        near(engine.consumeColumnStereoPeak(columnId)[0],0);
+    });
     test("Fader wheel steps are calibrated, precise and respect silence",[] {
         GainMeterFader fader;
         near(GainMeterFader::wheelTargetDb(-12.0f,1,false),-11.5);
