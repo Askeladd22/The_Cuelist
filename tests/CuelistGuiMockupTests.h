@@ -584,7 +584,10 @@ void cuelistGuiMockupTests() {
               ui.nextLiveGoCueForUi()=="END" &&
               changedPixels(renamed,afterGo,{24,7,253,58})==0,
               "R5 global GO incorrectly altered VIEW title or LIVE ownership");
-        returnButton->triggerClick(); // real native button callback
+        // JUCE Button::triggerClick is asynchronous. Deliver the actual
+        // native mouse down/up path to test the callback synchronously.
+        cueViewFixtures::click(*returnButton,
+            returnButton->getWidth()*.5f,returnButton->getHeight()*.5f);
         check(ui.show.activeCuelist==0 && ui.liveCuelistIndex()==0 &&
               ui.nextLiveGoCueForUi()=="END" &&
               ui.engine.acknowledgedCueId.load()==liveSecond &&
@@ -622,7 +625,8 @@ void cuelistGuiMockupTests() {
               "R5 return button cached obsolete LIVE L01");
         const int liveCue=ui.liveNextCueIndex();
         const int ack=ui.engine.acknowledgedCueId.load();
-        button->triggerClick();
+        cueViewFixtures::click(*button,
+            button->getWidth()*.5f,button->getHeight()*.5f);
         check(ui.show.activeCuelist==1 && ui.liveCuelistIndex()==1 &&
               ui.liveNextCueIndex()==liveCue &&
               ui.engine.acknowledgedCueId.load()==ack &&
