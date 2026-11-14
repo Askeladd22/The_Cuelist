@@ -124,8 +124,10 @@ WorkspaceLayout calculateWorkspaceLayout(const WorkspaceLayoutInput& input) {
     i.bpmField={x,285,w,32};
     i.rowLoop={x-3,328,w,26};
     i.cellDividerY=367;
-    i.cellSection={x+3,379,w-6,21};
-    i.selectedColumn={x+115,379,w-119,21};
+    // The heading and selected-column name share one line; their actual
+    // paint rectangles must not overlap, even with very long names.
+    i.cellSection={x+3,379,127,21};
+    i.selectedColumn={x+136,379,w-140,21};
     i.cellNameCaption={x,403,w,20};
     i.cellNameField={x,426,w,32};
     i.gainCaption={x,469,55,20};
