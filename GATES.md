@@ -1,55 +1,61 @@
-# Gates: UX-03D — Correct collapsed-column keyboard test
+# GATES — UX-03E: protect native column-action overlay from multi-click leakage
 
-BASE: `main@0b7a045d4c4eff9e3f045ba2ba81c3b1f8f09b9d`, VERSION.txt=0.9.64.
-SCOPE: Repair the UX-03C test contract and clarify the operator guide.
-OWNS: tests/UiRefinementTests.h, docs/complete-user-guide.md,
-      GATES.md, VERSION.txt, CMakeLists.txt, CHANGELOG.md.
-No changes to application source, UI, transport or JSON schema v10.
+BASE: main@36b6cec743fe49697a345369f51bfd2767440ed7; VERSION.txt=0.9.65.
+SCOPE: Only mouse gesture handling in PinnedColumnHeaders (native JUCE);
+  tests and operator guide. No audio, MIDI, OSC, LTC, timeline, grid model,
+  VIEW/LIVE, JSON v10 or transport changes.
+OWNS: GATES.md, src/MainComponent.h, src/CueViews.cpp,
+  tests/UiRefinementTests.h, docs/complete-user-guide.md,
+  VERSION.txt, CMakeLists.txt, CHANGELOG.md.
 
-## Incident evidence (carried forward from merged PR #185)
-- Windows CI: https://github.com/Askeladd22/The_Cuelist/actions/runs/43526445383
-- Windows Release compilation passed; CTest FAILED (420393 assertions,
-  1 failed test: UX03C column keys preserve identity and require D confirmation).
-- Screenshot artifact upload skipped after CTest failure.
-- The prior UX-03C GATES.md listed G1-G6 as pending even though #185 merged.
-  Do not infer success from that merge; the independent LIVE gate remains open.
+## Context and prior gate state
+PR #186 merged; Windows Release/CTest success on head
+0341baaf40fa883f1ecb4b59cc745a4330ae2ae1:
+https://github.com/Askeladd22/The_Cuelist/actions/runs/43570017283
+Native screenshot artifact uploaded (does NOT itself constitute human review).
+Manual Windows DPI/Narrator/hardware and the broader ESC/PANIC popup audit
+remain ND and are NOT silently considered completed.
 
-## Acceptance gates (manual evidence ledger)
+## Measurable hypothesis and negative control
+H-UX03E: A mouse press used to dismiss the Shift+F10 non-modal column
+overlay must consume the rest of that same native JUCE multi-click sequence,
+including mouseDoubleClick; a fresh independent click sequence must retain
+existing double-click rename. The current main has a mouseDown guard but
+mouseDoubleClick dispatches unconditionally to grid.doubleClickColumnHeader().
+This is a source-derived risk, not an observed hardware reproduction.
+JUCE MouseEvent::getNumberOfClicks() identifies a multi-click sequence.
 
-This GitHub connector can inspect code and CI but cannot execute local
-Windows/CTest commands. No inherited CHECK is approved.
+## Gates — evidence required
+- [x] E1 BASELINE: main SHA, version and preceding Windows CTest verified.
+  EVIDENCE: GitHub main ref, VERSION.txt, #186 workflow 43570017283.
+- [x] E2 CODE DIAGNOSIS: The two native handlers use separate paths, with
+  no overlay guard in mouseDoubleClick on the verified baseline.
+  EVIDENCE: src/CueViews.cpp::PinnedColumnHeaders::mouseDown/mouseDoubleClick;
+  src/CueViews.cpp::CueGrid::doubleClickColumnHeader (inline rename).
+- [ ] E3 NATIVE TEST: Simulated overlay + first click + second mouseDown
+  (clicks=2) + mouseDoubleClick must not invoke rename or alter Show,
+  selectedColumn, nextCue or LIVE. Direct double-click over overlay also
+  consumed; fresh ordinary double-click still opens original inline editor.
+  EVIDENCE: pending full Windows CTest on new PR SHA.
+- [ ] E4 IMPLEMENTATION: No duplicate native controls or focus hooks;
+  consume only the overlay-dismissal multi-click sequence and reset on
+  fresh click count=1. Normal icon actions, collapse, drag, wheel and
+  keyboard transport unchanged.
+  EVIDENCE: pending code review and regression results.
+- [ ] E5 WINDOWS CI: version/changelog guard, Release and complete CTest
+  are green on PR head; capture actual generated screenshot artifact.
+  EVIDENCE: pending head-specific GitHub Actions links.
+- [ ] E6 HUMAN/LIVE: inspect native compact/wide screenshots; Windows
+  real mouse double-click, keyboard layout, DPI 100/125/150, Narrator and
+  hardware Audio/MIDI/OSC/LTC with show active.
+  EVIDENCE: ND until measured; CI green != ready for LIVE.
 
-- [x] G1 — Root cause is supported by the checked source and CI log.
-  Collapsing the selected column calls toggleColumnCollapsed(), which can move
-  selectedColumn to the first expanded column. toggleSelectedColumnKeyboardActions()
-  captures the currently selected column ID for each new invocation.
-  EVIDENCE: src/CueOperations.cpp, tests/UiRefinementTests.h,
-  workflow job 132233272048.
+## Red team
+Double-clicks recognized by the native platform may be delivered in
+multiple callbacks. Tests simulate events; real Windows timing/order must
+be independently checked. Do not block later, unrelated double-click
+rename; do not allow a hidden Delete/Collapse under an overlay. Other
+JUCE PopupMenu Escape/PANIC pathways require a separate audit.
 
-- [ ] G2 — The regression test asserts selection reassignment, checks the
-  currently targeted column label, explicitly reselects the collapsed MIDI
-  column, then verifies 5 -> D removes only its stable ID and preserves LIVE.
-  EVIDENCE: updated source reviewed; CTest execution on new SHA pending.
-
-- [ ] G3 — Windows Release + complete CTest + version/changelog guard pass at
-  the PR head SHA, including earlier Esc PANIC, Space GO, repeated 5 and stale
-  target regressions. The previous #185 CTest was RED.
-  EVIDENCE: pending new GitHub Actions run.
-
-- [ ] G4 — Review genuine JUCE screenshots (1180x820 and 1920x1080 action
-  strip and armed Delete) for truncation, contrast and false affordances.
-  EVIDENCE: pending artifact; #185 screenshot upload was skipped.
-
-- [ ] G5 — On real Windows, verify 100/125/150% DPI, actual keyboard / IME,
-  Narrator accessibility, GO/PANIC during active playback and external
-  Audio/MIDI/OSC/LTC hardware. Simulated CI is not readiness-for-LIVE.
-  EVIDENCE: ND, requires operator/hardware verification.
-
-## Red team and release boundary
-
-The fix changes only a false assumption in a test. It does NOT guarantee
-that other pre-existing JUCE popups allow Esc/PANIC; audit separately.
-If CI remains red, record the exact failing assertion and do not merge.
-Release/live readiness remains blocked by G4/G5 until independently checked.
-
-Rollback: revert UX-03D PR; no schema migration or native UX changes.
+Merge policy: small draft PR; never auto merge. Rollback: revert this PR,
+no project-schema migration. No inherited shell CHECK commands are approved.

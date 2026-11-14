@@ -719,6 +719,56 @@ void uiRefinementTests() {
               "UX03C stale target acted upon another column");
     });
 
+    test("UX03E: overlay dismissal consumes double-click but preserves normal rename",[] {
+        MainComponent ui(false);
+        addColumn(ui.show,ColumnType::midi,"MIDI cues");
+        ui.setSize(1440,900);
+        check(ui.select(0,1),"UX03E fixture could not select MIDI column");
+        auto* pinned=cueViewFixtures::find<PinnedColumnHeaders>(ui);
+        check(pinned!=nullptr,"UX03E pinned header missing");
+        if (!pinned) return;
+        const juce::KeyPress actions{juce::KeyPress::F10Key,
+                                      juce::ModifierKeys::shiftModifier,0};
+        const juce::Point<float> title{20.f,46.f}; // Audio title, not an icon
+        const auto mouse=[&](int clicks) {
+            return cueViewFixtures::event(*pinned,title,title,clicks);
+        };
+        const auto original=encodeShow(ui.show);
+        const int live=ui.liveCuelistIndex();
+        const int selected=ui.selectedColumn;
+        const int next=ui.nextCueIndex();
+        check(ui.keyPressed(actions),"UX03E cannot open action strip");
+        pinned->mouseDown(mouse(1)); // dismiss overlay, MUST consume gesture
+        pinned->mouseUp(mouse(1));
+        pinned->mouseDown(mouse(2)); // same JUCE multi-click sequence
+        pinned->mouseDoubleClick(mouse(2));
+        pinned->mouseUp(mouse(2));
+        check(!ui.isInlineRenaming() && encodeShow(ui.show)==original &&
+              ui.selectedColumn==selected && ui.nextCueIndex()==next &&
+              ui.liveCuelistIndex()==live &&
+              !pinned->getDescription().contains("1 Rename"),
+              "UX03E multi-click leaked an underlying column rename");
+        // A fresh native click sequence (count reset to 1) must still
+        // preserve the existing title double-click rename operation.
+        pinned->mouseDown(mouse(1));
+        pinned->mouseUp(mouse(1));
+        pinned->mouseDown(mouse(2));
+        pinned->mouseDoubleClick(mouse(2));
+        pinned->mouseUp(mouse(2));
+        check(ui.isInlineRenaming(),
+              "UX03E guard incorrectly disabled normal column rename");
+        ui.cancelInlineRename();
+        check(encodeShow(ui.show)==original && ui.liveCuelistIndex()==live,
+              "UX03E cancelling a normal rename modified Show or LIVE");
+        check(ui.select(0,1) && ui.keyPressed(actions),
+              "UX03E could not reopen the action strip");
+        pinned->mouseDoubleClick(mouse(2)); // direct callback also protected
+        check(!ui.isInlineRenaming() &&
+              !pinned->getDescription().contains("1 Rename") &&
+              encodeShow(ui.show)==original && ui.liveCuelistIndex()==live,
+              "UX03E direct mouseDoubleClick bypassed visible action strip");
+    });
+
     test("UX02: neutral audio import does not borrow the transport GO role",[] {
         MainComponent ui(false);
         ui.setAppearanceTheme(palette::Appearance::industrialOrange);
