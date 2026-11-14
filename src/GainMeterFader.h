@@ -50,6 +50,10 @@ public:
     void setColumnReadableScale(bool enabled) {
         if(columnReadableScale!=enabled){columnReadableScale=enabled;repaint();}
     }
+    // Move the column's terminal silence caption just above its bottom
+    // tick so it clears the neighbouring native MUTE caption at short heights.
+    // Only label ink moves; the calibrated tick, slider and peak rails do not.
+    static constexpr float columnSilenceCaptionLift=11.0f;
     // Order matches the fixed scale ticks in paint(): +6, 0, -6, -12,
     // -18, -24, -36, -48, -60 (last label is mathematical -infinity).
     // No allocations or mutable global state during a JUCE repaint.
