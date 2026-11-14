@@ -887,58 +887,47 @@ void MainComponent::paint(juce::Graphics& g) {
               {x+4,205,geometry.inspectorInnerWidth-8,24},
               12,palette::muted,true);
     } else {
-    // An instrument panel, not a stack of floating cards. Real inputs
-    // retain their tested geometry, focus, validation and live callbacks.
-    const int inspectorInner=geometry.inspectorInnerWidth;
-    const auto panel=geometry.inspectorPanel;
+    // N4.2 — one native Inspector layout for both rendered labels and
+    // actual editor bounds. No affine-shrunken labels or nested cards.
+    // Group identity remains stable while selecting Audio/MIDI/OSC/Control.
+    const auto& i=geometry.inspector;
     const int x=geometry.inspectorLeft;
+    const int inspectorInner=geometry.inspectorInnerWidth;
     g.setColour(palette::panel);
-    g.fillRect(panel);
+    g.fillRect(geometry.inspectorPanel);
     g.setColour(palette::line.withAlpha(.52f));
-    g.drawVerticalLine(panel.getX(),(float)panel.getY(),(float)panel.getBottom());
-    label(g,"INSPECTOR",{x+3,99,inspectorInner-6,19},12,palette::muted,true);
+    g.drawVerticalLine(geometry.inspectorPanel.getX(),
+                       (float)geometry.inspectorPanel.getY(),
+                       (float)geometry.inspectorPanel.getBottom());
+    label(g,"INSPECTOR",i.inspectorTitle,12,palette::muted,true);
     const auto& col=show.columns[selectedColumn];
     label(g,"CUE "+juce::String(selectedRow+1).paddedLeft('0',2),
-          {x+3,129,134,28},22,palette::text,true);
-    label(g,typeName(col.type),{x+133,133,inspectorInner-138,21},11,
+          i.cueIdentity,22,palette::text,true);
+    label(g,typeName(col.type),i.cellType,11,
           palette::type((int)col.type),true,
           juce::Justification::centredRight);
-    g.setColour(palette::line.withAlpha(.56f));
-    g.drawHorizontalLine(158,(float)x-6,(float)x+inspectorInner+6);
-
-    g.saveState();
-    g.addTransform(geometry.inspectorTransform());
-    // Section labels follow the Inspector's shared scale. No second
-    // rule beside the header divider, and no raised containers.
-    label(g,"CUE PARAMETERS",{x+3,173,inspectorInner-6,20},12,
-          palette::muted,true);
-    label(g,"Cue name",{x,204,inspectorInner,18},12,palette::text,true);
-    label(g,"Initial BPM",{x,272,inspectorInner,18},12,palette::text,true);
-    g.setColour(palette::line.withAlpha(.55f));
-    g.drawHorizontalLine(408,(float)x-6,(float)x+inspectorInner+6);
-    label(g,"CELL PARAMETERS",{x+3,423,111,20},12,palette::muted,true);
-    label(g,col.name,{x+116,423,inspectorInner-120,20},12,
-          palette::text,true,juce::Justification::centredRight);
-    label(g,"Cell name",{x,454,inspectorInner,18},12,palette::text,true);
+    const auto rule=[&](int y) {
+        g.setColour(palette::line.withAlpha(.55f));
+        g.drawHorizontalLine(y,(float)x-6,(float)x+inspectorInner+6);
+    };
+    rule(i.cueDividerY);
+    label(g,"CUE PARAMETERS",i.cueSection,13,palette::muted,true);
+    label(g,"Cue name",i.cueNameCaption,13,palette::text,true);
+    label(g,"Initial BPM",i.bpmCaption,13,palette::text,true);
+    rule(i.cellDividerY);
+    label(g,"CELL PARAMETERS",i.cellSection,13,palette::muted,true);
+    label(g,col.name,i.selectedColumn,12,palette::text,true,
+          juce::Justification::centredRight);
+    label(g,"Cell name",i.cellNameCaption,13,palette::text,true);
     if (col.type==ColumnType::audio) {
-        label(g,"Gain",{x,532,48,18},12,palette::muted,true);
-        label(g,"dB",{x+163,532,43,18},12,palette::muted,true);
+        label(g,"Gain",i.gainCaption,12,palette::muted,true);
+        label(g,"dB",i.dbSuffix,12,palette::muted,true);
     }
     if (col.type==ColumnType::osc)
-        label(g,"UDP destination in column Utility",{x,645,inspectorInner,18},
-              10,palette::muted);
-    g.restoreState();
-
-    // Notes are a real editable field, not a third fake raised panel.
-    // Its position stays downstream of all cue and cell actions.
-    const int notesAfterActions=
-        geometry.scaleInspectorControl({0,728,1,25}).getBottom()+8;
-    const int notesTop=std::max(notesAfterActions,
-                                geometry.inspectorPanel.getBottom()-167);
-    g.setColour(palette::line.withAlpha(.55f));
-    g.drawHorizontalLine(notesTop,(float)x-6,(float)x+inspectorInner+6);
-    label(g,"CUE NOTES",{x+3,notesTop+5,inspectorInner-6,20},12,
-          palette::muted,true);
+        label(g,"UDP destination in column Utility",
+              i.oscDestinationHint,10,palette::muted);
+    rule(i.notesDividerY);
+    label(g,"CUE NOTES",i.notesTitle,13,palette::muted,true);
     }
     }
     // Drag/drop only changes tab ordering. A narrow insertion marker between
