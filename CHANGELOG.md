@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.76] - 2026-11-14
+
+**RQ-UI-R5 — Gerarchia LIVE/VIEW e navigazione Cuelist:** [issue #204](https://github.com/Askeladd22/The_Cuelist/issues/204).
+
+### UI nativa JUCE
+- Sulla base dello screenshot annotato dell'operatore, il nome della **Cuelist visualizzata** nella testata bloccata passa al livello tipografico 22, seguito immediatamente da **LIVE rosso** quando VIEW=LIVE o **VIEW arancione** quando si esplora un'altra Cuelist. In caso di nomi lunghi resta visibile il badge; la seconda riga contiene l'indice Lxx e i conteggi cue/clip.
+- Rimosse dalla testata le righe ridondanti `LIVE Lxx` / nome LIVE / `GO xx` (il trasporto LIVE e il GO globale rimangono nella sidebar), e dalla sidebar la sezione duplicata `VIEW / BROWSING`. Lo status LIVE/ON DECK e NEXT GLOBAL conserva nome e prossima cue; la card si accorcia da 114 a 80px e restituisce spazio ai Recent Projects.
+- Aggiunto **un vero pulsante JUCE vettoriale** prima delle schede per tornare alla Cuelist LIVE con un clic; usa `activateCuelist(liveCuelist)`, si disabilita quando si è già in LIVE e indica nel tooltip la destinazione corrente. L'azione cambia solo la vista, senza GO/STOP/PANIC né trasferimento LIVE.
+- Le frecce esistenti per riordinare le Cuelist scendono nella seconda riga liberata, senza cambiare callback o shortcut; Collapse All, overflow e `+` restano funzionanti. Master Audio, Cue Grid 318×72/righe 62, BPM/AutoStop 184, Mixer, Inspector, Timeline, Undo/Redo, Control Maps, audio/MIDI/OSC/LTC e formato `.cuelist` JSON v10 invariati.
+
+### QA e rollback
+- Test di navigazione a LIVE nascosta con nove Cuelist, callback effettivo e nessuna alterazione del prossimo GO, cambio intenzionale LIVE via Row GO, layout 1180/1647/1920 e nuove snapshot JUCE di VIEW arancione/LIVE rosso; aggiornati i test UI che imponevano la duplicazione ora rimossa.
+- Build Windows Release/CTest, guard e immagini native da verificare **sull'esatto head della PR**. DPI 100/125/150 Windows, Narrator/IME, banco Audio/MIDI/OSC/LTC e studio operatori **ND**; CI verde non equivale a certificazione LIVE.
+- PR draft, nessun merge automatico. Rollback: revert della PR, nessuna migrazione dati.
+
 ## [0.9.75] - 2026-11-14
 
 **N5.4 — Annotazione del silenzio digitale e terminologia audio:** [issue #202](https://github.com/Askeladd22/The_Cuelist/issues/202).
