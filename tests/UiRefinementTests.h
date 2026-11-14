@@ -294,6 +294,33 @@ void uiRefinementTests() {
               "Native controls bypass the shared typography hierarchy");
     });
 
+    test("R3 pinned operator headings grow beyond the ten-point clamp and fit",[] {
+        const auto previousSmall=font(13.0f,true);
+        const auto important=font(15.0f,true);
+        check(previousSmall.getHeightInPoints()>=10.0f &&
+              important.getHeightInPoints()>previousSmall.getHeightInPoints() &&
+              important.getTypefaceName().containsIgnoreCase("Hind"),
+              "R3 pinned status type did not grow to real Hind heading tier");
+        const auto glyphWidth=[&](const juce::String& copy) {
+            return juce::GlyphArrangement::getStringWidth(important,copy);
+        };
+        for(const auto text:{"LIVE L12","GO 12","END"}) {
+            const float available=juce::String(text).startsWith("LIVE")
+                ? 72.0f : 70.0f;
+            check(glyphWidth(text)+4.0f<=available,
+                  "R3 LIVE/GO text would ellipsize in fixed native header");
+        }
+        check(glyphWidth("BPM")+4.0f<=76.0f &&
+              glyphWidth("AUTO STOP")+4.0f<=81.0f,
+              "R3 BPM/Auto Stop titles exceed pinned native lane width");
+        // No global scaling, extra width or new font families: retain
+        // the geometry contract used by the fixed Master and cue grid.
+        check(CueGridGeometry::nameWidth==MasterAudioLayout::laneWidth &&
+              CueGridGeometry::headerHeight==72 &&
+              CueGridGeometry::rowHeight==62 &&
+              CueGridGeometry::pinnedMetricsWidth==184,
+              "R3 typography must not change original native hitboxes");
+    });
     test("Noto Math and Symbols 2 are explicitly chosen for their glyphs",[] {
         const auto& faces=appTypefaces();
         check(faces.notoMath!=nullptr && faces.notoSymbols2!=nullptr,
