@@ -13,6 +13,20 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.65] - 2026-11-14
+
+**PR:** UX-03D — correzione della regressione CTest dopo la PR #185 (Taste + UI/UX Review + Unlazy).
+
+### Corretto
+- Il workflow Windows [#43526445383](https://github.com/Askeladd22/The_Cuelist/actions/runs/43526445383) della 0.9.64 ha compilato l'applicazione, ma CTest è fallito con **420.393 assertions, 1 failed test**: "UX03C: column keys preserve identity and require D confirmation".
+- Il test presumeva erroneamente che dopo `Collapse` la colonna MIDI restasse selezionata. Il codice preesistente `toggleColumnCollapsed()` seleziona la prima colonna espansa; un nuovo `Shift+F10` riguarda correttamente questa nuova selezione.
+- Il test verifica adesso la selezione effettiva e l'etichetta della modalità azioni, poi riseleziona esplicitamente la colonna MIDI collassata prima di eliminarla con **5**, quindi **D**. La guida chiarisce il comportamento all'operatore.
+- **Nessun cambiamento al codice applicativo:** VIEW/LIVE, GO/STOP/PANIC, audio, MIDI/OSC/LTC, Mixer, interazione mouse e schema JSON v10 invariati.
+
+### QA e rollback
+- Diagnosi: log della CI #185 e sorgenti correnti letti; verifica statica del contratto test/documentazione. **Da eseguire:** Windows Release/CTest della nuova PR, screenshot nativi, DPI/Narrator e banco hardware. Non dichiarare ready-for-LIVE.
+- PR draft; non fare merge automatico. Rollback: revert della PR, nessuna migrazione.
+
 ## [0.9.64] - 2026-11-14
 
 **PR:** [#185](https://github.com/Askeladd22/The_Cuelist/pull/185) (draft, senza merge automatico).
