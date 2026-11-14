@@ -106,6 +106,41 @@ WorkspaceLayout calculateWorkspaceLayout(const WorkspaceLayoutInput& input) {
     result.inspectorPanel={result.editorX,76,inspectorWidth-20,input.height-124};
     result.inspectorCueCard={result.inspectorLeft-7,162,inspectorInnerWidth+14,245};
     result.inspectorCellCard={result.inspectorLeft-7,412,inspectorInnerWidth+14,337};
+    // N4.2 form composition: one unscaled coordinate contract for
+    // captions, native fields, contextual actions and operational notes.
+    // The host window has an explicit minimum height of 820 logical px.
+    // The bottom-anchored notes area absorbs extra vertical space.
+    const int x=result.inspectorLeft,w=result.inspectorInnerWidth;
+    const int notesBottom=result.inspectorPanel.getBottom()-10;
+    auto& i=result.inspector;
+    i.inspectorTitle={x+3,99,w-6,19};
+    i.cueIdentity={x+3,129,134,28};
+    i.cellType={x+133,133,w-138,21};
+    i.cueDividerY=158;
+    i.cueSection={x+3,171,w-6,21};
+    i.cueNameCaption={x,198,w,20};
+    i.cueNameField={x,222,w,33};
+    i.bpmCaption={x,261,w,20};
+    i.bpmField={x,285,w,32};
+    i.rowLoop={x-3,328,w,26};
+    i.cellDividerY=367;
+    // The heading and selected-column name share one line; their actual
+    // paint rectangles must not overlap, even with very long names.
+    i.cellSection={x+3,379,127,21};
+    i.selectedColumn={x+136,379,w-140,21};
+    i.cellNameCaption={x,403,w,20};
+    i.cellNameField={x,426,w,32};
+    i.gainCaption={x,469,55,20};
+    i.gainField={x+64,465,105,28};
+    i.dbSuffix={x+175,469,34,20};
+    i.followToggle={x-3,501,w,27};
+    i.loopToggle={x-3,537,w,27};
+    i.editAction={x,572,w,33};
+    i.importAction={x,610,w,33};
+    i.oscDestinationHint={x,610,w,22};
+    i.notesDividerY=652;
+    i.notesTitle={x+3,660,w-6,20};
+    i.notesField={x,685,w,std::max(70,notesBottom-685)};
 
     // Compute both scrollbars from actual content size. The former unconditional
     // width-9 left an empty 9px lane beside BPM even when no vertical scrollbar

@@ -13,6 +13,23 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.70] - 2026-11-14
+
+**RQ:** [#193](https://github.com/Askeladd22/The_Cuelist/issues/193) — redesign strutturale R1/N4.2 dell'Inspector nativo (Matt Pocock, GStack, Taste/UI-UX, Emil e Unlazy).
+
+### Inspector — prima modifica strutturale
+- In `WorkspaceLayout` introdotta una sola interfaccia `InspectorContentLayout` che fornisce rettangoli condivisi a `MainComponent::paint()` e `resized()`. La disposizione dei campi non dipende più da un'AFFINE transform per il testo e da un secondo scaling verticale degli input.
+- Le sezioni **Cue Parameters**, **Cell Parameters**, **Cue Notes** usano campi nativi JUCE a grandezza costante, tipografia secondaria leggibile e intervalli più compatti; l'area Note si espande con l'altezza della finestra senza sopprimere azioni MIDI/OSC/Audio.
+- Conservati i veri componenti `rowName`, `bpm`, `rowLoop`, `cellName`, `gainDb`, `follow`, `loop`, `midiEditButton`, `oscEditButton`, `importButton` e `cueNotes` e tutti i callback, la validazione e il focus. Aggiunti nomi JUCE stabili ai controlli già esistenti per test e accessibilità.
+- **Invarianti:** nessuna modifica a Cue Grid 62/72/318/152, BPM/Auto Stop 184, Master Audio 318, Mixer, Timeline, GO/STOP/PANIC, VIEW/LIVE, Undo/Redo, MIDI/OSC/LTC o file `.cuelist` JSON v10. Nessun mockup HTML.
+- Regressioni pure/native in `tests/WorkspaceLayoutTests.h` per layout 1180×820, 1440×900, 1647×895, 1920×1080 e 3840×1080; verifica di Bounds per gli editor reali, geometria, note e parità Show/LIVE/NEXT. Nuove snapshot off-screen JUCE Inspector Audio/MIDI in `tests/Tests.cpp`.
+- Specifica e limiti: `docs/research/RQ-UI-R1-N42-INSPECTOR.md`, gate `GATES.md`.
+
+### QA e rollback
+- **Da verificare sulla PR esatta:** Windows Release/CTest completo, screenshot nativi della nuova composizione, guard versione/changelog; nessun risultato attribuito prima del workflow.
+- **ND:** reale DPI Windows 100/125/150, IME/Narrator, prove A/B operatori, hardware Audio/MIDI/OSC/LTC e sincronismo downstream. Questa prima modifica all'Inspector NON completa il redesign dell'intero workspace né certifica LIVE.
+- **Rollback:** revert della PR; nessuna migrazione di progetti e nessuna modifica audio realtime.
+
 ## [0.9.69] - 2026-11-14
 
 **PR:** [#192](https://github.com/Askeladd22/The_Cuelist/pull/192) (draft, senza merge automatico) — UX-04C test asincrono + UX-04D Esc/PANIC nella Label del nome progetto (Matt Pocock + GStack + Unlazy + Taste/Emil).
