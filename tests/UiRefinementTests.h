@@ -841,6 +841,87 @@ void uiRefinementTests() {
               "UX03F D failed to delete the captured ID safely");
     });
 
+    test("UX04A: Escape in inline name BPM and marker editors still calls PANIC",[] {
+        const juce::KeyPress esc{juce::KeyPress::escapeKey};
+
+        // The inline name editor consumes JUCE Escape instead of letting
+        // MainComponent::keyPressed receive it. Exercise the real callback.
+        {
+            MainComponent ui(false);
+            ui.show.rows[0].cells[0].name="Original cell name";
+            ui.refreshForTest();
+            check(ui.renameCell(0,0),"UX04A cannot start native cell rename");
+            auto* editor=dynamic_cast<juce::TextEditor*>(
+                controlsV3::named(ui,"inlineNameEditor"));
+            check(editor && editor->isVisible(),
+                  "UX04A name editor not visible");
+            if (!editor) return;
+            const auto saved=encodeShow(ui.show);
+            const int live=ui.liveCuelistIndex();
+            const int next=ui.nextCueIndex();
+            editor->setText("Unsaved name",juce::dontSendNotification);
+            ui.engine.acknowledgedCueId.store(923);
+            editor->keyPressed(esc);
+            check(!ui.isInlineRenaming() && !editor->isVisible() &&
+                  encodeShow(ui.show)==saved &&
+                  ui.liveCuelistIndex()==live && ui.nextCueIndex()==next &&
+                  ui.engine.acknowledgedCueId.load()==0,
+                  "UX04A inline name Esc cancelled editing but missed PANIC");
+        }
+
+        // BPM uses a separate fixed overlay and a distinct Escape handler.
+        {
+            MainComponent ui(false);
+            ui.setSize(1180,820);
+            auto* metrics=cueViewFixtures::find<CueMetricsOverlay>(ui);
+            check(metrics!=nullptr,"UX04A BPM overlay missing");
+            if (!metrics) return;
+            metrics->beginBpmEdit(0);
+            auto& editor=metrics->bpmEditorForTests();
+            check(metrics->isBpmEditing() && editor.isVisible(),
+                  "UX04A native BPM field did not enter edit mode");
+            const auto saved=encodeShow(ui.show);
+            const int live=ui.liveCuelistIndex();
+            const int next=ui.nextCueIndex();
+            editor.setText("160.0",juce::dontSendNotification);
+            ui.engine.acknowledgedCueId.store(923);
+            editor.keyPressed(esc);
+            check(!metrics->isBpmEditing() && !editor.isVisible() &&
+                  encodeShow(ui.show)==saved &&
+                  ui.liveCuelistIndex()==live && ui.nextCueIndex()==next &&
+                  ui.engine.acknowledgedCueId.load()==0,
+                  "UX04A BPM Esc cancelled entry but missed PANIC");
+        }
+
+        // The Timeline owns its marker TextEditor; the new marker itself
+        // stays in the show, while the pending name is discarded by Escape.
+        {
+            MainComponent ui(false);
+            auto* timeline=cueViewFixtures::find<Timeline>(ui);
+            check(timeline!=nullptr,"UX04A Timeline missing");
+            if (!timeline) return;
+            timeline->setSize(800,260);
+            const juce::Point<float> p{350.f,90.f};
+            timeline->mouseDoubleClick(cueViewFixtures::event(
+                *timeline,p,p,2));
+            auto* editor=cueViewFixtures::find<juce::TextEditor>(*timeline);
+            check(editor && editor->isVisible() &&
+                  ui.show.rows[0].markers.size()==1,
+                  "UX04A marker inline editor did not open");
+            if (!editor) return;
+            const auto saved=encodeShow(ui.show);
+            const int live=ui.liveCuelistIndex();
+            const int next=ui.nextCueIndex();
+            editor->setText("Uncommitted marker",juce::dontSendNotification);
+            ui.engine.acknowledgedCueId.store(923);
+            editor->keyPressed(esc);
+            check(!editor->isVisible() && encodeShow(ui.show)==saved &&
+                  ui.liveCuelistIndex()==live && ui.nextCueIndex()==next &&
+                  ui.engine.acknowledgedCueId.load()==0,
+                  "UX04A marker Esc discarded text but missed PANIC");
+        }
+    });
+
     test("UX02: neutral audio import does not borrow the transport GO role",[] {
         MainComponent ui(false);
         ui.setAppearanceTheme(palette::Appearance::industrialOrange);
