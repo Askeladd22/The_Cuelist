@@ -119,7 +119,8 @@ juce::Result writeClickTrackWav(const juce::File& destination,
     auto stream=destination.createOutputStream();
     if (!stream) return juce::Result::fail("Cannot create the Click Track WAV.");
     juce::WavAudioFormat format;
-    auto writer=format.createWriterFor(std::move(stream),
+    std::unique_ptr<juce::OutputStream> outputStream(std::move(stream));
+    auto writer=format.createWriterFor(outputStream,
         juce::AudioFormatWriterOptions()
             .withSampleRate(ClickPulseBank::sampleRate)
             .withNumChannels(1).withBitsPerSample(16));
