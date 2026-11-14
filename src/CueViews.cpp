@@ -206,30 +206,29 @@ void CueGrid::paint(juce::Graphics& g) {
     const auto activeName=show.cuelists.empty()
         ? juce::String("Cuelist 1")
         : show.cuelists[(size_t)show.activeCuelist].name;
-    label(g,activeName,{24,7,nameWidth-173,28},
-          18,palette::text,true);
-    // The title is the browsed VIEW. A separate LIVE/GO destination
-    // always remains visible when its tab is hidden in the overflow.
-    // Both are labels, never controls: no new transfer of LIVE ownership.
-    // The L01–L12 locator disambiguates long names that may ellipsize.
-    const auto liveGo=owner.nextLiveGoCueForUi();
-    // font(10..13) would all clamp to 10pt in Theme.h. Use a true
-    // 11.25pt Hind Semibold tier for LIVE identity and next global GO,
-    // leaving names left-aligned and GO right-aligned in the same boxes.
-    label(g,"LIVE L"+juce::String(owner.liveCuelistIndex()+1).paddedLeft('0',2),
-          {24,33,72,19},15,palette::standby,true);
-    label(g,owner.liveCuelistNameForUi(),{98,32,121,20},
-          15,palette::text,true);
-    label(g,liveGo=="END" ? "END" : "GO "+liveGo,
-          {224,33,70,19},15,palette::standby,true,
-          juce::Justification::centredRight);
-    // Preserve both VIEW counts in the existing 72px header.
+    // R5: one larger viewed Cuelist name with a semantic badge *beside*
+    // it. LIVE means the currently viewed list owns global transport;
+    // orange VIEW means the operator is browsing a different list.
+    // The 318x72 original hit surface and Collapse All remain unchanged.
+    const auto titleFont=font(22.0f,true);
+    const int titleWidth=juce::jlimit(50,196,
+        (int)std::ceil(juce::GlyphArrangement::getStringWidth(
+            titleFont,activeName))+3);
+    label(g,activeName,{24,7,titleWidth,31},22,palette::text,true);
+    const bool viewingLive=show.activeCuelist==owner.liveCuelistIndex();
+    label(g,viewingLive ? "LIVE" : "VIEW",
+          {24+titleWidth+7,10,48,27},16,
+          viewingLive ? palette::red : palette::amber,true);
+    // Only the browsed list's index/counts belong here. The actual LIVE
+    // identity and its NEXT GLOBAL GO remain beside the real GO/PANIC
+    // buttons in the sidebar, even when LIVE is hidden in tab overflow.
     const int viewCues=(int)show.rows.size();
     const int viewClips=owner.visibleClipCount;
-    label(g,"VIEW  /  "+juce::String(viewCues)+
+    label(g,"L"+juce::String(show.activeCuelist+1).paddedLeft('0',2)+
+          "  /  "+juce::String(viewCues)+
           (viewCues==1 ? " cue  /  " : " cues  /  ")+
           juce::String(viewClips)+(viewClips==1 ? " clip" : " clips"),
-          {24,53,nameWidth-48,14},10,palette::muted,true);
+          {24,44,186,20},11,palette::muted,true);
     g.setColour(palette::line.withAlpha(.28f));
     g.fillRoundedRectangle(24.f,68.f,(float)nameWidth-48.f,1.f,.5f);
     for (int c=0;c<(int)show.columns.size();++c) {
