@@ -12,12 +12,15 @@ std::array<bool,9> GainMeterFader::columnTickLabelMask(
     std::array<bool,9> result {};
     for(const int index:priority) {
         if(ticks[index]>ceilingDb) continue;
-        const float candidate=yForDb((float)ticks[index],top,bottom,ceilingDb);
+        const auto captionY=[&](int tick) {
+            const float y=yForDb((float)tick,top,bottom,ceilingDb);
+            return tick==-60 ? y-columnSilenceCaptionLift : y;
+        };
+        const float candidate=captionY(ticks[index]);
         bool fits=true;
         for(int j=0;j<9;++j)
             if(result[(size_t)j] &&
-               std::abs(candidate-yForDb((float)ticks[j],top,bottom,ceilingDb))
-                   <minSpacing) {
+               std::abs(candidate-captionY(ticks[j]))<minSpacing) {
                 fits=false;break;
             }
         if(fits)result[(size_t)index]=true;
@@ -119,9 +122,12 @@ void GainMeterFader::paint(juce::Graphics& g) {
             g.setFont(tick==-60 ? mathFont(10.0f) : font(10.0f));
             const auto minusInfinity=juce::String::charToString((juce::juce_wchar)0x2212)
                                     +juce::String::charToString((juce::juce_wchar)0x221e);
+            const float captionY=columnReadableScale && tick==-60
+                ? y-columnSilenceCaptionLift : y;
             g.drawText(tick==-60 ? minusInfinity :
                        tick>0 ? "+"+juce::String(tick) : juce::String(tick),
-                       52,(int)std::round(y-7),27,14,juce::Justification::centredLeft,false);
+                       52,(int)std::round(captionY-7),27,14,
+                       juce::Justification::centredLeft,false);
             previousLabel=y;
         }
     }
