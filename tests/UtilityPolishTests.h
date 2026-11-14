@@ -269,6 +269,38 @@ void utilityPolishTests() {
         check(mute->getX()>=fader->getX()+fader->getWidth()-24,
               "Audio Mute unexpectedly moved behind the calibrated meter region");
     });
+    test("N5.3 silence endpoint label clears Audio MUTE and PAN captions",[] {
+        for(const auto size:std::initializer_list<juce::Point<int>>{
+                {1180,820},{1440,900},{1647,895},{1920,1080}}) {
+            MainComponent ui(false);ui.setSize(size.x,size.y);
+            auto* utility=cueViewFixtures::find<ColumnUtilities>(ui);
+            check(utility!=nullptr,"N5.3 ColumnUtilities missing");
+            if(!utility) return;
+            auto* first=utility->getChildComponent(0)->getChildComponent(0);
+            auto* fader=dynamic_cast<GainMeterFader*>(
+                controlsV3::named(*first,"columnGainDb"));
+            check(fader && fader->isVisible() &&
+                  fader->isColumnReadableScale() && !fader->isCompact(),
+                  "N5.3 native Audio fader is missing the readable scale");
+            if(!fader) return;
+            // These are the actual Strip::paint rectangles. The label
+            // glyphs are drawn inside GainMeterFader at x52,y(bottom-18),
+            // while the two other captions belong to Strip itself.
+            const int h=first->getHeight(),w=first->getWidth();
+            const auto silence=juce::Rectangle<int>(
+                fader->getX()+52,
+                fader->getY()+(int)std::round(
+                    (float)fader->getHeight()-48.f-
+                    GainMeterFader::columnSilenceCaptionLift-7.f),
+                27,14);
+            const auto muteCaption=juce::Rectangle<int>(w-86,h-53,42,16);
+            const auto panReadout=juce::Rectangle<int>(w-63,100,58,18);
+            check(!silence.intersects(muteCaption) &&
+                  !silence.intersects(panReadout) &&
+                  first->getLocalBounds().contains(silence),
+                  "N5.3 silence label collides with MUTE/PAN or clips the strip");
+        }
+    });
     test("Compact Master Mute is centred below Pan and not over its label",[] {
         MainComponent ui(false);
         auto* util=cueViewFixtures::find<ColumnUtilities>(ui);
