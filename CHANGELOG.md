@@ -13,6 +13,20 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.66] - 2026-11-14
+
+**PR:** UX-03E — protezione del gesto multi-click sulla barra di azioni colonna (Taste + UI/UX Review + Unlazy).
+
+### Corretto
+- La modalità azioni native `Shift+F10` intercettava il primo `mouseDown` per chiudere la barra, ma il separato `PinnedColumnHeaders::mouseDoubleClick` poteva inoltrare il secondo clic a `CueGrid::doubleClickColumnHeader`, iniziando un Rename sotto la barra appena chiusa.
+- Ora l'evento che chiude la barra consuma tutta la medesima sequenza multi-click, compreso `mouseDoubleClick`. Una successiva sequenza indipendente (nuovo clic numero 1) conserva la normale rinomina con doppio clic.
+- Regressione nativa aggiunta per mouseDown/doubleClick in sequenza, callback doppio clic diretto, ripristino del Rename, immutabilità Show e identità VIEW/LIVE.
+- Nessun nuovo controllo, PopupMenu, listener, timer o cambiamento geometrico/visuale. GO/STOP/PANIC, Control Map, Undo/Redo, Mixer, Timeline, Audio/MIDI/OSC/LTC e schema JSON v10 non modificati.
+
+### QA e limiti
+- Diagnosi da sorgenti JUCE e componenti nativi; rischio dedotto dal codice, non riprodotto su hardware Windows. Test e CI nuovi **da verificare**; nessuna certificazione LIVE.
+- Rollback tramite revert della PR, senza migrazioni.
+
 ## [0.9.65] - 2026-11-14
 
 **PR:** [#186](https://github.com/Askeladd22/The_Cuelist/pull/186) (draft, senza merge automatico) — UX-03D dopo la PR #185 (Taste + UI/UX Review + Unlazy).
