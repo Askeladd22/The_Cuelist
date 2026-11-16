@@ -2037,6 +2037,7 @@ void MainComponent::importFile(const juce::File& file) {
     // Invalid imports no longer stop an ongoing performance; a successful
     // import still uses changed(...), preserving its original transport policy.
     clips=std::move(updated); c.click.reset(); c.file=file.getFullPathName(); c.name=file.getFileNameWithoutExtension();
+    c.audioOffsetSeconds=c.audioDurationSeconds=c.fadeInSeconds=c.fadeOutSeconds=0;
     changed("Imported "+file.getFileName()+". Double-click the cell to play.");
 }
 bool MainComponent::send(int id,bool row,bool stop) {

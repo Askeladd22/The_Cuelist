@@ -574,6 +574,10 @@ public:
     void moveClip(int,int,int,int);
     void setClipStart(int column,double seconds);
     void setClipDuration(int column,double durationSeconds);
+    // Commit a single Timeline gesture (trim, move or fades) with one Undo step.
+    // No WAV mutation; a rejected edit leaves the Show and LIVE state intact.
+    bool setAudioClipRegion(int row,int column,double start,double offset,
+                            double duration,double fadeIn,double fadeOut);
     bool copySelectedCell();
     bool pasteSelectedCell();
     bool cutSelectedCell();

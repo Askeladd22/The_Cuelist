@@ -174,6 +174,48 @@ bool MainComponent::pasteSelectedCell() {
     return true;
 }
 
+bool MainComponent::setAudioClipRegion(int row,int column,double start,double offset,
+                                       double duration,double fadeIn,double fadeOut) {
+    if(row<0 || row>=(int)show.rows.size() || column<0 ||
+       column>=(int)show.columns.size() ||
+       show.columns[(size_t)column].type!=ColumnType::audio ||
+       !std::isfinite(start) || !std::isfinite(offset) ||
+       !std::isfinite(duration) || !std::isfinite(fadeIn) ||
+       !std::isfinite(fadeOut) || show.columns[(size_t)column].collapsed) return false;
+    const auto& cell=show.rows[(size_t)row].cells[(size_t)column];
+    const auto found=clips.find(cell.id);
+    if(found==clips.end() || !found->second || cell.click) return false;
+    const auto& clip=*found->second;
+    if(clip.sampleRate<=0 || clip.samples.getNumSamples()<=0) return false;
+    const double source=(double)clip.samples.getNumSamples()/clip.sampleRate;
+    const double minimum=1.0/clip.sampleRate;
+    if(start<0 || start>86400 || offset<0 || offset>=source ||
+       duration<minimum || offset+duration>source+minimum*.5 ||
+       fadeIn<0 || fadeOut<0 || fadeIn>duration || fadeOut>duration)
+        return false;
+    if(!applyInspector()) return false;
+    auto candidate=show;
+    auto& edit=candidate.rows[(size_t)row].cells[(size_t)column];
+    const auto roundMs=[](double v) {return std::round(v*1000.0)/1000.0;};
+    edit.startSeconds=roundMs(start);
+    edit.audioOffsetSeconds=roundMs(offset);
+    edit.audioDurationSeconds=std::min(source-edit.audioOffsetSeconds,
+                                       std::max(minimum,roundMs(duration)));
+    edit.fadeInSeconds=std::min(edit.audioDurationSeconds,roundMs(fadeIn));
+    edit.fadeOutSeconds=std::min(edit.audioDurationSeconds,roundMs(fadeOut));
+    if(edit.startSeconds==cell.startSeconds &&
+       edit.audioOffsetSeconds==cell.audioOffsetSeconds &&
+       edit.audioDurationSeconds==cell.audioDurationSeconds &&
+       edit.fadeInSeconds==cell.fadeInSeconds &&
+       edit.fadeOutSeconds==cell.fadeOutSeconds) return false;
+    if(validateShow(candidate).failed()) return false;
+    show=std::move(candidate);
+    // RenderState inherits LIVE voice positions, rather than stopping
+    // another cue or resetting GO/NEXT when editing a Timeline clip.
+    changed("Audio trim / fade edited.",false);
+    return true;
+}
+
 void MainComponent::setClipDuration(int column,double seconds) {
     if (column<0 || column>=(int)show.columns.size() ||
         selectedRow<0 || selectedRow>=(int)show.rows.size() || !std::isfinite(seconds)) return;
@@ -186,7 +228,20 @@ void MainComponent::setClipDuration(int column,double seconds) {
         changed("Click Track duration updated. LIVE continues.",false,true);
         return;
     }
-    if (!cell.midi && !cell.osc) return;
+    if (!cell.midi && !cell.osc) {
+        if(show.columns[(size_t)column].type==ColumnType::audio && !cell.click) {
+            const auto it=clips.find(cell.id);
+            if(it!=clips.end() && it->second && it->second->sampleRate>0) {
+                const double source=(double)it->second->samples.getNumSamples()/it->second->sampleRate;
+                const double available=source-cell.audioOffsetSeconds;
+                setAudioClipRegion(selectedRow,column,cell.startSeconds,cell.audioOffsetSeconds,
+                    juce::jlimit(1.0/it->second->sampleRate,available,seconds),
+                    std::min(cell.fadeInSeconds,seconds),
+                    std::min(cell.fadeOutSeconds,seconds));
+            }
+        }
+        return;
+    }
     const auto& tempo=row.tempo;
     const auto beatAt=[&](double duration) {
         double low=0,high=std::max(1.0,duration*4);

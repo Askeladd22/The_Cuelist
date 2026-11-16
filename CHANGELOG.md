@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.79] - 2026-11-16
+
+**Timeline Audio trim dai due bordi e fade-in/fade-out non distruttivi.**
+
+### UI nativa JUCE
+- Nella Timeline le clip Audio WAV/MP3 hanno maniglie laterali inferiori per accorciare/allungare l'intervallo riprodotto e maniglie superiori separate per modificare i fade, con cursori contestuali.
+- Il corpo della clip conserva il drag per il posizionamento; Snap e gli editor MIDI/OSC restano indipendenti.
+
+### Audio e comportamento
+- I parametri opzionali audioOffsetSeconds, audioDurationSeconds, fadeInSeconds e fadeOutSeconds sono persistiti nello schema JSON v10, senza riscrivere i file originali.
+- Le rampe lineari operano sul PCM prima di sends Master/Direct e meter, senza buffer nuovi o modifiche alla generazione Click WAV. Un solo commit di modello per gesto mantiene Undo/Redo e non ferma altre voci LIVE.
+
+### Test
+- Verifica di trim e fade sul rendering, serializzazione/default dei vecchi file, hit-test, cursori e gesture JUCE. Build Windows e collaudo hardware da verificare in CI e sul dispositivo reale.
+
 ## [0.9.78] - 2026-11-14
 
 **RQ-AUDIO-METER: affidabilita dei transienti brevi nel meter Audio.**

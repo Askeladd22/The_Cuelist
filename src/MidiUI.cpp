@@ -58,7 +58,8 @@ double MainComponent::clipDuration(int row,int column) const {
     if (cell.osc) return cell.osc->useBeats ? secondsAtBeat(cue.tempo,cell.osc->length) : cell.osc->length;
     if (cell.click) return cell.click->durationSeconds;
     const auto clip=clips.find(cell.id);
-    return clip!=clips.end() && clip->second->sampleRate>0 ? clip->second->samples.getNumSamples()/clip->second->sampleRate : 0;
+    return clip!=clips.end() && clip->second->sampleRate>0
+        ? (double)resolvedAudioRegion(cell,*clip->second).lengthFrames/clip->second->sampleRate : 0;
 }
 void MainComponent::editMidiClip() {
     if (show.columns[selectedColumn].type!=ColumnType::midi || !applyInspector()) return;
