@@ -88,7 +88,9 @@ void audioTimelineEditTests() {
         for(int i=0;i<32;++i)clip->samples.setSample(0,i,.25f);
         const int cellId=ui.show.rows[0].cells[0].id;
         ui.clips[cellId]=clip;
-        ui.engine.publish(makeRenderState(ui.show,ui.clips));
+        // Manually mounted test media must enter global history before the
+        // trim gesture; a real Import action creates that checkpoint.
+        ui.commitModelEditForTest("Prepare PCM fixture");
         check(ui.engine.send(cellId,false),"Cannot start Audio test voice");
         juce::AudioBuffer<float> out(2,1);
         ui.engine.processBlock(out.getArrayOfWritePointers(),2,1,4);
