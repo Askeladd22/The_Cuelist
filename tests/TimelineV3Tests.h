@@ -4,6 +4,31 @@
 void timelineV3Tests() {
     using namespace cueViewFixtures;
 
+    test("Audio Timeline clicking resize and fade handles without dragging is a model no-op",[] {
+        MainComponent ui(false);
+        auto clip=std::make_shared<AudioClip>();
+        clip->sampleRate=48000;
+        clip->samples.setSize(1,48000*4);
+        clip->samples.clear();
+        ui.clips[ui.show.rows[0].cells[0].id]=clip;
+        auto* timeline=cueViewFixtures::find<Timeline>(ui);
+        check(timeline!=nullptr,"Timeline not available");
+        timeline->setSize(800,250);
+        const auto before=encodeShow(ui.show);
+        // Normal, untrimmed media is shown over 4 seconds of 10s view.
+        for(const juce::Point<float> position : {
+            juce::Point<float>{144,119},  // left lower trim
+            juce::Point<float>{392,119},  // right lower trim
+            juce::Point<float>{144,110},  // fade-in top dot
+            juce::Point<float>{392,110}   // fade-out top dot
+        }) {
+            timeline->mouseDown(event(*timeline,position,position));
+            timeline->mouseUp(event(*timeline,position,position));
+            check(encodeShow(ui.show)==before,
+                  "A handle click without movement modified the Audio region");
+        }
+    });
+
     test("Audio Timeline native trim handles change both edges and preserve one Undo gesture",[] {
         MainComponent ui(false);
         auto clip=std::make_shared<AudioClip>();

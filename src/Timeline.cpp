@@ -672,8 +672,16 @@ void Timeline::mouseUp(const juce::MouseEvent&) {
     if (audioDrag!=AudioDrag::none && dragColumn>=0 &&
         owner.selectedRow>=0 && owner.selectedRow<(int)owner.show.rows.size() &&
         owner.show.rows[(size_t)owner.selectedRow].id==dragRowId) {
-        owner.setAudioClipRegion(owner.selectedRow,dragColumn,audioPreviewStart,
-            audioPreviewOffset,audioPreviewDuration,audioPreviewFadeIn,audioPreviewFadeOut);
+        // MouseDown/Up without a real adjustment must not turn a legacy
+        // duration=0 (whole source) into explicit metadata or create Undo.
+        const bool changed=std::abs(audioPreviewStart-dragStartSeconds)>1.0e-7 ||
+            std::abs(audioPreviewOffset-audioOriginalOffset)>1.0e-7 ||
+            std::abs(audioPreviewDuration-dragStartDuration)>1.0e-7 ||
+            std::abs(audioPreviewFadeIn-audioOriginalFadeIn)>1.0e-7 ||
+            std::abs(audioPreviewFadeOut-audioOriginalFadeOut)>1.0e-7;
+        if(changed)
+            owner.setAudioClipRegion(owner.selectedRow,dragColumn,audioPreviewStart,
+                audioPreviewOffset,audioPreviewDuration,audioPreviewFadeIn,audioPreviewFadeOut);
     }
     audioDrag=AudioDrag::none;
     if (draggingMarkerId>0) {
