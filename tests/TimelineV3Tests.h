@@ -16,8 +16,20 @@ void timelineV3Tests() {
         auto* timeline=cueViewFixtures::find<Timeline>(ui);
         check(timeline!=nullptr,"Timeline not available");
         timeline->setSize(800,250);
-        // Full length 10 s, ruler 640px: x=268..652 at 2..8s.
-        const juce::Point<float> right{647,119},rightIn{615,119};
+        // Use the actual JUCE scrollbar scale; refresh() can resize the
+        // Timeline after every committed edit.
+        const auto clipX=[&](double seconds) {
+            auto* scroll=find<juce::ScrollBar>(*timeline);
+            check(scroll!=nullptr,"Audio Timeline scrollbar missing");
+            return 140.0f+(float)((seconds-scroll->getCurrentRangeStart())*
+                (timeline->getWidth()-160)/scroll->getCurrentRangeSize());
+        };
+        const auto pxHalf=[&] {
+            auto* scroll=find<juce::ScrollBar>(*timeline);
+            return (float)((timeline->getWidth()-160)*.5/scroll->getCurrentRangeSize());
+        };
+        const juce::Point<float> right{clipX(8)-5,119};
+        const juce::Point<float> rightIn{right.x-pxHalf(),119};
         timeline->mouseMove(event(*timeline,right,right));
         check(timeline->getMouseCursor()==juce::MouseCursor(juce::MouseCursor::LeftRightResizeCursor),
               "Right trim did not show horizontal-resize pointer");
@@ -29,7 +41,8 @@ void timelineV3Tests() {
         near(ui.clipDuration(0,0),5.5);
         near(ui.show.rows[0].cells[0].audioOffsetSeconds,1);
         timeline->setSize(800,250); // changed() may refresh workspace bounds
-        const juce::Point<float> left{272,119},leftIn{304,119};
+        const juce::Point<float> left{clipX(2)+4,119};
+        const juce::Point<float> leftIn{left.x+pxHalf(),119};
         timeline->mouseMove(event(*timeline,left,left));
         check(timeline->getMouseCursor()==juce::MouseCursor(juce::MouseCursor::LeftRightResizeCursor),
               "Left trim did not show horizontal-resize pointer");
@@ -58,8 +71,20 @@ void timelineV3Tests() {
         check(ui.setAudioClipRegion(0,0,2,1,6,0,0),"Initial Audio region rejected");
         auto* timeline=cueViewFixtures::find<Timeline>(ui);
         timeline->setSize(800,250);
-        // Fade knobs at x=start+4 and x=end-4, top row.
-        const juce::Point<float> begin{272,110},startEnd{304,110};
+        // Read the actual viewport after each model commit. The top
+        // handles are 4 px inside the currently rendered clip edges.
+        const auto clipX=[&](double seconds) {
+            auto* scroll=find<juce::ScrollBar>(*timeline);
+            check(scroll!=nullptr,"Timeline scrollbar missing for fade");
+            return 140.0f+(float)((seconds-scroll->getCurrentRangeStart())*
+                (timeline->getWidth()-160)/scroll->getCurrentRangeSize());
+        };
+        const auto pxHalf=[&] {
+            auto* scroll=find<juce::ScrollBar>(*timeline);
+            return (float)((timeline->getWidth()-160)*.5/scroll->getCurrentRangeSize());
+        };
+        const juce::Point<float> begin{clipX(2)+4,110};
+        const juce::Point<float> startEnd{begin.x+pxHalf(),110};
         timeline->mouseMove(event(*timeline,begin,begin));
         check(timeline->getMouseCursor()==juce::MouseCursor(juce::MouseCursor::CrosshairCursor),
               "Top fade-in handle cursor is not distinct from trim");
@@ -69,7 +94,8 @@ void timelineV3Tests() {
         near(ui.show.rows[0].cells[0].fadeInSeconds,.5);
         near(ui.show.rows[0].cells[0].startSeconds,2);
         timeline->setSize(800,250); // changed() may refresh workspace bounds
-        const juce::Point<float> end{648,110},endTo{616,110};
+        const juce::Point<float> end{clipX(8)-4,110};
+        const juce::Point<float> endTo{end.x-pxHalf(),110};
         timeline->mouseMove(event(*timeline,end,end));
         timeline->mouseDown(event(*timeline,end,end));
         timeline->mouseDrag(event(*timeline,endTo,end,1,true));
