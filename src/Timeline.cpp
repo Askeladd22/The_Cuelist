@@ -557,6 +557,8 @@ void Timeline::mouseDown(const juce::MouseEvent& e) {
             const auto clip=owner.clips.find(cell.id);
             audioSourceSeconds=clip!=owner.clips.end() && clip->second->sampleRate>0
                 ? (double)clip->second->samples.getNumSamples()/clip->second->sampleRate : 0;
+            audioSampleSeconds=clip!=owner.clips.end() && clip->second->sampleRate>0
+                ? 1.0/clip->second->sampleRate : .01;
         }
         const int edgeX=timelineStart+(int)std::round((end-dragViewStart)*area/dragLength);
         resizingClip=(cell.midi || cell.osc) && std::abs(e.x-edgeX)<=10;
@@ -631,7 +633,9 @@ void Timeline::mouseDrag(const juce::MouseEvent& e) {
     else if (dragColumn>=0 && dragColumn<(int)owner.show.rows[owner.selectedRow].cells.size()) {
         const double delta=e.getDistanceFromDragStartX()*dragLength/dragPixels;
         if(audioDrag!=AudioDrag::none && audioSourceSeconds>0) {
-            const double minDuration=std::min(.01,audioSourceSeconds);
+            // A region can be shorter than 10 ms. Keep both drag bounds
+            // ordered and allow trimming down to one source sample.
+            const double minDuration=std::min(audioSampleSeconds,dragStartDuration);
             const double originalEnd=dragStartSeconds+dragStartDuration;
             // Every move derives from the frozen mouseDown state; no rounding
             // drift and no realtime snapshot publication during the drag.

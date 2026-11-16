@@ -4,6 +4,51 @@
 void timelineV3Tests() {
     using namespace cueViewFixtures;
 
+    test("Short Audio regions keep valid left trim bounds below ten milliseconds",[] {
+        MainComponent ui(false);
+        auto clip=std::make_shared<AudioClip>();
+        clip->sampleRate=48000;
+        clip->samples.setSize(1,48000);
+        clip->samples.clear();
+        ui.clips[ui.show.rows[0].cells[0].id]=clip;
+        check(ui.setAudioClipRegion(0,0,0,0,.005,0,0),
+              "Five-millisecond source region rejected");
+        auto* timeline=cueViewFixtures::find<Timeline>(ui);
+        check(timeline!=nullptr,"Timeline missing");
+        timeline->setSize(800,250);
+        // Zoom anchored at zero so the tiny clip remains in the viewport.
+        const auto timestamp=juce::Time::getCurrentTime();
+        const juce::MouseEvent ctrlAtZero{
+            juce::Desktop::getInstance().getMainMouseSource(),{140,60},
+            juce::ModifierKeys(juce::ModifierKeys::ctrlModifier),1,0,0,0,0,
+            timeline,timeline,timestamp,{140,60},timestamp,1,false};
+        juce::MouseWheelDetails wheel{};
+        wheel.deltaY=1.0f/3.0f;
+        for(int i=0;i<5;++i)timeline->mouseWheelMove(ctrlAtZero,wheel);
+        bool snapFound=false;
+        for(auto* child:timeline->getChildren())
+            if(child->getName()=="timelineSnapToggle") {
+                auto* toggle=dynamic_cast<juce::TextButton*>(child);
+                check(toggle!=nullptr,"Snap toggle type mismatch");
+                toggle->onClick();
+                snapFound=true;
+            }
+        check(snapFound,"Snap toggle missing from real JUCE Timeline");
+        const juce::Point<float> from{144,119},to{147,119};
+        timeline->mouseMove(event(*timeline,from,from));
+        check(timeline->getMouseCursor()==
+                  juce::MouseCursor(juce::MouseCursor::LeftRightResizeCursor),
+              "Short clip edge is not reachable at 32x zoom");
+        timeline->mouseDown(event(*timeline,from,from));
+        timeline->mouseDrag(event(*timeline,to,from,1,true));
+        timeline->mouseUp(event(*timeline,to,from,1,true));
+        const auto& edit=ui.show.rows[0].cells[0];
+        check(edit.startSeconds>0 && edit.audioOffsetSeconds>0,
+              "Sub-10ms left trim produced inverted drag limits");
+        check(ui.clipDuration(0,0)>0 && ui.clipDuration(0,0)<.005,
+              "Short Audio interval did not shrink safely");
+    });
+
     test("Audio Timeline clicking resize and fade handles without dragging is a model no-op",[] {
         MainComponent ui(false);
         auto clip=std::make_shared<AudioClip>();

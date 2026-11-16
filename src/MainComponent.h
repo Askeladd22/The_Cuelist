@@ -356,7 +356,7 @@ private:
     // the realtime callback; mouseUp commits exactly one undoable edit.
     AudioDrag audioDrag=AudioDrag::none;
     AudioDrag audioHit(int column,int x,int y) const;
-    double audioSourceSeconds=0, audioOriginalOffset=0;
+    double audioSourceSeconds=0, audioSampleSeconds=.01, audioOriginalOffset=0;
     double audioOriginalFadeIn=0, audioOriginalFadeOut=0;
     double audioPreviewStart=0, audioPreviewOffset=0, audioPreviewDuration=0;
     double audioPreviewFadeIn=0, audioPreviewFadeOut=0;
