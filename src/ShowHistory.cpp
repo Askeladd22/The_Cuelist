@@ -131,6 +131,35 @@ bool MainComponent::restoreHistorySnapshot(const HistorySnapshot& snapshot,
             encodeShow(neutralized)==encodeShow(newLive);
         if(markerOnlyRestore) liveAffected=false;
     }
+    bool audioRegionOnlyRestore=false;
+    if(liveAffected && targetLive>=0 && oldLive.rows.size()==newLive.rows.size()) {
+        // Undo/Redo of a pure Audio trim or fade must not PANIC an active
+        // Cuelist. Stable PCM identity is checked separately below.
+        auto neutralized=oldLive;
+        bool sameIdentity=true;
+        for(size_t i=0;i<neutralized.rows.size();++i) {
+            if(neutralized.rows[i].id!=newLive.rows[i].id ||
+               neutralized.rows[i].cells.size()!=newLive.rows[i].cells.size()) {
+                sameIdentity=false;break;
+            }
+            for(size_t j=0;j<neutralized.rows[i].cells.size();++j) {
+                auto& before=neutralized.rows[i].cells[j];
+                const auto& after=newLive.rows[i].cells[j];
+                if(before.id!=after.id) {sameIdentity=false;break;}
+                if(show.columns[j].type==ColumnType::audio) {
+                    before.startSeconds=after.startSeconds;
+                    before.audioOffsetSeconds=after.audioOffsetSeconds;
+                    before.audioDurationSeconds=after.audioDurationSeconds;
+                    before.fadeInSeconds=after.fadeInSeconds;
+                    before.fadeOutSeconds=after.fadeOutSeconds;
+                }
+            }
+            if(!sameIdentity) break;
+        }
+        audioRegionOnlyRestore=sameIdentity &&
+            encodeShow(neutralized)==encodeShow(newLive);
+        if(audioRegionOnlyRestore) liveAffected=false;
+    }
     bool clickOnlyRestore=false;
     if(liveAffected && targetLive>=0 && oldLive.rows.size()==newLive.rows.size()) {
         // Undo/Redo of a procedural source or its label never silences unrelated

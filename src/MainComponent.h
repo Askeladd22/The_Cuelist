@@ -351,6 +351,15 @@ private:
     void finishMarkerEdit(bool accept);
     void showMarkerContextMenu(int markerId,const juce::Point<int>& screenPoint);
     bool mutateMarkers(const std::function<bool(Row&)>& apply,bool changesTempo,const juce::String& status);
+    enum class AudioDrag { none, resizeStart, resizeEnd, fadeIn, fadeOut };
+    // A physical drag previews the model without publishing snapshots to
+    // the realtime callback; mouseUp commits exactly one undoable edit.
+    AudioDrag audioDrag=AudioDrag::none;
+    AudioDrag audioHit(int column,int x,int y) const;
+    double audioSourceSeconds=0, audioOriginalOffset=0;
+    double audioOriginalFadeIn=0, audioOriginalFadeOut=0;
+    double audioPreviewStart=0, audioPreviewOffset=0, audioPreviewDuration=0;
+    double audioPreviewFadeIn=0, audioPreviewFadeOut=0;
     bool seeking=false,resizingClip=false;
     double dragStartDuration=0;
     double dragStartSeconds=0, dragLength=10, dragViewStart=0, dragPixels=1;
