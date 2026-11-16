@@ -420,14 +420,15 @@ void Timeline::paint(juce::Graphics& g) {
                 const double begin=secondsAtBeat(row.tempo,note.beat), end=secondsAtBeat(row.tempo,note.beat+note.length);
                 g.fillRect(x+(float)(area*begin/length),(float)y+3+(127-note.pitch)*.18f,std::max(1.0f,(float)(area*(end-begin)/length)),2.0f);
             }
-        } else {
-        const auto& audio=owner.clips.at(cell.id)->samples;
+        } else if(const auto source=owner.clips.find(cell.id);
+                  source!=owner.clips.end() && source->second) {
+        const auto& audio=source->second->samples;
         if (audio.getNumSamples()>0 && audio.getNumChannels()>0) for (int px=std::max(0,(int)(timelineStart-x));px<(int)width;px+=3) {
             if (x+px>getWidth()-20) break;
             // Waveform samples follow the actual trimmed source interval.
             const double sourceAt=offset+seconds*px/width;
             const int sample=juce::jlimit(0,audio.getNumSamples()-1,
-                (int)(sourceAt*owner.clips.at(cell.id)->sampleRate));
+                (int)(sourceAt*source->second->sampleRate));
             const float amp=std::min(1.0f,std::abs(audio.getSample(0,sample)))*24;
             g.fillRect(x+px,(float)y+15-amp/2,1.0f,std::max(1.0f,amp));
         }

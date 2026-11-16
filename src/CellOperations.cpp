@@ -234,6 +234,7 @@ void MainComponent::setClipDuration(int column,double seconds) {
             if(it!=clips.end() && it->second && it->second->sampleRate>0) {
                 const double source=(double)it->second->samples.getNumSamples()/it->second->sampleRate;
                 const double available=source-cell.audioOffsetSeconds;
+                if(available<1.0/it->second->sampleRate) return;
                 setAudioClipRegion(selectedRow,column,cell.startSeconds,cell.audioOffsetSeconds,
                     juce::jlimit(1.0/it->second->sampleRate,available,seconds),
                     std::min(cell.fadeInSeconds,seconds),

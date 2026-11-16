@@ -28,6 +28,7 @@ void timelineV3Tests() {
         timeline->mouseUp(event(*timeline,rightIn,right,1,true));
         near(ui.clipDuration(0,0),5.5);
         near(ui.show.rows[0].cells[0].audioOffsetSeconds,1);
+        timeline->setSize(800,250); // changed() may refresh workspace bounds
         const juce::Point<float> left{272,119},leftIn{304,119};
         timeline->mouseMove(event(*timeline,left,left));
         check(timeline->getMouseCursor()==juce::MouseCursor(juce::MouseCursor::LeftRightResizeCursor),
@@ -67,6 +68,7 @@ void timelineV3Tests() {
         timeline->mouseUp(event(*timeline,startEnd,begin,1,true));
         near(ui.show.rows[0].cells[0].fadeInSeconds,.5);
         near(ui.show.rows[0].cells[0].startSeconds,2);
+        timeline->setSize(800,250); // changed() may refresh workspace bounds
         const juce::Point<float> end{648,110},endTo{616,110};
         timeline->mouseMove(event(*timeline,end,end));
         timeline->mouseDown(event(*timeline,end,end));
