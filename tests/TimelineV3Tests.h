@@ -3,6 +3,137 @@
 
 void timelineV3Tests() {
     using namespace cueViewFixtures;
+
+    test("Audio Timeline clicking resize and fade handles without dragging is a model no-op",[] {
+        MainComponent ui(false);
+        auto clip=std::make_shared<AudioClip>();
+        clip->sampleRate=48000;
+        clip->samples.setSize(1,48000*4);
+        clip->samples.clear();
+        ui.clips[ui.show.rows[0].cells[0].id]=clip;
+        auto* timeline=cueViewFixtures::find<Timeline>(ui);
+        check(timeline!=nullptr,"Timeline not available");
+        timeline->setSize(800,250);
+        const auto before=encodeShow(ui.show);
+        // Normal, untrimmed media is shown over 4 seconds of 10s view.
+        for(const juce::Point<float> position : {
+            juce::Point<float>{144,119},  // left lower trim
+            juce::Point<float>{392,119},  // right lower trim
+            juce::Point<float>{144,110},  // fade-in top dot
+            juce::Point<float>{392,110}   // fade-out top dot
+        }) {
+            timeline->mouseDown(event(*timeline,position,position));
+            timeline->mouseUp(event(*timeline,position,position));
+            check(encodeShow(ui.show)==before,
+                  "A handle click without movement modified the Audio region");
+        }
+    });
+
+    test("Audio Timeline native trim handles change both edges and preserve one Undo gesture",[] {
+        MainComponent ui(false);
+        auto clip=std::make_shared<AudioClip>();
+        clip->sampleRate=48000;
+        clip->samples.setSize(1,480000);
+        clip->samples.clear();
+        const int id=ui.show.rows[0].cells[0].id;
+        ui.clips[id]=clip;
+        check(ui.setAudioClipRegion(0,0,2,1,6,0,0),"Initial Audio region rejected");
+        auto* timeline=cueViewFixtures::find<Timeline>(ui);
+        check(timeline!=nullptr,"Timeline not available");
+        timeline->setSize(800,250);
+        // Use the actual JUCE scrollbar scale; refresh() can resize the
+        // Timeline after every committed edit.
+        const auto clipX=[&](double seconds) {
+            auto* scroll=find<juce::ScrollBar>(*timeline);
+            check(scroll!=nullptr,"Audio Timeline scrollbar missing");
+            return 140.0f+(float)((seconds-scroll->getCurrentRangeStart())*
+                (timeline->getWidth()-160)/scroll->getCurrentRangeSize());
+        };
+        const auto pxHalf=[&] {
+            auto* scroll=find<juce::ScrollBar>(*timeline);
+            return (float)((timeline->getWidth()-160)*.5/scroll->getCurrentRangeSize());
+        };
+        const juce::Point<float> right{clipX(8)-5,119};
+        const juce::Point<float> rightIn{right.x-pxHalf(),119};
+        timeline->mouseMove(event(*timeline,right,right));
+        check(timeline->getMouseCursor()==juce::MouseCursor(juce::MouseCursor::LeftRightResizeCursor),
+              "Right trim did not show horizontal-resize pointer");
+        timeline->mouseDown(event(*timeline,right,right));
+        timeline->mouseDrag(event(*timeline,rightIn,right,1,true));
+        // Preview is paint-only until release (avoids publishing on every frame).
+        near(ui.clipDuration(0,0),6);
+        timeline->mouseUp(event(*timeline,rightIn,right,1,true));
+        near(ui.clipDuration(0,0),5.5);
+        near(ui.show.rows[0].cells[0].audioOffsetSeconds,1);
+        timeline->setSize(800,250); // changed() may refresh workspace bounds
+        const juce::Point<float> left{clipX(2)+4,119};
+        const juce::Point<float> leftIn{left.x+pxHalf(),119};
+        timeline->mouseMove(event(*timeline,left,left));
+        check(timeline->getMouseCursor()==juce::MouseCursor(juce::MouseCursor::LeftRightResizeCursor),
+              "Left trim did not show horizontal-resize pointer");
+        timeline->mouseDown(event(*timeline,left,left));
+        timeline->mouseDrag(event(*timeline,leftIn,left,1,true));
+        timeline->mouseUp(event(*timeline,leftIn,left,1,true));
+        near(ui.show.rows[0].cells[0].startSeconds,2.5);
+        near(ui.show.rows[0].cells[0].audioOffsetSeconds,1.5);
+        near(ui.clipDuration(0,0),5);
+        near(ui.show.rows[0].cells[0].startSeconds+ui.clipDuration(0,0),7.5);
+        // The second drag is one undoable action, not dozens of drag frames.
+        check(ui.undoEdit(),"Audio trim Undo did not commit");
+        near(ui.show.rows[0].cells[0].startSeconds,2);
+        near(ui.clipDuration(0,0),5.5);
+        check(ui.redoEdit(),"Audio trim Redo missing");
+        near(ui.show.rows[0].cells[0].startSeconds,2.5);
+    });
+    test("Audio Timeline upper handles edit fade lengths without changing media", [] {
+        MainComponent ui(false);
+        auto clip=std::make_shared<AudioClip>();
+        clip->sampleRate=48000;
+        clip->samples.setSize(1,480000);
+        clip->samples.clear();
+        const int id=ui.show.rows[0].cells[0].id;
+        ui.clips[id]=clip;
+        check(ui.setAudioClipRegion(0,0,2,1,6,0,0),"Initial Audio region rejected");
+        auto* timeline=cueViewFixtures::find<Timeline>(ui);
+        timeline->setSize(800,250);
+        // Read the actual viewport after each model commit. The top
+        // handles are 4 px inside the currently rendered clip edges.
+        const auto clipX=[&](double seconds) {
+            auto* scroll=find<juce::ScrollBar>(*timeline);
+            check(scroll!=nullptr,"Timeline scrollbar missing for fade");
+            return 140.0f+(float)((seconds-scroll->getCurrentRangeStart())*
+                (timeline->getWidth()-160)/scroll->getCurrentRangeSize());
+        };
+        const auto pxHalf=[&] {
+            auto* scroll=find<juce::ScrollBar>(*timeline);
+            return (float)((timeline->getWidth()-160)*.5/scroll->getCurrentRangeSize());
+        };
+        const juce::Point<float> begin{clipX(2)+4,110};
+        const juce::Point<float> startEnd{begin.x+pxHalf(),110};
+        timeline->mouseMove(event(*timeline,begin,begin));
+        check(timeline->getMouseCursor()==juce::MouseCursor(juce::MouseCursor::CrosshairCursor),
+              "Top fade-in handle cursor is not distinct from trim");
+        timeline->mouseDown(event(*timeline,begin,begin));
+        timeline->mouseDrag(event(*timeline,startEnd,begin,1,true));
+        timeline->mouseUp(event(*timeline,startEnd,begin,1,true));
+        near(ui.show.rows[0].cells[0].fadeInSeconds,.5);
+        near(ui.show.rows[0].cells[0].startSeconds,2);
+        timeline->setSize(800,250); // changed() may refresh workspace bounds
+        const juce::Point<float> end{clipX(8)-4,110};
+        const juce::Point<float> endTo{end.x-pxHalf(),110};
+        timeline->mouseMove(event(*timeline,end,end));
+        timeline->mouseDown(event(*timeline,end,end));
+        timeline->mouseDrag(event(*timeline,endTo,end,1,true));
+        timeline->mouseUp(event(*timeline,endTo,end,1,true));
+        near(ui.show.rows[0].cells[0].fadeOutSeconds,.5);
+        near(ui.clipDuration(0,0),6);
+        const auto snapshot=timeline->createComponentSnapshot(timeline->getLocalBounds());
+        check(snapshot.isValid(),"Native Timeline fade envelope not drawn");
+        Show saved;
+        check(decodeShow(encodeShow(ui.show),saved).wasOk(),"Audio fade v10 roundtrip failed");
+        near(saved.rows[0].cells[0].fadeInSeconds,.5);
+        near(saved.rows[0].cells[0].fadeOutSeconds,.5);
+    });
     test("Timeline uses neutral toolbar and visible type-keyed media fills",[] {
         MainComponent ui(false);
         addColumn(ui.show,ColumnType::control,"Stage control");

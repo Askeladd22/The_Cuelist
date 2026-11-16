@@ -259,6 +259,14 @@ Audio cells support WAV and MP3, imported with the cell's import action. One mon
 
 Individual cell gain is expressed in **dB**. A peak meter reports **dBFS**: 0 dB gain is unity, while 0 dBFS is the digital ceiling. The two units are not interchangeable. A muted fader reads **−∞ dB**; its mathematical minus/infinity symbols are rendered directly with embedded Noto Sans Math, while the unit remains in Exo 2. The meter's L/R labels and the gain readout occupy separate vertical lanes.
 
+### 7.1.1 Timeline: audio trims and fades
+
+In the native Timeline, drag the **lower left or right edge** of an Audio WAV/MP3 clip to trim its start or end without changing the original file. The mouse pointer changes to a horizontal resize cursor. Drag the **clip body** to reposition it; musical Snap applies to positioning and trim edges.
+
+The two **small top corner handles** control a linear fade-in (left) and fade-out (right) independently of the trim edges. The pointer changes to a crosshair; dragging a handle shows the envelope and commits it when released. Fade durations are relative to the visible trimmed clip, and cannot exceed the clip length. Left trim moves the clip's timeline start and advances the source offset while keeping its right edge fixed. Right trim changes only the end and cannot extend beyond the original source media.
+
+Trims and fades persist as optional fields of the unchanged `.cuelist` JSON v10 format, support Undo/Redo, and apply to normal Audio playback, including WAV Click Tracks. Existing projects without these fields play their whole files with no fade. Newer edited projects require this or a compatible newer version to retain the optional trim/fade fields. During LIVE playback, commits preserve other active voices; editing an already-playing clip can alter that clip's audible region or ramp, so rehearse changes before a show. Loop playback repeats the trimmed region and its ramps.
+
 ### 7.2 Column Utilities
 
 Audio column strips provide gain, stereo meters, pan, Mute, phase inversion and routing. MIDI and OSC strips expose the appropriate output controls rather than audio faders. Collapsed Audio columns retain compact meter/gain and Mute controls. **Mute** uses the embedded **Noto Sans Symbols 2** directly: **🔊** means audio/output enabled; **🔇** means muted. Both are centred by their visible glyph outlines inside the compact button, rather than by the font's advance width. The same two-state icon is used for Master, Audio columns and MIDI/OSC data-output mute, while phase inversion retains its own symbol.

@@ -22,6 +22,7 @@ void test(const char* name, const std::function<void()>& body) {
 #include "CueViewTests.h"
 #include "ModelV3Tests.h"
 #include "TimelineV3Tests.h"
+#include "AudioTimelineEditTests.h"
 #include "TimelineMarkerTests.h"
 #include "ClickTrackTests.h"
 #include "ControlsV3Tests.h"
@@ -321,6 +322,7 @@ int main() {
     cueViewTests();
     modelV3Tests();
     timelineV3Tests();
+    audioTimelineEditTests();
     timelineMarkerTests();
     clickTrackTests();
     controlsV3Tests();

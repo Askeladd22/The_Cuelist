@@ -54,6 +54,11 @@ struct Cell {
     bool stopOnNext = true;
     float gain = 1.0f;
     double startSeconds = 0;
+    // Audio media is never destructively edited: select a playable source
+    // region and apply linear ramps inside it. Zero duration = source remainder
+    // (legacy v10 files have no audio-edit properties).
+    double audioOffsetSeconds = 0, audioDurationSeconds = 0;
+    double fadeInSeconds = 0, fadeOutSeconds = 0;
     Behaviour behaviour = Behaviour::retrigger;
     std::optional<MidiClip> midi;
     std::optional<OscClip> osc;

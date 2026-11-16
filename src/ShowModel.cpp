@@ -203,6 +203,21 @@ juce::Result validateShow(const Show& show) {
             if (!unique(c.id) || !std::isfinite(c.gain) || c.gain < 0 || c.gain > 4 || (int)c.behaviour < 0 || (int)c.behaviour > 3
                 || !std::isfinite(c.startSeconds) || c.startSeconds < 0 || c.startSeconds > 86400)
                 return fail("Invalid cell.");
+            // Optional additions inside existing v10 schema. No DSP state
+            // belongs in non-Audio cells or a legacy procedural click source.
+            if (!std::isfinite(c.audioOffsetSeconds) || !std::isfinite(c.audioDurationSeconds)
+                || !std::isfinite(c.fadeInSeconds) || !std::isfinite(c.fadeOutSeconds)
+                || c.audioOffsetSeconds<0 || c.audioOffsetSeconds>86400
+                || c.audioDurationSeconds<0 || c.audioDurationSeconds>86400
+                || c.fadeInSeconds<0 || c.fadeInSeconds>86400
+                || c.fadeOutSeconds<0 || c.fadeOutSeconds>86400
+                || (c.audioDurationSeconds>0
+                    && (c.fadeInSeconds>c.audioDurationSeconds ||
+                        c.fadeOutSeconds>c.audioDurationSeconds))
+                || ((show.columns[i].type!=ColumnType::audio || c.click)
+                    && (c.audioOffsetSeconds!=0 || c.audioDurationSeconds!=0
+                        || c.fadeInSeconds!=0 || c.fadeOutSeconds!=0)))
+                return fail("Invalid Audio trim or fade.");
             if (c.file.isNotEmpty() && (show.columns[i].type != ColumnType::audio || (!juce::File::isAbsolutePath(c.file) && !safeRelative(c.file))))
                 return fail("Invalid audio path or non-Audio column.");
         }
@@ -494,7 +509,10 @@ juce::String encodeShow(const Show& show) {
                 {"accent",c.click->accent},{"subdivision",c.click->subdivision},
                 {"durationSeconds",c.click->durationSeconds}});
             cells.add(object({{"id",c.id},{"name",c.name},{"file",c.file},{"click",click},{"followsRow",c.followsRow},
-                {"loop",c.loop},{"stopOnNext",c.stopOnNext},{"gain",c.gain},{"startSeconds",c.startSeconds},{"behaviour",(int)c.behaviour},{"midi",midi},{"osc",osc},
+                {"loop",c.loop},{"stopOnNext",c.stopOnNext},{"gain",c.gain},{"startSeconds",c.startSeconds},
+                {"audioOffsetSeconds",c.audioOffsetSeconds},{"audioDurationSeconds",c.audioDurationSeconds},
+                {"fadeInSeconds",c.fadeInSeconds},{"fadeOutSeconds",c.fadeOutSeconds},
+                {"behaviour",(int)c.behaviour},{"midi",midi},{"osc",osc},
                 {"controlSet",c.controlSet ? controlSetObject(*c.controlSet) : juce::var()},
                 {"assignedMapId",c.assignedMapId}}));
         }
@@ -658,6 +676,14 @@ juce::Result decodeShow(const juce::String& text, Show& destination) {
                 }
                 cell.followsRow=boolean(c,"followsRow"); cell.loop=boolean(c,"loop"); cell.gain=(float)number(c,"gain"); cell.behaviour=activation(integer(c,"behaviour"));
                 if (version >= 2) cell.startSeconds=number(c,"startSeconds");
+                if (c.hasProperty("audioOffsetSeconds"))
+                    cell.audioOffsetSeconds=number(c,"audioOffsetSeconds");
+                if (c.hasProperty("audioDurationSeconds"))
+                    cell.audioDurationSeconds=number(c,"audioDurationSeconds");
+                if (c.hasProperty("fadeInSeconds"))
+                    cell.fadeInSeconds=number(c,"fadeInSeconds");
+                if (c.hasProperty("fadeOutSeconds"))
+                    cell.fadeOutSeconds=number(c,"fadeOutSeconds");
                 if (auto* obj=c.getDynamicObject())
                     if (obj->hasProperty("controlSet")) {
                         auto value=c.getProperty("controlSet",{});

@@ -168,6 +168,7 @@ void Timeline::syncViewport() {
     const int id=owner.selectedRow>=0 && owner.selectedRow<(int)owner.show.rows.size() ? owner.show.rows[owner.selectedRow].id : -1;
     if (id!=viewportRowId) {
         viewportRowId=id; zoom=1; viewStart=0; trackScroll=0; dragColumn=-1; seeking=false;
+        audioDrag=AudioDrag::none;
         draggingMarkerId=-1; markerEdit=MarkerEdit::none; editingMarkerId=-1;
         markerEditor.setVisible(false);
         setMouseCursor(juce::MouseCursor::NormalCursor);
@@ -189,6 +190,39 @@ void Timeline::changeZoom(double factor,double anchor) {
     const double point=viewStart+anchor*visibleLength();
     zoom=juce::jlimit(1.0,32.0,zoom*factor);
     viewStart=point-anchor*visibleLength(); syncViewport(); repaint();
+}
+Timeline::AudioDrag Timeline::audioHit(int column,int px,int py) const {
+    if(getHeight()<completeTimelineHeight ||
+       owner.selectedRow<0 || owner.selectedRow>=(int)owner.show.rows.size() ||
+       column<0 || column>=(int)owner.show.columns.size() ||
+       owner.show.columns[(size_t)column].type!=ColumnType::audio ||
+       !owner.hasClip(owner.selectedRow,column)) return AudioDrag::none;
+    const auto& cell=owner.show.rows[(size_t)owner.selectedRow].cells[(size_t)column];
+    if(cell.click) return AudioDrag::none; // old procedural source is not PCM
+    const int y=tracksTop+column*trackHeight-trackScroll;
+    if(py<y || py>=y+31 || py>=getHeight()-48) return AudioDrag::none;
+    const double seconds=owner.clipDuration(owner.selectedRow,column);
+    if(seconds<=0) return AudioDrag::none;
+    const int area=std::max(1,getWidth()-timelineStart-20);
+    const double length=visibleLength();
+    const float x=(float)(timelineStart+area*(cell.startSeconds-viewStart)/length);
+    const float width=std::max(4.0f,(float)(area*seconds/length));
+    if(px<x || px>x+width) return AudioDrag::none;
+    if(py-y<=11 && width>=24) {
+        const float fadeLeft=x+4.0f+(width-8.0f)*(float)(cell.fadeInSeconds/seconds);
+        const float fadeRight=x+width-4.0f-
+            (width-8.0f)*(float)(cell.fadeOutSeconds/seconds);
+        const float fromLeft=std::abs(px-fadeLeft),fromRight=std::abs(px-fadeRight);
+        if(std::min(fromLeft,fromRight)<=8.0f)
+            return fromLeft<=fromRight ? AudioDrag::fadeIn : AudioDrag::fadeOut;
+    }
+    // Lower portion of the clip is deliberately reserved for trimming,
+    // preventing a fade drag from accidentally changing the audio region.
+    if(py-y>=11) {
+        if(px-x<=9.0f) return AudioDrag::resizeStart;
+        if(x+width-px<=9.0f) return AudioDrag::resizeEnd;
+    }
+    return AudioDrag::none;
 }
 void Timeline::paint(juce::Graphics& g) {
     // All ruler, track and footer artwork belongs strictly to this component.
@@ -329,9 +363,16 @@ void Timeline::paint(juce::Graphics& g) {
             continue;
         }
         if (!present) continue;
-        const auto& cell=row.cells[c]; const double seconds=owner.clipDuration(owner.selectedRow,c);
+        const auto& cell=row.cells[c];
+        const bool preview=audioDrag!=AudioDrag::none && dragColumn==c && dragRowId==row.id;
+        const bool pcm=owner.show.columns[c].type==ColumnType::audio && !cell.click;
+        const double seconds=preview ? audioPreviewDuration : owner.clipDuration(owner.selectedRow,c);
+        const double start=preview ? audioPreviewStart : cell.startSeconds;
+        const double offset=preview ? audioPreviewOffset : cell.audioOffsetSeconds;
+        const double fadeIn=preview ? audioPreviewFadeIn : cell.fadeInSeconds;
+        const double fadeOut=preview ? audioPreviewFadeOut : cell.fadeOutSeconds;
         const auto colour=palette::type((int)owner.show.columns[c].type);
-        const float x=(float)(timelineStart+area*(cell.startSeconds-viewStart)/length), width=std::max(4.0f,(float)(area*seconds/length));
+        const float x=(float)(timelineStart+area*(start-viewStart)/length), width=std::max(4.0f,(float)(area*seconds/length));
         g.saveState(); g.reduceClipRegion(timelineStart,tracksTop,area,std::max(0,bottom-tracksTop));
         const auto clipBounds=juce::Rectangle<float>(x,(float)y,width,31.f);
         // The fill follows each clip's existing type colour, rather than
@@ -379,21 +420,47 @@ void Timeline::paint(juce::Graphics& g) {
                 const double begin=secondsAtBeat(row.tempo,note.beat), end=secondsAtBeat(row.tempo,note.beat+note.length);
                 g.fillRect(x+(float)(area*begin/length),(float)y+3+(127-note.pitch)*.18f,std::max(1.0f,(float)(area*(end-begin)/length)),2.0f);
             }
-        } else {
-        const auto& audio=owner.clips.at(cell.id)->samples;
+        } else if(const auto source=owner.clips.find(cell.id);
+                  source!=owner.clips.end() && source->second) {
+        const auto& audio=source->second->samples;
         if (audio.getNumSamples()>0 && audio.getNumChannels()>0) for (int px=std::max(0,(int)(timelineStart-x));px<(int)width;px+=3) {
             if (x+px>getWidth()-20) break;
-            const int sample=juce::jlimit(0,audio.getNumSamples()-1,(int)((double)px/width*audio.getNumSamples()));
+            // Waveform samples follow the actual trimmed source interval.
+            const double sourceAt=offset+seconds*px/width;
+            const int sample=juce::jlimit(0,audio.getNumSamples()-1,
+                (int)(sourceAt*source->second->sampleRate));
             const float amp=std::min(1.0f,std::abs(audio.getSample(0,sample)))*24;
             g.fillRect(x+px,(float)y+15-amp/2,1.0f,std::max(1.0f,amp));
         }
         }
         if (cell.midi || cell.osc) {
-            // Explicit resize grip at the right edge of MIDI and OSC clips.
+            // Keep the existing MIDI/OSC right-edge editor grip unchanged.
             g.setColour(palette::text.withAlpha(.67f));
             g.fillRect(x+width-7,(float)y+5,3.f,21.f);
         }
-        label(g,(cell.name.isEmpty() ? (cell.midi ? "MIDI" : cell.osc ? "OSC" : "AUDIO") : cell.name)+"  +"+juce::String(cell.startSeconds,2)+"s",{(int)x+8,y+5,std::max(1,(int)width-16),20},12,contentInk);
+        label(g,(cell.name.isEmpty() ? (cell.midi ? "MIDI" : cell.osc ? "OSC" : "AUDIO") : cell.name)+"  +"+juce::String(start,2)+"s",{(int)x+8,y+5,std::max(1,(int)width-16),20},12,contentInk);
+        if(pcm) {
+            // Two lower trim grips and two upper envelope handles, all native
+            // JUCE drawing. Top and lower hit zones have different gestures.
+            g.setColour(contentInk.withAlpha(.57f));
+            g.fillRect(x+2,(float)y+17,2.f,11.f);
+            g.fillRect(x+width-4,(float)y+17,2.f,11.f);
+            if(width>=24 && seconds>0) {
+                const float left=x+4,right=x+width-4;
+                const float fadeLeft=left+(right-left)*(float)(fadeIn/seconds);
+                const float fadeRight=right-(right-left)*(float)(fadeOut/seconds);
+                juce::Path envelope;
+                envelope.startNewSubPath(left,(float)y+(fadeIn>0 ? 27.f : 5.f));
+                envelope.lineTo(fadeLeft,(float)y+5.f);
+                envelope.lineTo(fadeRight,(float)y+5.f);
+                envelope.lineTo(right,(float)y+(fadeOut>0 ? 27.f : 5.f));
+                g.setColour(contentInk.withAlpha(.83f));
+                g.strokePath(envelope,juce::PathStrokeType(1.15f));
+                g.setColour(palette::text);
+                g.fillEllipse(fadeLeft-3.4f,(float)y+1.6f,6.8f,6.8f);
+                g.fillEllipse(fadeRight-3.4f,(float)y+1.6f,6.8f,6.8f);
+            }
+        }
         g.restoreState();
     }
     g.restoreState();
@@ -430,6 +497,7 @@ void Timeline::mouseDown(const juce::MouseEvent& e) {
     }
     if (!e.mods.isLeftButtonDown()) return;
     owner.grabKeyboardFocus(); dragColumn=-1; seeking=false; resizingClip=false;
+    audioDrag=AudioDrag::none;
     draggingMarkerId=-1;
     // Compact layouts still expose the marker lane even if track editing
     // is hidden; do not block its mouse target along with the media tracks.
@@ -476,13 +544,31 @@ void Timeline::mouseDown(const juce::MouseEvent& e) {
         if (position<start || position>end || !owner.select(owner.selectedRow,c)) return;
         dragColumn=c; dragRowId=rowId; dragStartSeconds=start;
         dragStartDuration=owner.clipDuration(owner.selectedRow,c);
+        if(owner.show.columns[c].type==ColumnType::audio && !cell.click) {
+            audioDrag=audioHit(c,e.x,e.y);
+            audioOriginalOffset=cell.audioOffsetSeconds;
+            audioOriginalFadeIn=cell.fadeInSeconds;
+            audioOriginalFadeOut=cell.fadeOutSeconds;
+            audioPreviewStart=start;
+            audioPreviewOffset=audioOriginalOffset;
+            audioPreviewDuration=dragStartDuration;
+            audioPreviewFadeIn=audioOriginalFadeIn;
+            audioPreviewFadeOut=audioOriginalFadeOut;
+            const auto clip=owner.clips.find(cell.id);
+            audioSourceSeconds=clip!=owner.clips.end() && clip->second->sampleRate>0
+                ? (double)clip->second->samples.getNumSamples()/clip->second->sampleRate : 0;
+        }
         const int edgeX=timelineStart+(int)std::round((end-dragViewStart)*area/dragLength);
         resizingClip=(cell.midi || cell.osc) && std::abs(e.x-edgeX)<=10;
-        if (!resizingClip) {
+        if(!resizingClip && audioDrag==AudioDrag::none) {
             if (owner.show.columns[c].type==ColumnType::midi) owner.editMidiClip();
             else if (owner.show.columns[c].type==ColumnType::osc) owner.editOscClip();
         }
-        setMouseCursor(juce::MouseCursor::DraggingHandCursor); return;
+        setMouseCursor(audioDrag==AudioDrag::resizeStart || audioDrag==AudioDrag::resizeEnd
+            ? juce::MouseCursor::LeftRightResizeCursor
+            : audioDrag==AudioDrag::fadeIn || audioDrag==AudioDrag::fadeOut
+                ? juce::MouseCursor::CrosshairCursor : juce::MouseCursor::DraggingHandCursor);
+        return;
     }
 }
 void Timeline::mouseDoubleClick(const juce::MouseEvent& e) {
@@ -544,7 +630,37 @@ void Timeline::mouseDrag(const juce::MouseEvent& e) {
     if (seeking) owner.seekTimeline(juce::jlimit(0.0,86400.0,dragViewStart+juce::jlimit(0.0,dragPixels,(double)e.x-timelineStart)*dragLength/dragPixels));
     else if (dragColumn>=0 && dragColumn<(int)owner.show.rows[owner.selectedRow].cells.size()) {
         const double delta=e.getDistanceFromDragStartX()*dragLength/dragPixels;
-        if (resizingClip) {
+        if(audioDrag!=AudioDrag::none && audioSourceSeconds>0) {
+            const double minDuration=std::min(.01,audioSourceSeconds);
+            const double originalEnd=dragStartSeconds+dragStartDuration;
+            // Every move derives from the frozen mouseDown state; no rounding
+            // drift and no realtime snapshot publication during the drag.
+            audioPreviewStart=dragStartSeconds;
+            audioPreviewOffset=audioOriginalOffset;
+            audioPreviewDuration=dragStartDuration;
+            audioPreviewFadeIn=audioOriginalFadeIn;
+            audioPreviewFadeOut=audioOriginalFadeOut;
+            if(audioDrag==AudioDrag::resizeStart) {
+                const double first=std::max(0.0,dragStartSeconds-audioOriginalOffset);
+                const double last=originalEnd-minDuration;
+                const double desired=snapSeconds(juce::jlimit(0.0,86400.0,dragStartSeconds+delta));
+                audioPreviewStart=juce::jlimit(first,last,desired);
+                audioPreviewOffset=audioOriginalOffset+audioPreviewStart-dragStartSeconds;
+                audioPreviewDuration=originalEnd-audioPreviewStart;
+            } else if(audioDrag==AudioDrag::resizeEnd) {
+                const double maximum=audioSourceSeconds-audioOriginalOffset;
+                const double desired=snapSeconds(juce::jlimit(0.0,86400.0,originalEnd+delta));
+                audioPreviewDuration=juce::jlimit(minDuration,maximum,desired-dragStartSeconds);
+            } else if(audioDrag==AudioDrag::fadeIn) {
+                audioPreviewFadeIn=juce::jlimit(0.0,dragStartDuration,
+                                               audioOriginalFadeIn+delta);
+            } else if(audioDrag==AudioDrag::fadeOut) {
+                audioPreviewFadeOut=juce::jlimit(0.0,dragStartDuration,
+                                                audioOriginalFadeOut-delta);
+            }
+            audioPreviewFadeIn=std::min(audioPreviewFadeIn,audioPreviewDuration);
+            audioPreviewFadeOut=std::min(audioPreviewFadeOut,audioPreviewDuration);
+        } else if (resizingClip) {
             const double end=snapSeconds(juce::jlimit(0.0,86400.0,dragStartSeconds+dragStartDuration+delta));
             owner.setClipDuration(dragColumn,end-dragStartSeconds);
         } else owner.setClipStart(dragColumn,juce::jlimit(0.0,86400.0,
@@ -553,6 +669,21 @@ void Timeline::mouseDrag(const juce::MouseEvent& e) {
     repaint();
 }
 void Timeline::mouseUp(const juce::MouseEvent&) {
+    if (audioDrag!=AudioDrag::none && dragColumn>=0 &&
+        owner.selectedRow>=0 && owner.selectedRow<(int)owner.show.rows.size() &&
+        owner.show.rows[(size_t)owner.selectedRow].id==dragRowId) {
+        // MouseDown/Up without a real adjustment must not turn a legacy
+        // duration=0 (whole source) into explicit metadata or create Undo.
+        const bool changed=std::abs(audioPreviewStart-dragStartSeconds)>1.0e-7 ||
+            std::abs(audioPreviewOffset-audioOriginalOffset)>1.0e-7 ||
+            std::abs(audioPreviewDuration-dragStartDuration)>1.0e-7 ||
+            std::abs(audioPreviewFadeIn-audioOriginalFadeIn)>1.0e-7 ||
+            std::abs(audioPreviewFadeOut-audioOriginalFadeOut)>1.0e-7;
+        if(changed)
+            owner.setAudioClipRegion(owner.selectedRow,dragColumn,audioPreviewStart,
+                audioPreviewOffset,audioPreviewDuration,audioPreviewFadeIn,audioPreviewFadeOut);
+    }
+    audioDrag=AudioDrag::none;
     if (draggingMarkerId>0) {
         const int id=draggingMarkerId;
         const double destination=previewMarkerSeconds;
@@ -736,8 +867,9 @@ void Timeline::showMarkerContextMenu(int markerId,const juce::Point<int>& screen
         });
 }
 void Timeline::mouseMove(const juce::MouseEvent& e) {
-    // Paint-only hover. Do not call select(), change focused row or edit data.
+    // Paint-only hover and cursor; never arm a cue or edit audio on hover.
     int candidate=-1;
+    AudioDrag hit=AudioDrag::none;
     if(owner.selectedRow>=0 &&
        owner.selectedRow<(int)owner.show.rows.size() &&
        e.y>=tracksTop && e.y<getHeight()-48 &&
@@ -753,17 +885,28 @@ void Timeline::mouseMove(const juce::MouseEvent& e) {
             const double t=viewStart+
                 (e.x-timelineStart)*visibleLength()/area;
             if(t>=cell.startSeconds &&
-               t<=cell.startSeconds+owner.clipDuration(owner.selectedRow,track))
+               t<=cell.startSeconds+owner.clipDuration(owner.selectedRow,track)) {
                 candidate=track;
+                hit=audioHit(track,e.x,e.y);
+            }
         }
     }
     if(candidate!=hoveredClipColumn) {
         hoveredClipColumn=candidate;
         repaint();
     }
+    if(dragColumn<0 && draggingMarkerId<0)
+        setMouseCursor(hit==AudioDrag::resizeStart || hit==AudioDrag::resizeEnd
+            ? juce::MouseCursor::LeftRightResizeCursor
+            : hit==AudioDrag::fadeIn || hit==AudioDrag::fadeOut
+                ? juce::MouseCursor::CrosshairCursor
+                : candidate>=0 ? juce::MouseCursor::DraggingHandCursor
+                               : juce::MouseCursor::NormalCursor);
 }
 void Timeline::mouseExit(const juce::MouseEvent&) {
     if(hoveredClipColumn>=0) {hoveredClipColumn=-1;repaint();}
+    if(dragColumn<0 && draggingMarkerId<0)
+        setMouseCursor(juce::MouseCursor::NormalCursor);
 }
 void Timeline::mouseWheelMove(const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel) {
     syncViewport();

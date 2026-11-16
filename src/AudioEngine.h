@@ -4,6 +4,7 @@
 #include <juce_audio_utils/juce_audio_utils.h>
 #include <array>
 #include <atomic>
+#include <cmath>
 #include <map>
 #include <memory>
 #include "MidiOutputRouter.h"
@@ -11,6 +12,21 @@
 
 namespace cuelist {
 struct AudioClip { juce::AudioBuffer<float> samples; double sampleRate = 48000; };
+struct AudioRegion { int offsetFrames=0, lengthFrames=0; };
+// One source of truth for Timeline width, Audio playback and cursor seeking.
+inline AudioRegion resolvedAudioRegion(const Cell& cell,const AudioClip& clip) noexcept {
+    const int total=clip.samples.getNumSamples();
+    if(total<=0 || !std::isfinite(clip.sampleRate) || clip.sampleRate<=0) return {};
+    const double totalSeconds=(double)total/clip.sampleRate;
+    const double safeOffset=juce::jlimit(0.0,totalSeconds,cell.audioOffsetSeconds);
+    const int begin=juce::jlimit(0,total,(int)std::llround(safeOffset*clip.sampleRate));
+    const int available=total-begin;
+    const double seconds=cell.audioDurationSeconds>0
+        ? std::min(cell.audioDurationSeconds,(double)available/clip.sampleRate)
+        : (double)available/clip.sampleRate;
+    const int length=juce::jlimit(0,available,(int)std::llround(seconds*clip.sampleRate));
+    return {begin,length};
+}
 struct CellPlaybackInfo {
     double positionSeconds = 0, durationSeconds = 0;
     bool playing = false, waiting = false, paused = false;
@@ -95,6 +111,10 @@ struct Voice {
     float gain = 0.8f;
     double position = 0;
     double startSeconds = 0, delaySeconds = 0;
+    // -1 keeps directly constructed legacy Voice fixtures equivalent to
+    // whole-file playback; makeRenderState always resolves an explicit region.
+    int audioOffsetFrames=0, audioLengthFrames=-1;
+    double fadeInFrames=0, fadeOutFrames=0;
     float rowGain = 1;
     float columnGain = 1, columnPan = 0;
     bool columnMuted = false, columnPhaseInverted = false;
