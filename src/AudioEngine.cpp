@@ -26,7 +26,9 @@ void RenderState::updateTelemetry() noexcept {
     for (const auto& v:voices) if (v.telemetry) {
         const double rate=(v.isMidi || v.isOsc || v.isClick) ? 1 : (v.clip ? v.clip->sampleRate : 0);
         v.telemetry->write({rate>0 ? v.position/rate : 0,
-            v.isMidi ? v.midiDuration : v.isOsc ? v.oscDuration : v.isClick ? v.clickDuration : (rate>0 ? v.audioLengthFrames/rate : 0),
+            v.isMidi ? v.midiDuration : v.isOsc ? v.oscDuration : v.isClick ? v.clickDuration
+                : (rate>0 ? (v.audioLengthFrames<0 ? v.clip->samples.getNumSamples()
+                                                     : v.audioLengthFrames)/rate : 0),
             v.playing, v.playing && v.rowMode && v.delaySeconds>1.0e-12, v.paused});
     }
 }
@@ -53,7 +55,8 @@ void placeOnTimeline(Voice& v, double seconds) noexcept {
     }
     if (!v.clip || v.clip->sampleRate<=0 || v.clip->samples.getNumSamples()==0) return;
     const double elapsed=std::max(0.0,seconds-v.startSeconds);
-    const double length=(double)v.audioLengthFrames;
+    const double length=(double)(v.audioLengthFrames<0
+        ? v.clip->samples.getNumSamples() : v.audioLengthFrames);
     if(length<=0) return;
     const double duration=length/v.clip->sampleRate;
     // Bound in seconds first: a finite seek can overflow when multiplied by Hz.
@@ -76,11 +79,15 @@ void RenderState::inheritPlayback(const RenderState& previous) noexcept {
             v.position=old.position; v.playing=old.playing; v.paused=old.paused; v.delaySeconds=old.delaySeconds;
             // Preserve the sounding source position when a trim is edited
             // during LIVE. Fade-only edits preserve the playback clock.
-            if(v.clip && old.clip && v.audioOffsetFrames!=old.audioOffsetFrames)
-                v.position=juce::jlimit(0.0,(double)v.audioLengthFrames,
-                    old.position+old.audioOffsetFrames-v.audioOffsetFrames);
-            else if(v.clip)
-                v.position=juce::jlimit(0.0,(double)v.audioLengthFrames,v.position);
+            if(v.clip) {
+                const auto length=(double)(v.audioLengthFrames<0
+                    ? v.clip->samples.getNumSamples() : v.audioLengthFrames);
+                if(old.clip && v.audioOffsetFrames!=old.audioOffsetFrames)
+                    v.position=juce::jlimit(0.0,length,
+                        old.position+old.audioOffsetFrames-v.audioOffsetFrames);
+                else
+                    v.position=juce::jlimit(0.0,length,v.position);
+            }
             // A new Tempo Map changes event times, never the running cue clock.
             v.clickNeedsSync=true;
             v.rowMode=old.rowMode; v.pendingSeek=old.pendingSeek;
@@ -369,13 +376,14 @@ void RenderState::render(float* const* outputs,int channels,int frames,double sa
         if (!v.playing || (!v.clip && !v.isClick)) continue;
         const auto* audio=v.clip ? &v.clip->samples : nullptr;
         const int length=audio ? audio->getNumSamples() : 0;
+        const int playableFrames=v.audioLengthFrames<0 ? length : v.audioLengthFrames;
         if (v.isClick ? (!v.clickPulse || v.clickDuration<=0) :
-            (length==0 || v.audioLengthFrames<=0 || audio->getNumChannels()==0)) {
+            (length==0 || playableFrames<=0 || audio->getNumChannels()==0)) {
             v.playing=false; v.paused=false; continue;
         }
         const bool looping=v.loop || v.rowLoop;
         // PCM position is relative to the non-destructive source trim region.
-        const double end=v.isClick ? v.clickDuration : (double)v.audioLengthFrames;
+        const double end=v.isClick ? v.clickDuration : (double)playableFrames;
         const double step=v.isClick ? 1.0/sampleRate : v.clip->sampleRate/sampleRate;
         // PRE direct out bypasses only the column fader. It retains clip/row
         // gain, strip pan, polarity and mute. Master Send is always POST.
@@ -402,7 +410,7 @@ void RenderState::render(float* const* outputs,int channels,int frames,double sa
             const int frame=v.isClick ? 0 : (int)v.position;
             const int a=v.isClick ? 0 : v.audioOffsetFrames+frame;
             const int b=v.isClick ? 0 : v.audioOffsetFrames+
-                (frame+1<v.audioLengthFrames ? frame+1 : (looping ? 0 : frame));
+                (frame+1<playableFrames ? frame+1 : (looping ? 0 : frame));
             const float fraction=v.isClick ? 0.0f : (float)(v.position-frame);
             // Linear fade envelope; applied to both Master and Direct
             // before column telemetry. No allocations and no audio delay.
@@ -412,7 +420,7 @@ void RenderState::render(float* const* outputs,int channels,int frames,double sa
                     envelope=std::min(envelope,(float)(v.position/v.fadeInFrames));
                 if(v.fadeOutFrames>0)
                     envelope=std::min(envelope,(float)std::max(0.0,
-                        ((double)v.audioLengthFrames-1.0-v.position)/v.fadeOutFrames));
+                        ((double)playableFrames-1.0-v.position)/v.fadeOutFrames));
             }
             for (int side=0;side<2;++side) {
                 const float* data=v.isClick ? nullptr :

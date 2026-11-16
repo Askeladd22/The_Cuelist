@@ -111,7 +111,9 @@ struct Voice {
     float gain = 0.8f;
     double position = 0;
     double startSeconds = 0, delaySeconds = 0;
-    int audioOffsetFrames=0, audioLengthFrames=0;
+    // -1 keeps directly constructed legacy Voice fixtures equivalent to
+    // whole-file playback; makeRenderState always resolves an explicit region.
+    int audioOffsetFrames=0, audioLengthFrames=-1;
     double fadeInFrames=0, fadeOutFrames=0;
     float rowGain = 1;
     float columnGain = 1, columnPan = 0;
