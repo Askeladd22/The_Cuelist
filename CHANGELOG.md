@@ -13,6 +13,18 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.80] - 2026-11-16
+
+**RQ-TIMELINE-AUDIO-TRIM: limiti di trascinamento per clip inferiori a 10 ms.**
+
+### Corretto
+- Il ridimensionamento Audio dal bordo sinistro usa come durata minima un campione della sorgente, non 10 ms fissi. I limiti restano ordinati anche per segmenti brevissimi e con sorgenti gia tagliate.
+- Nessuna modifica al motore audio, alla generazione Click WAV, al fade, al routing o allo schema JSON v10. Il fix riguarda solo il calcolo del drag nella UI nativa.
+
+### Test
+- Test JUCE per 5 ms, zoom 32x ancorato al tempo zero, Snap disattivato, cursore resize e trascinamento dal bordo sinistro verso l'interno.
+- Windows Release/CTest e collaudo hardware verificati separatamente; nessuna attestazione LIVE dalla sola CI.
+
 ## [0.9.79] - 2026-11-16
 
 **Timeline Audio trim dai due bordi e fade-in/fade-out non distruttivi.**

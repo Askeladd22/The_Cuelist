@@ -40,6 +40,13 @@ gain ramp implements both fades without touching the file.
 - [ ] Rehearsal on real audio interface: no xrun / GO/STOP/PANIC regression.
 - [ ] No changes to Click WAV synthesis, media files or schema version.
 
+## Sub-10ms follow-up (v0.9.80)
+A 5 ms Audio clip has a valid duration below the former 10 ms drag minimum.
+That made the left-trim upper limit smaller than its lower limit.
+The focused follow-up pins the minimum to one source sample captured on mouseDown,
+without any engine or file-format change. Regression: zoom 32x, Snap OFF,
+trim an Audio region from 5 ms to less than 5 ms, retain a valid source offset.
+
 ## Red team / operational safety
 Trimming can uncover a source waveform discontinuity; the requested fade may
 be used to smooth it, but no automatic waveform rewrite occurs. Overlapping
