@@ -7,10 +7,20 @@ namespace cuelist {
 bool PhysicalControlEdges::recordAndWasDown(const ControlEvent& event) {
     const auto physical=event.deviceId+"|"+juce::String((int)event.kind)+"|"+
         juce::String(event.channel)+"|"+juce::String(event.number);
-    const bool wasDown=pressed[physical];
+    // Never let remote OSC exhaust or evict held MIDI controls.
+    auto& held=event.kind==ControlKind::osc ? heldOsc : heldMidi;
+    const auto found=held.find(physical);
     const bool isDown=!event.isNoteOff && event.normalized()>=0.5f;
-    pressed[physical]=isDown;
-    return wasDown;
+    if (!isDown) {
+        if (found==held.end()) return false;
+        held.erase(found);
+        return true;
+    }
+    if (found!=held.end()) return true;
+    if (event.kind==ControlKind::osc && held.size()>=maxHeldOsc)
+        return true; // No new rising edge: suppress GO/PANIC on saturation.
+    held.insert(physical);
+    return false;
 }
 
 std::optional<float> mappedPickupTarget(const Show& show,
