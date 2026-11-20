@@ -165,10 +165,10 @@ void GainMeterFader::paint(juce::Graphics& g) {
     if (!columnReadableScale) {
         const auto readout=juce::Rectangle<float>(
             2.0f,(float)getHeight()-25.0f,(float)getWidth()-4.0f,23.0f);
+        // Blend into the existing Master surface, with no extra outlined
+        // control/card competing with the real fader and mute controls.
         g.setColour(palette::panel);
         g.fillRect(readout);
-        g.setColour(palette::line.withAlpha(.45f));
-        g.drawRect(readout,1.0f);
     }
     g.setColour(palette::text);
     const int valueY=getHeight()-22;
