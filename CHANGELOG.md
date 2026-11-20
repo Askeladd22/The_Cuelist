@@ -13,6 +13,20 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.88] - 2026-11-20
+
+**RQ-QA-008: riduzione del rumore diagnostico MSVC e test nativo delle automazioni OSC nella Timeline.**
+
+### Qualita C++ / Timeline
+- Eliminato il warning MSVC C4456 nel disegno della Timeline rinominando le due variabili locali relative all'inizio/fine di una rampa OSC in `automationStart`/`automationEnd`. I calcoli, le coordinate, la gestione dei beat e la posizione assoluta del clip sono identici.
+- Aggiunto test con snapshot reali JUCE delle strisce di automazione OSC in modalita secondi e beat, con start del clip non nullo e verifica che il render non alteri il modello, inclusa la codifica .cuelist JSON v10.
+- Non e' stata modificata alcuna API, il router OSC, il motore audio/MIDI/LTC, GO/STOP/PANIC, VIEW/LIVE, gli editor, il Mixer o la UI del Master.
+
+### Gate e limiti
+- Windows Release/CTest **PASS** sullo SHA codice `806d9ac7`: [run 44754748213](https://github.com/Askeladd22/The_Cuelist/actions/runs/44754748213), **421.177 asserzioni, 0 fallimenti**. Il nuovo test OSC Timeline in secondi e beat e' PASS; nessuna occorrenza C4456 nei log Windows, senza disattivare gli avvisi MSVC. Upload degli screenshot nativi PASS.
+- Controllo VERSION/CMake/CHANGELOG **PASS** sullo SHA codice [run 44754748268](https://github.com/Askeladd22/The_Cuelist/actions/runs/44754748268). CodeQL e triage alert devono essere verificati separatamente; eventuale commit solo documentale richiede nuovo controllo del suo SHA. Non si presume un bug di playback o di sincronismo risolto.
+- Il riquadro scuro accanto al Master 0.0 dB originale resta non riprodotto, issue #217. Banco hardware esterno, verifica DPI 100/125/150% e sincronismo a valle di OSC/MIDI: ND.
+
 ## [0.9.87] - 2026-11-20
 
 **RQ-UI-007: Master 0.0 dB, ricerca di una sovrapposizione dipendente dallo stato JUCE.**

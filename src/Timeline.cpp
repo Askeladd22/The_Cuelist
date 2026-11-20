@@ -406,11 +406,16 @@ void Timeline::paint(juce::Graphics& g) {
                 g.fillRect(dx,(float)y+6,2.0f,19.0f);
             }
             for (const auto& automation:cell.osc->automations) {
-                const double start=cell.osc->useBeats ? secondsAtBeat(row.tempo,automation.time) : automation.time;
-                const double end=cell.osc->useBeats
+                // Local automation coordinates are relative to the parent
+                // clip start. Do not shadow the clip's absolute 'start':
+                // that value remains the label/viewport time reference.
+                const double automationStart=cell.osc->useBeats
+                    ? secondsAtBeat(row.tempo,automation.time) : automation.time;
+                const double automationEnd=cell.osc->useBeats
                     ? secondsAtBeat(row.tempo,automation.time+automation.duration)
                     : automation.time+automation.duration;
-                const auto from=x+(float)(area*start/length),to=x+(float)(area*end/length);
+                const auto from=x+(float)(area*automationStart/length),
+                           to=x+(float)(area*automationEnd/length);
                 g.setColour(colour.withAlpha(.86f));
                 g.fillRect(from,(float)y+25,std::max(2.0f,to-from),3.f);
                 g.setColour(colour.withAlpha(.52f));
