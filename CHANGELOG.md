@@ -29,7 +29,7 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ## [0.9.90] - 2026-11-20
 
-**RQ-UX04B-01 — File menu PopupMenu: primo Esc e inoltro PANIC (PR in bozza, test-first).**
+**RQ-UX04B-01 — File menu PopupMenu: primo Esc inoltra PANIC (PR #221 integrata).**
 
 ### Scenario e obiettivo
 - Il menu File della barra superiore usa JUCE 8.0.12 `PopupMenu::showMenuAsync`: il codice MenuWindow intercetta Escape e chiude il menu senza inoltrare l'evento alla root di The CUElist. Ipotesi testabile: il primo Esc deve invocare `stopAll()` oltre a conservare la chiusura del menu.
@@ -37,7 +37,7 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 - Ambito intenzionalmente limitato al menu File di primo livello. Le altre finestre, i sottomenu, i popup contestuali e le modali di terze parti rimangono fuori scope; niente hook di sistema o sostituzione HTML/JUCE.
 
 ### Gate e compatibilita'
-- Richiesto RED Windows sul test nativo con il codice pre-fix; solo dopo RED, applicare la correzione minima e verificare GREEN Windows Release/CTest + CodeQL + controllo versione sull'ultimo SHA.
+- **RED effettivo** sul commit pre-fix `abb209e4` [Windows CI 44772996671](https://github.com/Askeladd22/The_Cuelist/actions/runs/44772996671): 421.018 asserzioni, esattamente 1 test fallito (`first Esc dismissed File menu but skipped PANIC`). **GREEN effettivo** su head PR `f2ffb739` [Windows CI 44773805428](https://github.com/Askeladd22/The_Cuelist/actions/runs/44773805428): 421.196 asserzioni, 0 fallimenti, CTest 1/1. [Version guard 44773805242](https://github.com/Askeladd22/The_Cuelist/actions/runs/44773805242) PASS; CodeQL [44773805376](https://github.com/Askeladd22/The_Cuelist/actions/runs/44773805376) in verifica all'ultimo controllo.
 - Nessuna modifica a Audio/MIDI/OSC/LTC, GO/STOP/PANIC esistenti fuori dal menu, Undo/Redo, Control Map, Timeline, Mixer, VIEW/LIVE e schema `.cuelist` JSON v10.
 - Tastiera Windows reale, popup sottomenu, loop output esterno, DPI 100/125/150 e tempi di arresto end-to-end: **ND / NON ESEGUITI**. Il test nativo non certifica uso LIVE. Rollback: revert della sola PR, nessun merge automatico.
 
