@@ -25,7 +25,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 ### Test e limiti
 - Aggiunta prova UDP reale Windows di 16 porte, stop cooperativo con soglia CI 3000 ms, riavvio, ricezione OSC e conservazione del listener dopo rifiuto di porte duplicate. L'esclusivita di porte gia occupate non e' garantita da JUCE/Windows.
 - Il rischio originale di timeout/terminazione forzata e' stato individuato da audit del contratto JUCE, **non riprodotto in un crash**. RED non forzato per non uccidere intenzionalmente un thread in CI. Le prime CI Windows 44728131774 e 44728365029 fallivano per una falsa assunzione del test sull'esclusivita di una porta UDP, poi corretta senza alterare la politica di riuso.
-- Test reali Windows Release/CTest e CodeQL da verificare sugli SHA esatti. L'uscita cooperativa evita il kill forzato ma non costituisce una garanzia assoluta di latenza se il sistema operativo non risponde. Banco hardware e p95/p99 stop lato operatore: ND.
+- Windows Release/CTest **PASS** sul commit codice da997936, [run 44729568289](https://github.com/Askeladd22/The_Cuelist/actions/runs/44729568289): **421.068 asserzioni, zero test falliti**; prova OSC su 16 porte e successivo riavvio PASS, upload screenshot nativi PASS. VERSION/CMake/CHANGELOG guard PASS sullo stesso SHA (run 44729568113); eventuale commit documentale finale richiede verifica sul suo SHA.
+- CodeQL e triage alert da verificare sull'ultimo SHA; nessuna certificazione di assenza vulnerabilita. L'uscita cooperativa evita il kill forzato ma non costituisce una garanzia assoluta di latenza se il sistema operativo non risponde. Banco hardware e p95/p99 stop lato operatore: ND. Warning MSVC C4456 preesistente su Timeline.cpp:409.
 
 ## [0.9.84] - 2026-11-20
 
