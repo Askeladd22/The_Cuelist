@@ -1,5 +1,7 @@
 #pragma once
 #include <array>
+#include <algorithm>
+#include <vector>
 #include "AudioEngine.h"
 #include "ProjectSafety.h"
 #include "ProjectMediaLoader.h"
@@ -434,6 +436,11 @@ public:
     }
     void attach(juce::Component* newMenu) {
         if (!newMenu || tracks(newMenu)) return;
+        // JUCE destroys/replaces child windows as the operator navigates.
+        // Avoid accumulating expired weak references during a long menu session.
+        menus.erase(std::remove_if(menus.begin(),menus.end(),
+                    [](const auto& entry) { return entry.getComponent()==nullptr; }),
+                    menus.end());
         menus.emplace_back(newMenu);
         newMenu->addKeyListener(this);
     }
