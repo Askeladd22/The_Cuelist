@@ -979,6 +979,36 @@ void uiRefinementTests() {
         check(pinned->getDescription().contains("Shift+F10 exits") &&
               pinned->getDescription().contains("Escape PANIC; Space GO"),
               "UX03G shortened visual footer lost its accessible full guidance");
+
+        // Large native header must keep the complete, third navigation hint.
+        ui.setSize(1920,1080);
+        ui.resized();
+        const int wideWidth=pinned->getWidth();
+        const juce::String full="ESC  PANIC    SPACE  GO    SHIFT+F10  EXIT";
+        check(wideWidth>=520 &&
+              juce::GlyphArrangement::getStringWidth(font(10.0f,true),full)
+                  <=(float)wideWidth-24.0f,
+              "UX03G expected full wide action footer to fit");
+        actual=pinned->createComponentSnapshot(pinned->getLocalBounds());
+        check(actual.isValid() && actual.getWidth()==wideWidth,
+              "UX03G native wide action footer screenshot unavailable");
+        if (!actual.isValid()) return;
+        juce::Image wideExpected(juce::Image::ARGB,wideWidth,pinned->getHeight(),true);
+        {
+            juce::Graphics g(wideExpected);
+            g.fillAll(palette::panel);
+            label(g,full,{10,49,wideWidth-20,17},10,palette::standby,true);
+        }
+        differences=0;
+        for(int y=49;y<66;++y)
+            for(int x=10;x<wideWidth-10;++x)
+                if(actual.getPixelAt(x,y)!=wideExpected.getPixelAt(x,y))
+                    ++differences;
+        check(differences==0,
+              "UX03G wide native header lost Shift+F10 or changed footer paint");
+        check(encodeShow(ui.show)==before && ui.liveCuelistIndex()==live &&
+              ui.nextCueIndex()==next,
+              "UX03G wide painting changed the show or global LIVE state");
     });
 
     test("UX04A: inline editor Escape callbacks cancel edit and invoke PANIC",[] {
