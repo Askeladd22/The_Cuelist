@@ -179,6 +179,54 @@ void timelineV3Tests() {
         near(saved.rows[0].cells[0].fadeInSeconds,.5);
         near(saved.rows[0].cells[0].fadeOutSeconds,.5);
     });
+    test("OSC Timeline paints automation strips in seconds and beats without clip mutation",[] {
+        // This is a real JUCE Timeline paint test, not a duplicated formula.
+        // It ensures the inner ramp coordinates and the clip's absolute
+        // start position remain distinct in both time representations.
+        for(const bool useBeats:{false,true}) {
+            MainComponent ui(false);
+            addColumn(ui.show,ColumnType::osc,"OSC automation");
+            auto& cell=ui.show.rows[0].cells[1];
+            cell.startSeconds=1.25;
+            OscClip clip;
+            clip.useBeats=useBeats;
+            clip.length=useBeats ? 8.0 : 4.0;
+            OscAutomation ramp;
+            ramp.message.address="/fixture/level";
+            ramp.message.arguments={{OscValueType::decimal,0,.1f,{}}};
+            ramp.argumentIndex=0;
+            ramp.time=useBeats ? 2.0 : 1.0;
+            ramp.duration=useBeats ? 2.0 : 1.0;
+            ramp.points={{0.0,.1f},{ramp.duration,.9f}};
+            clip.automations.push_back(ramp);
+            cell.osc=clip;
+            auto* timeline=cueViewFixtures::find<Timeline>(ui);
+            check(timeline!=nullptr,"Native OSC Timeline not found");
+            if (!timeline) continue;
+            timeline->setSize(800,250);
+            const auto before=encodeShow(ui.show);
+            const auto withAutomation=timeline->createComponentSnapshot(
+                timeline->getLocalBounds());
+            cell.osc->automations.clear();
+            const auto withoutAutomation=timeline->createComponentSnapshot(
+                timeline->getLocalBounds());
+            check(withAutomation.isValid() && withoutAutomation.isValid(),
+                  "OSC Timeline automation snapshot invalid");
+            int paintedPixels=0;
+            if(withAutomation.isValid() && withoutAutomation.isValid())
+                for(int y=110;y<202;++y)
+                    for(int x=140;x<780;++x)
+                        if(withAutomation.getPixelAt(x,y)!=
+                           withoutAutomation.getPixelAt(x,y))
+                            ++paintedPixels;
+            check(paintedPixels>=50,
+                  "Native OSC Timeline did not paint its automation span");
+            cell.osc=clip;
+            check(encodeShow(ui.show)==before &&
+                  cell.startSeconds==1.25,
+                  "OSC automation paint changed stored clip start or JSON v10 data");
+        }
+    });
     test("Timeline uses neutral toolbar and visible type-keyed media fills",[] {
         MainComponent ui(false);
         addColumn(ui.show,ColumnType::control,"Stage control");
