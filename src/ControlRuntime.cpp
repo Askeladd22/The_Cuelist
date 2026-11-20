@@ -573,7 +573,12 @@ bool MainComponent::setControlColumnPriority(int column,int priority) {
 void MainComponent::dispatchControl(const ControlEvent& input) {
     // Record even unmatched notes and CC releases, including across a GO
     // that switches the effective Control Set.
+    const bool wasOscOverloaded=physicalEdges.oscTrackingSaturated();
     const bool wasDown=physicalEdges.recordAndWasDown(input);
+    if (!wasOscOverloaded && physicalEdges.oscTrackingSaturated()) {
+        status="OSC input overloaded: new OSC GO/PANIC blocked. Re-apply OSC ports in Settings.";
+        repaint();
+    }
     // Hardware MIDI events have already been copied to the UI thread.
     // Pickup compares against the physical value expected for the current
     // actual target. No mutation of show happens in a MIDI callback.
