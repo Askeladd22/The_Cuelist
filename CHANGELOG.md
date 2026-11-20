@@ -13,6 +13,18 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.83] - 2026-11-20
+
+**RQ-SEC-003: cancellazione generazionale dei Control Mapping OSC in attesa di invio durante PANIC.**
+
+### Obiettivo
+- Impedire che un pacchetto OSC gia prelevato dal worker ma non ancora consegnato alla chiamata UDP sia trasmesso dopo PANIC; conservare gli invii legittimi successivi.
+- Nessuna attesa di rete nel callback audio; nessun cambiamento al formato .cuelist JSON v10, alle code audio/MIDI/OSC Timeline, al modello VIEW/LIVE o alle funzioni esistenti.
+
+### Verifiche e limiti
+- Test sincronizzato con una pausa nel worker tra estrazione della coda e invio UDP; regressione RED/GREEN da verificare sulla CI Windows per gli SHA esatti.
+- Un invio UDP gia iniziato prima di PANIC non puo essere revocato; nessuna garanzia di ricezione remota. Banco esterno MIDI/OSC/LTC e misura jitter: ND.
+
 ## [0.9.82] - 2026-11-20
 
 **RQ-OBS-002: observability and bounded packet validation for Control Map OSC output.**

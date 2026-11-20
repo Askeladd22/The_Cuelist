@@ -1,9 +1,11 @@
 #include "ControlOutputRouter.h"
 #include <cmath>
 #include <cstring>
+#include <utility>
 
 namespace cuelist {
-ControlOutputRouter::ControlOutputRouter():juce::Thread("Control OSC output") {startThread();}
+ControlOutputRouter::ControlOutputRouter(std::function<void()> probe)
+    : juce::Thread("Control OSC output"), beforeWriteProbe(std::move(probe)) {startThread();}
 ControlOutputRouter::~ControlOutputRouter() {
     signalThreadShouldExit(); notify(); stopThread(-1);
 }
@@ -39,6 +41,9 @@ void ControlOutputRouter::run() {
         OscValue argument; argument.type=OscValueType::decimal; argument.decimal=p.decimal;
         event.arguments.push_back(std::move(argument));
         auto bytes=encodeOscMessage(event);
+        // Test-only staging hook: create a deterministic pause after dequeue
+        // and encoding, before the irrevocable OS UDP write.
+        if (beforeWriteProbe) beforeWriteProbe();
         if (!bytes.empty() && bytes.size()<=1024 &&
             udp.write(p.host,p.port,bytes.data(),(int)bytes.size())==(int)bytes.size())
             sent.fetch_add(1,std::memory_order_relaxed);

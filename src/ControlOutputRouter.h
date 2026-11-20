@@ -3,13 +3,16 @@
 #include <juce_core/juce_core.h>
 #include <atomic>
 #include <deque>
+#include <functional>
 
 // Async OSC output for MIDI-controller mappings. MIDI CC output is delegated
 // to the existing MidiOutputRouter so that Windows devices are opened once.
 namespace cuelist {
 class ControlOutputRouter final : private juce::Thread {
 public:
-    ControlOutputRouter();
+    // Optional staging probe used by deterministic worker-concurrency tests.
+    // Production callers pass no hook.
+    explicit ControlOutputRouter(std::function<void()> beforeWriteProbe={});
     ~ControlOutputRouter() override;
     bool sendOscFloat(const juce::String& host,int port,const juce::String& address,float value);
     void clear();
@@ -26,6 +29,7 @@ private:
     std::atomic<int> dropped{0};
     std::atomic<uint64_t> sent{0};
     static constexpr size_t maxQueue=512;
+    std::function<void()> beforeWriteProbe;
     void run() override;
 };
 }

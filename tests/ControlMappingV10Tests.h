@@ -220,6 +220,39 @@ void controlMappingV10Tests() {
         check(output.sentCount()==1 && output.droppedCount()==0,
               "Valid loopback OSC packet was reported as failed or not counted");
     });
+    test("PANIC discards dequeued mapped OSC before the network write",[] {
+        juce::DatagramSocket receiver(false);
+        check(receiver.bindToPort(0),"Could not bind PANIC cancellation loopback receiver");
+        const int port=receiver.getBoundPort();
+        check(port>0,"PANIC cancellation receiver has no UDP port");
+
+        juce::WaitableEvent staged(false),release(false);
+        std::atomic<int> visits{0};
+        // The worker is paused AFTER a packet is dequeued. clear() cannot
+        // remove this packet from its old queue, reproducing the PANIC window.
+        ControlOutputRouter output([&] {
+            if (visits.fetch_add(1,std::memory_order_relaxed)==0) {
+                staged.signal();
+                release.wait(3000.0);
+            }
+        });
+        const bool enqueued=output.sendOscFloat("127.0.0.1",port,"/old/look",0.5f);
+        const bool workerPaused=staged.wait(2000.0);
+        output.clear(); // Exactly the operation called by MainComponent::stopAll.
+        release.signal(); // Always release before assertions/destruction.
+        check(enqueued && workerPaused,
+              "Failed to stage a dequeued but not yet transmitted OSC packet");
+        check(receiver.waitUntilReady(true,500)==0,
+              "A Control Map OSC packet was transmitted after PANIC clear()");
+        check(output.sendOscFloat("127.0.0.1",port,"/new/look",0.75f),
+              "A legitimate OSC Control Map output was blocked after PANIC");
+        check(receiver.waitUntilReady(true,1500)==1,
+              "New mapped OSC output did not recover after PANIC clear()");
+        char bytes[128]{};
+        const int n=receiver.read(bytes,sizeof(bytes),false);
+        check(n>0 && juce::String::fromUTF8(bytes)=="/new/look",
+              "Recovered Control Map output sent an old or incorrect OSC address");
+    });
     test("hardware CC, notes and bend are accepted and bounded off the UI thread",[] {
         MidiInputManager input;
         input.ingestForTest(juce::MidiMessage::controllerEvent(3,21,127));
