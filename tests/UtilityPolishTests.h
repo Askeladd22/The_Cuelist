@@ -330,6 +330,34 @@ void utilityPolishTests() {
                   "Visual Master readout test unexpectedly changed the audio gain");
         }
     });
+    test("Compact Quick Learn hotspots never overwrite Pan or Limiter labels",[] {
+        // The actual RQ-UI-007 Windows snapshots exposed LEARN text across
+        // the native 105x31 Limiter and 43x43 Pan widgets. Their border is
+        // enough to show Learn mode; inner text must not occlude the value.
+        // The 152x48 GO/PANIC targets and 82x135 fader must retain LEARN.
+        const auto captionPixels=[](int width,int height) {
+            QuickLearnHotspot hotspot("Gain");
+            hotspot.setSize(width,height);
+            hotspot.setLearnPresentation(palette::amber,false,true);
+            juce::Image image(juce::Image::ARGB,width,height,true);
+            {
+                juce::Graphics g(image);
+                hotspot.paint(g);
+            }
+            int opaqueInnerPixels=0;
+            // The border and translucent fill are intentionally excluded;
+            // a painted caption leaves >140 alpha glyph pixels here.
+            for(int y=4;y<std::min(17,height-5);++y)
+                for(int x=8;x<width-8;++x)
+                    if(image.getPixelAt(x,y).getAlpha()>140)
+                        ++opaqueInnerPixels;
+            return opaqueInnerPixels;
+        };
+        check(captionPixels(105,31)==0 && captionPixels(43,43)==0,
+              "Compact native Quick Learn overlay covers Pan/Limiter labels");
+        check(captionPixels(152,48)>0 && captionPixels(82,135)>0,
+              "GO/PANIC or Master fader lost its readable Learn target caption");
+    });
     test("Compact Master Mute is centred below Pan and not over its label",[] {
         MainComponent ui(false);
         auto* util=cueViewFixtures::find<ColumnUtilities>(ui);

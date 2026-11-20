@@ -40,7 +40,11 @@ public:
         g.fillRoundedRectangle(bounds,4.0f);
         g.setColour(accent.withAlpha(selected ? (pulseBright ? 1.0f : .32f) : .70f));
         g.drawRoundedRectangle(bounds,4.0f,selected ? 2.6f : 1.5f);
-        if (getWidth()>=40 && getHeight()>=30) {
+        // A LEARN caption above native Pan (43px) or Limiter (31px)
+        // obscures the real control name/value. Keep those compact targets
+        // fully clickable and tinted, but reserve text for taller surfaces.
+        // GO/PANIC are 48px high and must keep the explicit LEARN caption.
+        if (getWidth()>=40 && getHeight()>=48) {
             g.setFont(juce::Font(juce::FontOptions(10.0f,juce::Font::bold)));
             g.drawText("LEARN",2,2,getWidth()-4,15,
                        juce::Justification::centred,true);
