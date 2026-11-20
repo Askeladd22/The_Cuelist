@@ -157,6 +157,45 @@ void uiRefinementTests() {
               "UX04B-02 popup cancellation/reopen changed the show or LIVE");
     });
 
+    test("UX04B-03: top-level Devices View More Escape reaches PANIC",[] {
+        // This exercises the *root* JUCE popup only. Do not infer behavior
+        // for nested menu windows, which own their own focused peers.
+        for (const auto* name: {"Devices","View","More"}) {
+            const bool compact=juce::String(name)=="More";
+            MainComponent ui(false);
+            ui.setSize(compact ? 1180 : 1920,compact ? 820 : 1080);
+            auto* button=dynamic_cast<juce::TextButton*>(
+                controlsV3::named(ui,"operatorMenu"+juce::String(name)));
+            check(button && button->isVisible() &&
+                  static_cast<bool>(button->onClick),
+                  "UX04B-03 top-level Devices/View/More menu is unavailable");
+            if (!button) return;
+            const auto before=encodeShow(ui.show);
+            const int live=ui.liveCuelistIndex(),next=ui.nextCueIndex();
+            struct Dismiss {
+                ~Dismiss() { juce::PopupMenu::dismissAllActiveMenus(); }
+            } dismiss;
+            button->onClick();
+            auto* modal=juce::Component::getCurrentlyModalComponent();
+            check(modal && modal!=&ui,
+                  "UX04B-03 top-level menu did not create a JUCE modal window");
+            if (!modal) return;
+            auto* peer=modal->getPeer();
+            check(peer!=nullptr,
+                  "UX04B-03 top-level menu has no native JUCE ComponentPeer");
+            if (!peer) return;
+            ui.engine.acknowledgedCueId.store(923);
+            check(peer->handleKeyPress(
+                      juce::KeyPress(juce::KeyPress::escapeKey)),
+                  "UX04B-03 native popup did not consume first Escape");
+            check(ui.engine.acknowledgedCueId.load()==0,
+                  "UX04B-03 top-level Devices/View/More Escape skipped PANIC");
+            check(encodeShow(ui.show)==before &&
+                  ui.liveCuelistIndex()==live && ui.nextCueIndex()==next,
+                  "UX04B-03 Escape altered persisted Show or LIVE/NEXT");
+        }
+    });
+
     test("UX04D: project name Label Escape cancels and triggers PANIC",[] {
         // This is a JUCE Label::TextEditor listener callback-contract test,
         // not a physical Escape-key delivery/latency test on Windows.
