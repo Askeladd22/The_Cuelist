@@ -119,6 +119,44 @@ void uiRefinementTests() {
         }
     });
 
+    test("UX04B-02: File popup cancellation is not PANIC and can reopen",[] {
+        MainComponent ui(false);
+        ui.setSize(1920,1080);
+        auto* file=dynamic_cast<juce::TextButton*>(
+            controlsV3::named(ui,"operatorMenuFile"));
+        check(file && file->isVisible() && static_cast<bool>(file->onClick),
+              "UX04B-02 File menu unavailable for cancellation regression");
+        if (!file) return;
+        struct Dismiss {
+            ~Dismiss() { juce::PopupMenu::dismissAllActiveMenus(); }
+        } dismiss;
+        const auto original=encodeShow(ui.show);
+        const int live=ui.liveCuelistIndex(),next=ui.nextCueIndex();
+        file->onClick();
+        check(juce::Component::getCurrentlyModalComponent()!=nullptr,
+              "UX04B-02 File menu did not enter native modal state");
+        ui.engine.acknowledgedCueId.store(923);
+        check(juce::PopupMenu::dismissAllActiveMenus(),
+              "UX04B-02 File popup did not dismiss normally");
+        check(ui.engine.acknowledgedCueId.load()==923,
+              "UX04B-02 ordinary menu dismissal accidentally triggered PANIC");
+        // A second menu instance must reattach the same bounded listener;
+        // the pointer to the dismissed first instance must not be reused.
+        file->onClick();
+        auto* modal=juce::Component::getCurrentlyModalComponent();
+        check(modal && modal->getPeer(),
+              "UX04B-02 reopened File popup lacks the real JUCE peer");
+        if (!modal || !modal->getPeer()) return;
+        ui.engine.acknowledgedCueId.store(923);
+        check(modal->getPeer()->handleKeyPress(
+                  juce::KeyPress(juce::KeyPress::escapeKey)) &&
+              ui.engine.acknowledgedCueId.load()==0,
+              "UX04B-02 File popup did not rearm first Escape after cancellation");
+        check(encodeShow(ui.show)==original && ui.liveCuelistIndex()==live &&
+              ui.nextCueIndex()==next,
+              "UX04B-02 popup cancellation/reopen changed the show or LIVE");
+    });
+
     test("UX04D: project name Label Escape cancels and triggers PANIC",[] {
         // This is a JUCE Label::TextEditor listener callback-contract test,
         // not a physical Escape-key delivery/latency test on Windows.
