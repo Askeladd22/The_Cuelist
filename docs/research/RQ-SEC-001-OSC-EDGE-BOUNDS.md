@@ -12,18 +12,18 @@ Threat model: REMOTE, when configured OSC UDP ports are reachable from untrusted
 
 ## Hypothesis, red team and alternatives
 
-Hypothesis: at most 4096 simultaneously held OSC identities can be tracked, and new identities under saturation are treated as already-held for GO/PANIC safety. Previously registered held controls remain tracked, and release permits recovery. MIDI states remain independent of OSC capacity.
+Hypothesis: at most 4096 simultaneously held OSC identities can be tracked, and new identities under saturation are treated as already-held for GO/PANIC safety. Previously registered held controls remain tracked, but the overflow latches until the operator explicitly re-applies or disables OSC input in Settings. MIDI states remain independent of OSC capacity and MIDI reconnect cannot clear the OSC latch.
 
 - Reject: indiscriminate clearing/eviction of held controls; it can re-arm a held GO during cue/Control Map transitions.
 - Reject: track only currently mapped OSC inputs; a mapping can change while a control is held.
-- Chosen: bounded positive-state set for OSC with fail-closed admission; a separate positive-state set for locally configured MIDI controls. Release does not reserve a slot. This may intentionally suppress a new OSC GO during saturation: operational availability is a known residual risk.
+- Chosen: bounded positive-state set for OSC with sticky fail-closed admission; a separate positive-state set for locally configured MIDI controls. Release does not reserve a slot. A rejected still-held OSC source cannot re-arm merely because a different source released. Operator re-arms explicitly through Settings; Diagnostics reports overload. This intentionally blocks new OSC GO under saturation: operational availability is a known residual risk.
 - No modification to network sender trust settings or protocol compatibility in this phase.
 
 ## Acceptance criteria and gates
 
 - **AC-1**: 100,000 unique OSC presses cannot create more than 4096 simultaneously held OSC identities; no unbounded retention of released identities.
 - **AC-2**: a held MIDI or OSC GO is never interpreted as a second rising edge after a flood or Control Map change.
-- **AC-3**: new OSC presses at capacity cannot trigger a fresh GO/PANIC; release of a tracked identity frees a slot for a later legitimate press.
+- **AC-3**: new OSC presses at capacity cannot trigger a fresh GO/PANIC; release of a different tracked identity cannot re-arm a rejected still-held source. Recovery requires an explicit successful OSC Settings Apply/Disable.
 - **AC-4**: existing edge, unmatched-release, MIDI Learn / OSC Learn and ordinary mapping tests still pass on Windows Release/CTest.
 - **AC-5**: VERSION.txt, CMake version and CHANGELOG align; .cuelist v10 unchanged; no audio callback I/O/allocations; no automatic PR merge.
 
@@ -31,7 +31,7 @@ Hypothesis: at most 4096 simultaneously held OSC identities can be tracked, and 
 
 | Gate | Verification | Status |
 | --- | --- | --- |
-| TDD-RED | Commit with regression test against pre-fix implementation; Windows CTest fails on capacity assertion | NOT RUN |
+| TDD-RED | Windows Release/CTest on dc34e436: regression fails only on capacity assertion, 420904 assertions, one failed test. https://github.com/Askeladd22/The_Cuelist/actions/runs/44707138683 | FAIL AS EXPECTED |
 | TDD-GREEN | Windows Release/CTest on fixed PR SHA | NOT RUN |
 | VERSION | CI version/changelog validator on fixed PR SHA | NOT RUN |
 | STATIC | Review source, diff, tests and invariants on pinned SHA | NOT RUN |
@@ -39,4 +39,4 @@ Hypothesis: at most 4096 simultaneously held OSC identities can be tracked, and 
 
 ## Rollback and remaining risks
 
-Revert the single feature commit/PR without modifying stored shows or migrating JSON v10. If OSC saturation is detected in a live rehearsal, restore a trusted/control-isolated network and re-test controller operation before running the show. Operator must not infer delivery from UDP write success. Hardware timing, audio underrun under flood, and external receiver validation remain ND.
+Revert the single feature commit/PR without modifying stored shows or migrating JSON v10. If OSC saturation is detected in a live rehearsal, use independent MIDI/physical emergency controls, isolate the trusted control network, re-apply the OSC input ports in Settings to clear the latch, and re-test controller operation before running the show. A re-arm intentionally clears previously held OSC identities: release all OSC buttons before re-arming. Operator must not infer delivery from UDP write success. Hardware timing, audio underrun under flood, and external receiver validation remain ND.
