@@ -26,7 +26,7 @@ Su un workspace 1180×820, l'operatore apre il pulsante **More** mentre un altro
 
 | ID | Contratto e test | Stato |
 |---|---|---|
-| AC-1 | More a 1180×820: aprire con reale bottone, Down, Right su peer root, Escape su peer **child**; RED deve provare PANIC assente | Test-only `00343b8961e608f94514db2abef6c67cf1d3491f`; Windows ND |
+| AC-1 | More a 1180×820: aprire con reale bottone, Down, Right su peer root, Escape su peer **child**; RED deve provare PANIC assente | **RED confermato:** test-only `00343b8961e608f94514db2abef6c67cf1d3491f`, [Windows CI #44788777815](https://github.com/Askeladd22/The_Cuelist/actions/runs/44788777815): **421.075 asserzioni / 1 FAIL atteso** (`child submenu consumed first Escape without PANIC`); test ha aperto realmente il peer figlio |
 | AC-2 | Dopo fix minimo, lo stesso scenario manda il primo Esc a PANIC e preserva Show serializzato, LIVE/VIEW e NEXT | Windows CTest ND |
 | AC-3 | Root File/Edit/Show/Cuelists/Devices/View/Guide/More rimangono coperti, normale dismiss non attiva PANIC | Test UX04B-01/02/03 e negativo UX04B-02; ND |
 | AC-4 | Child Left→parent Esc opera ancora; menu indipendenti e callback di selezione restano invariati | Test negativo / manual review; ND |
@@ -51,4 +51,4 @@ Su un workspace 1180×820, l'operatore apre il pulsante **More** mentre un altro
 
 **Red-team ulteriore:** una popup non collegata aperta *mentre* un menu operatore e' modale e' un controesempio teorico per il solo controllo del modal owner; il sistema modale normalmente blocca l'input concorrente, ma una callback programmata potrebbe produrla. Non dichiarare isolamento formalmente provato dal test More. Test aggiuntivi su popup asincroni e submenu profondi richiesti prima di allargare il perimetro.
 
-**Stato:** test-only e patch C++ separati e committati; RED/ GREEN Windows sul child e CodeQL sullo SHA finale ancora ND finche' i job non sono conclusi e letti. Non dichiarare ready-for-LIVE.
+**Stato:** RED Windows **confermato** sul test-only `00343b89`; patch C++ e regressione Left→parent in branch, con pulizia delle weak reference scadute in ripetute aperture di child. GREEN Windows, CodeQL e verifica fisica sullo SHA finale **ND finche' non letti i job**. Non dichiarare ready-for-LIVE.
