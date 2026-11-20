@@ -38,7 +38,7 @@ inline const ThemeTokens& tokens(Appearance id) {
     return id==Appearance::legacy ? legacyTokens : industrialTokens;
 }
 inline const char* displayName(Appearance id) {
-    return id==Appearance::legacy ? "Legacy — Graphite / Copper" :
+    return id==Appearance::legacy ? "Legacy - Graphite / Copper" :
                                     "Industrial Orange";
 }
 namespace swatch {
@@ -571,7 +571,10 @@ public:
     // JUCE PopupMenu is a separate desktop window. Explicitly attach this
     // LookAndFeel when constructing a menu (not only to its target button),
     // otherwise Windows can render it using the default grey theme.
-    juce::Font getPopupMenuFont() override { return font(13.0f); }
+    // Minimum readable popup tier for operator menus. Keep drawing and
+    // measurement at the same font size so Windows DPI does not truncate text.
+    static constexpr float popupTextSize=14.5f;
+    juce::Font getPopupMenuFont() override { return font(popupTextSize); }
 
     void drawPopupMenuBackground(juce::Graphics& g,int width,int height) override {
         g.fillAll(palette::panel);
@@ -605,7 +608,7 @@ public:
         const auto ink=customTextColour!=nullptr ? *customTextColour : palette::text;
         g.setColour(active ? (hover ? palette::text : ink)
                            : palette::muted.withAlpha(.48f));
-        g.setFont(font(13.0f));
+        g.setFont(font(popupTextSize));
 
         auto content=area.reduced(10,0);
         const auto iconArea=content.removeFromLeft(20).toFloat();
@@ -640,17 +643,17 @@ public:
                            : palette::muted.withAlpha(.48f));
         if (title.startsWith(faderMinusInfinity())) {
             const auto prefix=faderMinusInfinity();
-            const auto mathematical=mathFont(13.0f);
+            const auto mathematical=mathFont(popupTextSize);
             const int prefixWidth=(int)std::ceil(
                 juce::GlyphArrangement::getStringWidth(mathematical,prefix))+2;
             const auto prefixArea=content.removeFromLeft(prefixWidth);
             g.setFont(mathematical);
             g.drawText(prefix,prefixArea,juce::Justification::centredLeft,false);
-            g.setFont(font(13.0f));
+            g.setFont(font(popupTextSize));
             g.drawFittedText(title.substring(prefix.length()),content,
                              juce::Justification::centredLeft,1);
         } else {
-            g.setFont(font(13.0f));
+            g.setFont(font(popupTextSize));
             g.drawFittedText(title,content,juce::Justification::centredLeft,1);
         }
         if (shortcut.isNotEmpty()) {
@@ -666,7 +669,7 @@ public:
                                     const juce::Rectangle<int>& area,
                                     const juce::String& section) override {
         g.setColour(palette::teal);
-        g.setFont(font(11.0f,true));
+        g.setFont(font(popupTextSize,true));
         g.drawFittedText(section,area.reduced(12,2),
                          juce::Justification::centredLeft,1);
     }
@@ -678,17 +681,17 @@ public:
             height=9;
             return;
         }
-        height=juce::jmax(34,standardHeight);
+        height=juce::jmax(36,standardHeight);
         if (title.startsWith(faderMinusInfinity())) {
             const auto prefix=faderMinusInfinity();
             width=juce::jmax(142,(int)std::ceil(
-                juce::GlyphArrangement::getStringWidth(mathFont(13.0f),prefix)
+                juce::GlyphArrangement::getStringWidth(mathFont(popupTextSize),prefix)
               + juce::GlyphArrangement::getStringWidth(
-                    font(13.0f),title.substring(prefix.length())))+73);
+                    font(popupTextSize),title.substring(prefix.length())))+73);
         } else {
             width=juce::jmax(110,
                 (int)std::ceil(juce::GlyphArrangement::getStringWidth(
-                    font(13.0f),title))+65);
+                    font(popupTextSize),title))+65);
         }
     }
 

@@ -42,6 +42,19 @@ class NativeOperatorMenuParity(unittest.TestCase):
         self.assertNotIn('"MIDI / OSC Settings..."', MENU)
         self.assertNotIn('"Diagnostics / I/O activity..."', MENU)
 
+    def test_native_device_and_appearance_labels_are_ascii_and_legible(self):
+        # The screenshot regression showed the long dash rendered as mojibake
+        # or unsupported glyphs inside real JUCE PopupMenu windows on Windows.
+        devices = menu_case(4)
+        view = menu_case(5)
+        self.assertIn('midiIn.addSectionHeader("MIDI INPUT - ENABLE")', devices)
+        self.assertIn('midiOut.addSectionHeader("MIDI OUTPUT - ENABLE")', devices)
+        self.assertIn('palette::displayName(palette::Appearance::legacy)', view)
+        for group in (devices, view):
+            self.assertNotIn(chr(0x2014), group, "Dash must not depend on a font fallback")
+        self.assertIn('m.addSubMenu("MIDI Inputs",midiIn)', devices)
+        self.assertIn('m.addSubMenu("MIDI Outputs",midiOut', devices)
+
     def test_legacy_preferences_reuses_only_the_native_operator_menu(self):
         # Regression: do not restore a second Settings menu/dispatcher.
         legacy = between(CPP, "preferencesButton.onClick=[this] {",

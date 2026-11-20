@@ -287,6 +287,8 @@ void uiRefinementTests() {
         Theme theme;
         juce::TextButton sample;
         juce::ComboBox combo;
+        check(theme.getPopupMenuFont().getHeightInPoints()>=10.5f,
+              "Operator popup captions are below the readable 10.5pt baseline");
         check(theme.getPopupMenuFont().getTypefaceName().containsIgnoreCase("Exo") &&
               theme.getTextButtonFont(sample,24).getHeightInPoints()>=10.0f &&
               theme.getTextButtonFont(sample,32).getTypefaceName().containsIgnoreCase("Hind") &&
@@ -1180,6 +1182,9 @@ void uiRefinementTests() {
     });
     test("Popup menus use Industrial Orange with readable hover and separator",[] {
         Theme theme;
+        check(juce::String(palette::displayName(palette::Appearance::legacy))==
+                  "Legacy - Graphite / Copper",
+              "Legacy Appearance label must use readable ASCII punctuation");
         // Check the actual LookAndFeel colours rather than exact sampled
         // pixels: JUCE's Windows rasteriser can blend ARGB images differently
         // across renderers and Windows SDK versions.

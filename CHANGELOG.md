@@ -13,6 +13,19 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.86] - 2026-11-20
+
+**RQ-UI-006: native Devices/View submenu glyphs and Master Audio gain readout.**
+
+### UX and accessibility
+- Replace font-dependent em dashes in the two MIDI menu section headers and the Legacy Appearance menu item with explicit ASCII punctuation. Preserve device identity, checked states, routing and all menu commands.
+- Improve native JUCE popup typography for operator legibility, with matching popup sizing and text layout. Keep Industrial Orange/Legacy palette and vector menu affordances.
+- Reserve an opaque, compact readout region under the 82px pinned Master gain meter so the dB value remains legible without changing the fader, its gain calibration or audio callback.
+
+### QA
+- Test-first Windows regressions: actual native menu inventory (Python source parity) and JUCE rendered gain caption plus popup font. Record RED/GREEN and any UI screenshot visual/DPI gate evidence by exact SHA.
+- Keep Audio/MIDI/OSC/LTC, GO/STOP/PANIC, VIEW/LIVE, Undo/Redo, Timeline, Mixer and .cuelist JSON schema v10 unchanged. Real operator Windows/DPI visual assessment remains separate from automated CTest.
+
 ## [0.9.85] - 2026-11-20
 
 **RQ-SEC-005: uscita cooperativa del listener OSC e ripristino sicuro delle porte.**

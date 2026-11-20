@@ -306,6 +306,30 @@ void utilityPolishTests() {
                   "N5.3 silence label collides with MUTE/PAN or clips the strip");
         }
     });
+    test("Pinned Master gain readout has an opaque protected label area",[] {
+        // Reproduce the operator's overlapping 0.0 dB readout screenshot:
+        // unlike column scales, Master has a short 82px-wide gain fader.
+        // Its last 20px need an opaque caption surface, not stray meter ink.
+        for (const int height : {135,163,220}) {
+            GainMeterFader master;
+            master.setSize(82,height);
+            check(!master.isColumnReadableScale() && !master.isCompact(),
+                  "Master fader no longer uses its native full-size geometry");
+            juce::Image image(juce::Image::ARGB,82,height,true);
+            {
+                // Windows can defer image writes until the graphics context
+                // is destroyed. Finish rendering before reading pixels.
+                juce::Graphics g(image);
+                master.paint(g);
+            }
+            const auto pixel=image.getPixelAt(3,height-10);
+            check(pixel.getAlpha()==255,
+                  "Master gain value has no opaque background: adjacent UI or "
+                  "meter content can show through the dB readout");
+            check(master.getGainDb()==0.0f,
+                  "Visual Master readout test unexpectedly changed the audio gain");
+        }
+    });
     test("Compact Master Mute is centred below Pan and not over its label",[] {
         MainComponent ui(false);
         auto* util=cueViewFixtures::find<ColumnUtilities>(ui);
