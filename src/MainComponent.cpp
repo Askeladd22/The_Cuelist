@@ -2506,11 +2506,11 @@ void MainComponent::timerCallback() {
             if (!hasExactMidiIdentifier(devices,extra.first)) {
                 if (extra.second->connected()) {
                     extra.second->disconnect();
-                    physicalEdges.clear();controlMapping.clearPickup();
+                    physicalEdges.clearMidi();controlMapping.clearPickup();
                 }
             } else if (!extra.second->connected()) {
                 if (extra.second->connect(extra.first).wasOk()) {
-                    physicalEdges.clear();controlMapping.clearPickup();
+                    physicalEdges.clearMidi();controlMapping.clearPickup();
                 }
             }
         }
@@ -2518,7 +2518,7 @@ void MainComponent::timerCallback() {
             midiInput.identifier(),midiInput.connected(),devices);
         if (firstAction==MidiSessionAction::disconnectMissing) {
             midiInput.disconnect();
-            physicalEdges.clear();controlMapping.clearPickup(); // stale MIDI state cannot survive unplug
+            physicalEdges.clearMidi();controlMapping.clearPickup(); // stale MIDI state cannot survive unplug
             status="MIDI input disconnected. Mappings suspended.";
         }
         // Preserve the original same-tick disconnect/reconnect flow, if a
@@ -2528,7 +2528,7 @@ void MainComponent::timerCallback() {
             ++midiInputReconnectAttempts;
             const auto restored=midiInput.connect(show.controls.midiInputId);
             if (restored.wasOk()) {
-                physicalEdges.clear();controlMapping.clearPickup();
+                physicalEdges.clearMidi();controlMapping.clearPickup();
                 status="MIDI controller reconnected (same device).";
             }
         }
