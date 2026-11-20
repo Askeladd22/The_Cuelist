@@ -17,8 +17,12 @@ bool PhysicalControlEdges::recordAndWasDown(const ControlEvent& event) {
         return true;
     }
     if (found!=held.end()) return true;
-    if (event.kind==ControlKind::osc && held.size()>=maxHeldOsc)
-        return true; // No new rising edge: suppress GO/PANIC on saturation.
+    if (event.kind==ControlKind::osc && (oscOverloaded || held.size()>=maxHeldOsc)) {
+        // Once over capacity, do not admit rejected still-held OSC sources
+        // merely because a different source released its key.
+        oscOverloaded=true;
+        return true; // Suppress a new OSC GO/PANIC until explicit port re-arm.
+    }
     held.insert(physical);
     return false;
 }
