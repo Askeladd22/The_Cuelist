@@ -20,8 +20,8 @@ Un operatore apre un menu superiore con voci di editing/gestione durante LIVE, p
 
 | AC | Criterio | Misura / prova |
 |---|---|---|
-| AC-1 | RED: almeno un menu nativo semplice non forwarda PANIC sul primo Esc | Test-only SHA `33b8b4c9`; [Windows run #44775466385](https://github.com/Askeladd22/The_Cuelist/actions/runs/44775466385), esito da leggere |
-| AC-2 | GREEN: File/Edit/Show/Cuelists/Guide forwardano primo Esc via **vero peer** | Test UX04B-01/UX04B-02, Windows Release/CTest esito da leggere |
+| AC-1 | RED: almeno un menu nativo semplice non forwarda PANIC sul primo Esc | **RED misurato:** test-only SHA `33b8b4c9`; [Windows run #44775466385](https://github.com/Askeladd22/The_Cuelist/actions/runs/44775466385), 421.024 asserzioni / 1 FAIL atteso (`top-level operator menu consumed Escape without PANIC`) |
+| AC-2 | GREEN: File/Edit/Show/Cuelists/Guide forwardano primo Esc via **vero peer** | **GREEN misurato sul codice:** SHA `a2381474`, [Windows run #44775956715](https://github.com/Askeladd22/The_Cuelist/actions/runs/44775956715), UX04B-01 e UX04B-02 PASS, 421.220 asserzioni / 0 FAIL |
 | AC-3 | Click fuori/cancel non sono PANIC, riapertura File riattacca listener senza puntatore obsoleto | Test `UX04B-02 File popup cancellation is not PANIC and can reopen`; esito da leggere |
 | AC-4 | LIVE/VIEW, NEXT, snapshot JSON v10 immutati dopo Escape; menu normali riutilizzano i comandi originali | Test e revisione patch mirata |
 | AC-5 | Version guard VERSION.txt/CMake 0.9.91, CHANGELOG; CI/CodeQL verificati sull'ultimo SHA | GitHub Actions, ND sino a run conclusi |
@@ -42,9 +42,9 @@ Un operatore apre un menu superiore con voci di editing/gestione durante LIVE, p
 
 | Gate | SHA/run | Risultato |
 |---|---|---|
-| Windows test-only RED | `33b8b4c9` / [44775466385](https://github.com/Askeladd22/The_Cuelist/actions/runs/44775466385) | ND finche' run non concluso |
-| Windows Release/CTest source | Run da registrare | ND |
-| Version guard e CodeQL final head | Run da registrare | ND |
+| Windows test-only RED | `33b8b4c9` / [44775466385](https://github.com/Askeladd22/The_Cuelist/actions/runs/44775466385) | **FAIL atteso:** 421.024 asserzioni / 1 FAIL mirato |
+| Windows Release/CTest source | `a2381474` / [44775956715](https://github.com/Askeladd22/The_Cuelist/actions/runs/44775956715) | **PASS** per 5 menu: 421.220 asserzioni / 0 FAIL; nuova regressione cancellazione non ancora inclusa |
+| HEAD docs + regressione cancellazione `d609f8d3`: Windows [44776449887](https://github.com/Askeladd22/The_Cuelist/actions/runs/44776449887), CodeQL [44776449893](https://github.com/Askeladd22/The_Cuelist/actions/runs/44776449893), version guard [44776449911](https://github.com/Askeladd22/The_Cuelist/actions/runs/44776449911) | **Guard PASS**, Windows/CodeQL in verifica; recheck sull'ultimo commit dopo aggiornamenti doc |
 | Tastiera fisica + menu e sottomenu con stato LIVE | PC Windows / show di prova | NON ESEGUITO |
 | DPI 100/125/150, Narrator, IME | Test fisici Windows | NON ESEGUITO |
 | Audi/MIDI/OSC/LTC esterni, latenza PANIC misurata | Banco isolato e hardware reale | NON ESEGUITO |
