@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdint>
 #include <algorithm>
+#include <functional>
 namespace cuelist {
 namespace palette {
 // One mutable token table, two immutable source presets. The Legacy numbers
@@ -500,6 +501,15 @@ inline void label(juce::Graphics& g,const juce::String& s,juce::Rectangle<int> r
 class Theme final : public juce::LookAndFeel_V4 {
 public:
     Theme() {applyColourTokens();}
+    // Called by pinned JUCE when it constructs every native MenuWindow
+    // (including nested child windows), before entering modal state.
+    // A caller must check the current modal owner before attaching hotkeys;
+    // ordinary non-operator popup menus must remain unaffected.
+    std::function<void(juce::Component&)> onPopupWindowPrepared;
+    void preparePopupMenuWindow(juce::Component& window) override {
+        juce::LookAndFeel_V4::preparePopupMenuWindow(window);
+        if (onPopupWindowPrepared) onPopupWindowPrepared(window);
+    }
     // LookAndFeel colour IDs are stored, unlike the dynamic palette tokens
     // used by paint(). Reapply on every theme switch, including popups.
     void applyColourTokens() {
