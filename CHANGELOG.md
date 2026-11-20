@@ -13,6 +13,20 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.92] - 2026-11-20
+
+**RQ-UX04B-03 — Primi Esc nei menu superiori Devices / View / More (test-first, PR draft).**
+
+### Scenario e ipotesi
+- JUCE 8.0.12 `PopupMenu::MenuWindow` consuma Esc per chiudere la finestra modale. La v0.9.91 copre File/Edit/Show/Cuelists/Guide, ma non il primo livello Devices/View/More, che e' anch'esso una finestra modale nativa.
+- La regressione test-first apre i reali menu superiori e inoltra Esc con il `ComponentPeer` della finestra modale, **non** con `MainComponent::keyPressed`. Verifica che il primo Esc invochi PANIC, chiuda il menu senza selezionare voci e lasci invariati Show JSON v10, LIVE/VIEW e NEXT.
+- **Non coperti:** sottomenu Devices/View/More (peer e focus distinti), Settings legacy, popup riga/cella, Control Map, OSC/MIDI editor, Timeline e AlertWindow/DialogWindow. Nessun hook globale, sostituzione GUI o modifica engine.
+
+### Gate
+- RED Windows CTest sul codice v0.9.91 prima di toccare il listener; soltanto dopo RED la patch minima estende il listener esistente ai tre menu superiori. GREEN Windows Release/CTest e CodeQL sull'esatto SHA finale, guard versioni.
+- Tastiera fisica Windows, Focus/IME/Narrator e DPI 100/125/150, tempo arresto reale Audio/MIDI/OSC/LTC su banco esterno: **ND / NOT RUN** e non equivalenti alla CI. Rischi residui documentati nell'issue #191.
+- Nessuna alterazione a Undo/Redo, PANIC button, GO, STOP, VIEW/LIVE, Control Map, Timeline, Mixer/Master e formato progetto JSON v10. Rollback con revert della singola PR, nessun merge automatico.
+
 ## [0.9.91] - 2026-11-20
 
 **RQ-UX04B-02 — First Escape under flat top-level JUCE operator menus (draft / test-first).**
