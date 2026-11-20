@@ -1276,7 +1276,8 @@ void MainComponent::showOperatorMenu(int index) {
     } else populate(menu,index);
 
     auto safe=juce::Component::SafePointer<MainComponent>(this);
-    // Only first-level *flat* File/Edit/Show/Cuelists/Guide menus are covered.
+    // Only top-level operator menu windows are covered, including root
+    // Devices/View/More. Nested menu windows remain a separate safety RQ.
     // Capture the previous modal target to reject an unrelated dialog.
     auto* previousModal=juce::Component::getCurrentlyModalComponent();
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(target),
@@ -1290,11 +1291,9 @@ void MainComponent::showOperatorMenu(int index) {
         });
     // JUCE 8.0.12 creates/enters the MenuWindow synchronously even though
     // selection results arrive asynchronously. Never attach the listener to
-    // another already-modal component. Devices/View/More and nested popup
-    // focus routes remain a separate RQ (issue #191).
-    const bool flatOperatorMenu=(index==0 || index==1 || index==2 ||
-                                 index==3 || index==6);
-    if (!legacyPreferences && flatOperatorMenu) {
+    // another already-modal component. Nested popup windows have their
+    // own peer and focus and remain a separate RQ (issue #191).
+    if (!legacyPreferences) {
         auto* openedModal=juce::Component::getCurrentlyModalComponent();
         if (openedModal && openedModal!=previousModal)
             operatorPopupEscapePanic.attach(openedModal);
