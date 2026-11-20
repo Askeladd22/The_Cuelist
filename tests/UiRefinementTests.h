@@ -196,6 +196,49 @@ void uiRefinementTests() {
         }
     });
 
+    test("UX04B-04: More child submenu first peer Escape reaches PANIC",[] {
+        // Real JUCE nested PopupMenu path: More -> first grouped category.
+        // The child MenuWindow has a different ComponentPeer than its root.
+        MainComponent ui(false);
+        ui.setSize(1180,820);
+        auto* more=dynamic_cast<juce::TextButton*>(
+            controlsV3::named(ui,"operatorMenuMore"));
+        check(more && more->isVisible() && static_cast<bool>(more->onClick),
+              "UX04B-04 compact More operator menu missing");
+        if (!more) return;
+        const auto showBefore=encodeShow(ui.show);
+        const int liveBefore=ui.liveCuelistIndex(),nextBefore=ui.nextCueIndex();
+        struct Dismiss {
+            ~Dismiss() { juce::PopupMenu::dismissAllActiveMenus(); }
+        } dismiss;
+        more->onClick();
+        auto* root=juce::Component::getCurrentlyModalComponent();
+        check(root && root!=&ui && root->getPeer(),
+              "UX04B-04 root More popup lacks a JUCE native peer");
+        if (!root || !root->getPeer()) return;
+        auto* rootPeer=root->getPeer();
+        // JUCE MenuWindow: Down highlights first item; Right enters its
+        // submenu. No direct call to MainComponent's shortcut handler.
+        check(rootPeer->handleKeyPress(juce::KeyPress(juce::KeyPress::downKey)),
+              "UX04B-04 root More menu did not accept Down");
+        check(rootPeer->handleKeyPress(juce::KeyPress(juce::KeyPress::rightKey)),
+              "UX04B-04 root More menu did not accept Right");
+        auto* child=juce::Component::getCurrentlyModalComponent();
+        check(child && child!=root && child->getPeer(),
+              "UX04B-04 real JUCE child submenu peer did not open");
+        if (!child || child==root || !child->getPeer()) return;
+        ui.engine.acknowledgedCueId.store(923);
+        check(child->getPeer()->handleKeyPress(
+                  juce::KeyPress(juce::KeyPress::escapeKey)),
+              "UX04B-04 child menu did not handle first Escape");
+        check(ui.engine.acknowledgedCueId.load()==0,
+              "UX04B-04 child submenu consumed first Escape without PANIC");
+        check(encodeShow(ui.show)==showBefore &&
+              ui.liveCuelistIndex()==liveBefore &&
+              ui.nextCueIndex()==nextBefore,
+              "UX04B-04 child Escape changed Show, LIVE or armed NEXT");
+    });
+
     test("UX04D: project name Label Escape cancels and triggers PANIC",[] {
         // This is a JUCE Label::TextEditor listener callback-contract test,
         // not a physical Escape-key delivery/latency test on Windows.
