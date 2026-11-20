@@ -418,6 +418,34 @@ public:
         if (wasEditing && onEscapePanic) onEscapePanic();
     }
 };
+// A one-menu scoped JUCE KeyListener: the MenuWindow consumes Esc before
+// MainComponent can see it. The listener runs first in ComponentPeer dispatch,
+// forwards PANIC once, then lets native Escape close the same popup.
+// Keep its lifetime separate from the menu's asynchronous callback.
+class FilePopupEscapePanic final : public juce::KeyListener {
+public:
+    std::function<void()> onEscape;
+    ~FilePopupEscapePanic() override { detach(); }
+    void attach(juce::Component* newMenu) {
+        detach();
+        if (!newMenu) return;
+        menu=newMenu;
+        newMenu->addKeyListener(this);
+    }
+    void detach() {
+        if (auto* active=menu.getComponent())
+            active->removeKeyListener(this);
+        menu=nullptr;
+    }
+    bool keyPressed(const juce::KeyPress& key,juce::Component*) override {
+        if (key.isKeyCode(juce::KeyPress::escapeKey) && onEscape)
+            onEscape();
+        // Leave JUCE MenuWindow's default Escape dismissal intact.
+        return false;
+    }
+private:
+    juce::Component::SafePointer<juce::Component> menu;
+};
 class MainComponent final : public juce::Component, private juce::Timer {
 public:
     explicit MainComponent(bool startAudio = true);
@@ -639,6 +667,7 @@ private:
     // V2 operator navigation. Existing command handlers are reused; the
     // original mixer and Master Audio are deliberately outside this phase.
     std::array<std::unique_ptr<OperatorNavigationButton>,8> operatorMenus;
+    FilePopupEscapePanic filePopupEscapePanic;
     static constexpr int legacyPreferencesMenu=-1; // hidden compatibility action
     void showOperatorMenu(int index);
     void dispatchOperatorMenu(int index,int command);

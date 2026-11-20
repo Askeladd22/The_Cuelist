@@ -13,6 +13,20 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.90] - 2026-11-20
+
+**RQ-UX04B-01 — File menu PopupMenu: primo Esc e inoltro PANIC (PR in bozza, test-first).**
+
+### Scenario e obiettivo
+- Il menu File della barra superiore usa JUCE 8.0.12 `PopupMenu::showMenuAsync`: il codice MenuWindow intercetta Escape e chiude il menu senza inoltrare l'evento alla root di The CUElist. Ipotesi testabile: il primo Esc deve invocare `stopAll()` oltre a conservare la chiusura del menu.
+- Nuovo test d'integrazione **sul peer JUCE del popup nativo**, non una chiamata artificiale a `MainComponent::keyPressed`, per verificare l'indicatore PANIC, il menu e l'immutabilita' di LIVE/VIEW, del cue cursor e del file Show. **Il test peer non equivale alla pressione fisica del tasto**.
+- Ambito intenzionalmente limitato al menu File di primo livello. Le altre finestre, i sottomenu, i popup contestuali e le modali di terze parti rimangono fuori scope; niente hook di sistema o sostituzione HTML/JUCE.
+
+### Gate e compatibilita'
+- Richiesto RED Windows sul test nativo con il codice pre-fix; solo dopo RED, applicare la correzione minima e verificare GREEN Windows Release/CTest + CodeQL + controllo versione sull'ultimo SHA.
+- Nessuna modifica a Audio/MIDI/OSC/LTC, GO/STOP/PANIC esistenti fuori dal menu, Undo/Redo, Control Map, Timeline, Mixer, VIEW/LIVE e schema `.cuelist` JSON v10.
+- Tastiera Windows reale, popup sottomenu, loop output esterno, DPI 100/125/150 e tempi di arresto end-to-end: **ND / NON ESEGUITI**. Il test nativo non certifica uso LIVE. Rollback: revert della sola PR, nessun merge automatico.
+
 ## [0.9.89] - 2026-11-20
 
 **RQ-UX03G — leggibilita' dei comandi di emergenza nella barra delle azioni colonna (PR #220, draft).**
