@@ -18,12 +18,14 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 **RQ-SEC-001: bounded OSC input-edge tracking (security and LIVE safety).**
 
 ### Corretto
-- Gli indirizzi OSC inattesi non possono ampliare indefinitamente lo stato dei controlli mantenuti premuti; alla saturazione nuovi OSC vengono trattati come gia premuti per impedire GO/PANIC involontari.
-- Le release liberano lo stato conservato e una tempesta OSC non cancella i pulsanti MIDI mantenuti premuti. Invariati Control Map, GO/STOP/PANIC, schema JSON v10 e callback audio.
+- Lo stato dei controlli OSC mantenuti premuti e limitato a 4096 identita; le release non lasciano identita inattive in memoria.
+- Dopo un overflow OSC, nuovi ingressi OSC non possono generare un nuovo GO/PANIC fino al riarmo esplicito delle porte tramite Settings, anche se si libera spazio: evita che un comando rifiutato, ancora tenuto premuto, diventi un nuovo GO. Il riarmo richiede che l'operatore rilasci prima i controlli OSC.
+- La riconnessione MIDI cancella solo gli stati MIDI: non sblocca un overload OSC e non interrompe i controlli OSC gia mantenuti premuti. Diagnostics mostra l'overload e l'azione di recupero.
+- Invariati Control Map, GO/STOP/PANIC, schema JSON v10 e callback audio.
 
 ### Test e limiti
-- Regressione deterministica proposta: 100.000 indirizzi OSC unici, GO MIDI/OSC mantenuto premuto, saturazione, release, recupero e reset esplicito.
-- Review statica e verifica Windows Release/CTest del commit PR da registrare separatamente; nessuna certificazione LIVE o prova su interfacce esterne.
+- Test TDD RED confermato sul commit dc34e436: Windows Release/CTest ha fallito sul controllo dei 100.000 indirizzi OSC unici (run 44707138683), con 420.904 asserzioni e un test fallito come previsto.
+- Regression GREEN del commit finale, verifica di reconnect MIDI, Diagnostics e controllo hardware da registrare separatamente; nessuna certificazione LIVE o prova su interfacce esterne.
 
 ## [0.9.80] - 2026-11-16
 
