@@ -418,33 +418,39 @@ public:
         if (wasEditing && onEscapePanic) onEscapePanic();
     }
 };
-// A scoped root operator menu JUCE KeyListener: the MenuWindow consumes Esc before
-// MainComponent can see it. The listener runs first in ComponentPeer dispatch,
-// forwards PANIC once, then lets native Escape close the same popup.
-// Keep its lifetime separate from the menu's asynchronous callback.
-class RootOperatorPopupEscapePanic final : public juce::KeyListener {
+// A single JUCE KeyListener shared by the native operator menu tree.
+// Each child MenuWindow has a separate desktop peer. Keep both parent and
+// child registered: Left may close only the child and return focus to parent.
+// All attachments are weak references and detached before owner destruction.
+class OperatorMenuEscapePanic final : public juce::KeyListener {
 public:
     std::function<void()> onEscape;
-    ~RootOperatorPopupEscapePanic() override { detach(); }
+    ~OperatorMenuEscapePanic() override { detach(); }
+    bool tracks(const juce::Component* window) const {
+        if (!window) return false;
+        for (const auto& pointer : menus)
+            if (pointer.getComponent()==window) return true;
+        return false;
+    }
     void attach(juce::Component* newMenu) {
-        detach();
-        if (!newMenu) return;
-        menu=newMenu;
+        if (!newMenu || tracks(newMenu)) return;
+        menus.emplace_back(newMenu);
         newMenu->addKeyListener(this);
     }
     void detach() {
-        if (auto* active=menu.getComponent())
-            active->removeKeyListener(this);
-        menu=nullptr;
+        for (auto& pointer : menus)
+            if (auto* active=pointer.getComponent())
+                active->removeKeyListener(this);
+        menus.clear();
     }
     bool keyPressed(const juce::KeyPress& key,juce::Component*) override {
         if (key.isKeyCode(juce::KeyPress::escapeKey) && onEscape)
             onEscape();
-        // Leave JUCE MenuWindow's default Escape dismissal intact.
+        // Let JUCE dismiss the entire menu tree on Escape as before.
         return false;
     }
 private:
-    juce::Component::SafePointer<juce::Component> menu;
+    std::vector<juce::Component::SafePointer<juce::Component>> menus;
 };
 class MainComponent final : public juce::Component, private juce::Timer {
 public:
@@ -667,7 +673,7 @@ private:
     // V2 operator navigation. Existing command handlers are reused; the
     // original mixer and Master Audio are deliberately outside this phase.
     std::array<std::unique_ptr<OperatorNavigationButton>,8> operatorMenus;
-    RootOperatorPopupEscapePanic operatorPopupEscapePanic;
+    OperatorMenuEscapePanic operatorPopupEscapePanic;
     static constexpr int legacyPreferencesMenu=-1; // hidden compatibility action
     void showOperatorMenu(int index);
     void dispatchOperatorMenu(int index,int command);
