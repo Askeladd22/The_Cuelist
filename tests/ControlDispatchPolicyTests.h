@@ -43,6 +43,42 @@ void controlDispatchPolicyTests() {
         check(!edges.recordAndWasDown(cc),"Rearmed CC did not generate an edge");
     });
 
+    test("OSC address flood cannot re-arm GO or exhaust physical edge identities",[] {
+        PhysicalControlEdges edges;
+        const ControlEvent midiGo{"footswitch",ControlKind::note,1,64,127,false};
+        const ControlEvent oscGo{"/show/go",ControlKind::osc,1,0,127,false};
+        check(!edges.recordAndWasDown(midiGo),"First MIDI GO press was already held");
+        check(!edges.recordAndWasDown(oscGo),"First OSC GO press was already held");
+
+        // Exercises the actual dispatch policy on the UI thread, not UDP timing.
+        // The listener bounds packet size, but previously not unique address state.
+        int newlyAccepted=0;
+        for (int n=0;n<100000;++n) {
+            const ControlEvent unexpected{"/noise/"+juce::String(n),
+                ControlKind::osc,1,0,127,false};
+            if (!edges.recordAndWasDown(unexpected)) ++newlyAccepted;
+        }
+        check(newlyAccepted<=4095,
+            "Unique OSC presses bypassed bounded physical-edge tracking");
+        check(edges.recordAndWasDown(midiGo),
+            "OSC flood lost the held MIDI GO debounce state");
+        check(edges.recordAndWasDown(oscGo),
+            "OSC flood re-armed an already-held mapped GO");
+
+        const ControlEvent unknown{"/new/command",ControlKind::osc,1,0,127,false};
+        check(edges.recordAndWasDown(unknown),
+            "A new OSC transport press was accepted while tracking was saturated");
+        auto release=oscGo; release.value=0; release.isNoteOff=true;
+        check(edges.recordAndWasDown(release),"Held OSC GO release was forgotten");
+        check(!edges.recordAndWasDown(unknown),
+            "An OSC slot was not released for a later legitimate press");
+        check(edges.recordAndWasDown(unknown),
+            "Repeated held OSC press unexpectedly created a second GO");
+        edges.clear();
+        check(!edges.recordAndWasDown(oscGo) && !edges.recordAndWasDown(midiGo),
+            "Explicit input reset did not clear both OSC and MIDI held states");
+    });
+
     test("pickup current-target normalization honors curve/invert and stable ID",[] {
         auto show=makeShow();
         addColumn(show,ColumnType::audio,"Other audio");

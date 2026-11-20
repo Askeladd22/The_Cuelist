@@ -13,6 +13,18 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.81] - 2026-11-20
+
+**RQ-SEC-001: bounded OSC input-edge tracking (security and LIVE safety).**
+
+### Corretto
+- Gli indirizzi OSC inattesi non possono ampliare indefinitamente lo stato dei controlli mantenuti premuti; alla saturazione nuovi OSC vengono trattati come gia premuti per impedire GO/PANIC involontari.
+- Le release liberano lo stato conservato e una tempesta OSC non cancella i pulsanti MIDI mantenuti premuti. Invariati Control Map, GO/STOP/PANIC, schema JSON v10 e callback audio.
+
+### Test e limiti
+- Regressione deterministica proposta: 100.000 indirizzi OSC unici, GO MIDI/OSC mantenuto premuto, saturazione, release, recupero e reset esplicito.
+- Review statica e verifica Windows Release/CTest del commit PR da registrare separatamente; nessuna certificazione LIVE o prova su interfacce esterne.
+
 ## [0.9.80] - 2026-11-16
 
 **RQ-TIMELINE-AUDIO-TRIM: limiti di trascinamento per clip inferiori a 10 ms.**
