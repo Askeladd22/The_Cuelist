@@ -13,6 +13,20 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.91] - 2026-11-20
+
+**RQ-UX04B-02 — First Escape under flat top-level JUCE operator menus (draft / test-first).**
+
+### Scenario, hypothesis and scope
+- Existing v0.9.90 File menu first-Esc PANIC fix is limited to `operatorMenuFile`. Other *flat* top-level menus (`Edit`, `Show`, `Cuelists`, `Guide`) use the same modal JUCE `MenuWindow`; test whether first Escape dismisses them without calling `stopAll()`.
+- Add a test exercising actual topbar `TextButton::onClick` then `ComponentPeer::handleKeyPress(Escape)` on its JUCE modal menu; prove fail-first on main 0.9.90 then GREEN after minimal reuse of the existing scoped `KeyListener`.
+- No change for `Devices`, `View`, `More`, legacy Preferences, menus with submenus, other context menus or modal dialogs. No global keyboard hook or mock UI. These require separate tests.
+
+### Gates and operator risk
+- Preserve normal menu cancellation/selection, LIVE/VIEW, GO/PANIC, Undo/Redo, native JUCE, Control Map, Audio/MIDI/OSC/LTC, and .cuelist JSON v10. Record red/green Windows Release/CTest, CodeQL and version guard on exact head.
+- **Physical first Escape on Windows, submenu focus, DPI/Narrator/IME, Audio/MIDI/OSC/LTC hardware latency = NOT RUN / ND**; do not treat simulated peer tests as live certification.
+- Rollback: revert only this small PR without data migration; no automatic merge.
+
 ## [0.9.90] - 2026-11-20
 
 **RQ-UX04B-01 — File menu PopupMenu: primo Esc e inoltro PANIC (PR in bozza, test-first).**
