@@ -30,6 +30,7 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 ### Verifiche misurate (non equivalenti a collaudo fisico)
 - **RED** (pre-fix `33b8b4c9`): [Windows run 44775466385](https://github.com/Askeladd22/The_Cuelist/actions/runs/44775466385) -> 421.024 asserzioni, 1 fallimento mirato `UX04B-02: top-level operator menu consumed Escape without PANIC`.
 - **GREEN primo codice** (`a2381474`): [Windows run 44775956715](https://github.com/Askeladd22/The_Cuelist/actions/runs/44775956715) -> 421.220 asserzioni, 0 fallimenti, Windows Release/CTest 1/1. Verificati con peer nativo File/Edit/Show/Cuelists/Guide; regression supplementare per cancellazione popup/riapertura aggiunta successivamente, quindi non coperta da questo run.
+- **GREEN regressioni complete** (`019cd87c`): [Windows run 44776093554](https://github.com/Askeladd22/The_Cuelist/actions/runs/44776093554) -> 421.227 asserzioni, 0 fallimenti; `UX04B-01`, `UX04B-02` (quattro menu semplici) e test negativo di cancellazione/riapertura popup tutti PASS.
 - **Final-head CI**: [Windows 44776449887](https://github.com/Askeladd22/The_Cuelist/actions/runs/44776449887), [CodeQL 44776449893](https://github.com/Askeladd22/The_Cuelist/actions/runs/44776449893) in corso al controllo; [version guard 44776449911](https://github.com/Askeladd22/The_Cuelist/actions/runs/44776449911) PASS. Allineare gli SHA dopo ulteriori sole modifiche documentali. Collaudo tastiera OS e banco esterno: **ND**.
 
 ## [0.9.90] - 2026-11-20
