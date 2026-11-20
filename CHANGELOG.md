@@ -13,6 +13,19 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.84] - 2026-11-20
+
+**RQ-SEC-004: automated CodeQL C++ security analysis on Windows.**
+
+### Sicurezza e qualita
+- Nuovo workflow CodeQL C++ su pull request e push di `main` e avvio manuale, con build MSVC/JUCE reale `scripts/build.ps1` in modalita `manual`, query `security-extended` e pubblicazione dei risultati su GitHub Code Scanning.
+- Permessi GitHub Actions limitati a lettura dei sorgenti/actions e caricamento eventi di sicurezza; workflow indipendente dai test Windows esistenti.
+- Nessuna modifica ai sorgenti C++, runtime GO/STOP/PANIC, stato VIEW/LIVE, Audio/MIDI/OSC/LTC, UI nativa JUCE o schema `.cuelist` v10.
+
+### QA e limiti
+- Validazione reale di compilazione Windows, CTest, workflow CodeQL, versione e changelog sulla PR da registrare sui rispettivi SHA.
+- Una CI CodeQL verde non certifica assenza di vulnerabilita, rispetto di deadline realtime o idoneita LIVE; gli alert devono essere esaminati, la branch protection richiede configurazione esplicita del proprietario, prove su hardware esterno ND.
+
 ## [0.9.83] - 2026-11-20
 
 **RQ-SEC-003: cancellazione generazionale dei Control Mapping OSC in attesa di invio durante PANIC.**
