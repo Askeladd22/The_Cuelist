@@ -49,7 +49,7 @@ class NativeOperatorMenuParity(unittest.TestCase):
         view = menu_case(5)
         self.assertIn('midiIn.addSectionHeader("MIDI INPUT - ENABLE")', devices)
         self.assertIn('midiOut.addSectionHeader("MIDI OUTPUT - ENABLE")', devices)
-        self.assertIn('"Legacy - Graphite / Copper"', view)
+        self.assertIn('palette::displayName(palette::Appearance::legacy)', view)
         for group in (devices, view):
             self.assertNotIn(chr(0x2014), group, "Dash must not depend on a font fallback")
         self.assertIn('m.addSubMenu("MIDI Inputs",midiIn)', devices)

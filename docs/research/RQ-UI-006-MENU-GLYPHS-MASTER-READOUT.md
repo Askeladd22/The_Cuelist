@@ -27,7 +27,8 @@
 | RED menu | Add assertion against real native MainComponent menu copy in existing Python parity script; code still old | NOT RUN |
 | RED Master | Render actual JUCE GainMeterFader Master and check opaque dB readout region at 135/163/220 height | NOT RUN |
 | RED typography | Native Theme popup-font minimum-height assertion | NOT RUN |
-| GREEN | Windows Release/CTest and version/menu guard on corrected source SHA; CodeQL C++ on same SHA | NOT RUN |
+| GREEN | Windows Release/CTest and version/menu guard on final source SHA; CodeQL C++ on same SHA | NOT RUN |
+| Test harness correction | First patch 74fe2ebd passed source menu parity and font but failed Master pixel test; pixel was read before the `Graphics` context was destroyed. Scoping the context before sampling is mandatory on Windows renderers. [Run 44732521036](https://github.com/Askeladd22/The_Cuelist/actions/runs/44732521036) | CORRECTED, rerun required |
 | Source review | Manual Trail of Bits C++ safety audit (no input/routing code touched, graphics-only and text); identify nearby accidental complexity | PARTIAL |
 | Native visual | Compare app Devices/MIDI submenu, View Appearance and Master at 100/125/150% Windows DPI; screenshot artefacts do not substitute visual inspection | ND |
 | Hardware | External MIDI/OSC/audio/LTC, GO/STOP/PANIC while menus open | ND |

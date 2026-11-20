@@ -1224,7 +1224,8 @@ void MainComponent::showOperatorMenu(int index) {
             // identical menu command only adds operator noise.
             m.addSeparator();
             juce::PopupMenu appearanceMenu;
-            appearanceMenu.addItem(base+20,"Legacy - Graphite / Copper",true,
+            appearanceMenu.addItem(base+20,
+                palette::displayName(palette::Appearance::legacy),true,
                 appearanceTheme()==palette::Appearance::legacy);
             appearanceMenu.addItem(base+21,"Industrial Orange",true,
                 appearanceTheme()==palette::Appearance::industrialOrange);

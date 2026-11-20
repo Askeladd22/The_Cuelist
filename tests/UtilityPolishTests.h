@@ -316,8 +316,12 @@ void utilityPolishTests() {
             check(!master.isColumnReadableScale() && !master.isCompact(),
                   "Master fader no longer uses its native full-size geometry");
             juce::Image image(juce::Image::ARGB,82,height,true);
-            juce::Graphics g(image);
-            master.paint(g);
+            {
+                // Windows can defer image writes until the graphics context
+                // is destroyed. Finish rendering before reading pixels.
+                juce::Graphics g(image);
+                master.paint(g);
+            }
             const auto pixel=image.getPixelAt(3,height-10);
             check(pixel.getAlpha()==255,
                   "Master gain value has no opaque background: adjacent UI or "

@@ -38,7 +38,7 @@ inline const ThemeTokens& tokens(Appearance id) {
     return id==Appearance::legacy ? legacyTokens : industrialTokens;
 }
 inline const char* displayName(Appearance id) {
-    return id==Appearance::legacy ? "Legacy — Graphite / Copper" :
+    return id==Appearance::legacy ? "Legacy - Graphite / Copper" :
                                     "Industrial Orange";
 }
 namespace swatch {

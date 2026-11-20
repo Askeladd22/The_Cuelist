@@ -1182,6 +1182,9 @@ void uiRefinementTests() {
     });
     test("Popup menus use Industrial Orange with readable hover and separator",[] {
         Theme theme;
+        check(juce::String(palette::displayName(palette::Appearance::legacy))==
+                  "Legacy - Graphite / Copper",
+              "Legacy Appearance label must use readable ASCII punctuation");
         // Check the actual LookAndFeel colours rather than exact sampled
         // pixels: JUCE's Windows rasteriser can blend ARGB images differently
         // across renderers and Windows SDK versions.
