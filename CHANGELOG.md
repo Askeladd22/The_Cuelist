@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.82] - 2026-11-20
+
+**RQ-OBS-002: observability and bounded packet validation for Control Map OSC output.**
+
+### Corretto
+- Il percorso dei Control Mapping OSC rifiuta prima dell'accodamento i messaggi float che non possono rispettare il limite dei pacchetti UDP OSC di 1024 byte, contando i byte UTF-8 (non i caratteri).
+- I fallimenti reali della scrittura UDP e gli invii OSC del router di controllo vengono contabilizzati e mostrati nei Diagnostics accanto agli eventi OSC della Timeline, con contatori separati e totali locali.
+- Nessuna modifica a GO/STOP/PANIC, snapshot audio, protocollo OSC dei messaggi validi, routing, schema JSON .cuelist v10 o callback realtime.
+
+### Test e limiti
+- Regressione per address OSC ASCII oltre il limite, variante UTF-8 multibyte, conservazione della semantica di input non valido e invio valido in loopback.
+- TDD RED: CI Windows sul commit 18acbd9b (run 44711085424), 420.920 asserzioni e un test fallito come previsto sull'accettazione di un indirizzo OSC troppo lungo.
+- TDD GREEN: CI Windows sul commit ee5a7ff7 (run 44711908286), **421.017 asserzioni, zero test falliti**; test ASCII/UTF-8 fuori limite e pacchetto valido da 1.024 byte ricevuto su UDP loopback. Version guard e artefatti screenshot CI PASS; verifica del successivo SHA documentale separata.
+- Una scrittura UDP riuscita non certifica ricezione remota; banco hardware, DPI manuale e ASan/CodeQL non eseguiti. Warning MSVC C4456 preesistente in Timeline.cpp:409.
+
 ## [0.9.81] - 2026-11-20
 
 **RQ-SEC-001: bounded OSC input-edge tracking (security and LIVE safety).**

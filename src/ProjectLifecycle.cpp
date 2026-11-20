@@ -61,6 +61,11 @@ void MainComponent::showDiagnostics() {
     const auto stats=engine.diagnostics();
     const auto online=engine.connected.load();
     const auto midiConnected=midiInput.connected();
+    const auto mappedOscSent=controlOutput.sentCount();
+    const auto mappedOscDropped=controlOutput.droppedCount();
+    const auto allOscSent=static_cast<uint64_t>(stats.oscSent)+mappedOscSent;
+    const auto allOscDropped=static_cast<uint64_t>(stats.oscDropped)+
+        static_cast<uint64_t>(mappedOscDropped);
     const auto count=[](auto value){ return juce::String(value); };
     const auto drops=[](auto value){
         return value==0 ? Status::neutral : Status::negative;
@@ -90,9 +95,12 @@ void MainComponent::showDiagnostics() {
                 {"Input edge tracker",physicalEdges.oscTrackingSaturated() ?
                     "OVERLOADED - re-arm in Settings" : "READY",
                     physicalEdges.oscTrackingSaturated() ? Status::negative : Status::neutral},
-                {"UDP packets sent",count(stats.oscSent)},
-                {"UDP drops / send failures",count(stats.oscDropped),
-                    drops(stats.oscDropped)},
+                {"UDP packets sent (local total)",count(allOscSent)},
+                {"UDP drops / send failures",count(allOscDropped),
+                    drops(allOscDropped)},
+                {"Control Map packets sent",count(mappedOscSent)},
+                {"Control Map drops / send failures",count(mappedOscDropped),
+                    drops(mappedOscDropped)},
                 {"Dispatches over 10 ms late",count(stats.oscLateOver10ms),
                     stats.oscLateOver10ms==0?Status::neutral:Status::caution}
             }},
