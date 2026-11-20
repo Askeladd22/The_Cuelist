@@ -38,6 +38,13 @@ juce::String duration(double seconds) {
 
 MainComponent::MainComponent(bool startAudio) {
     operatorPopupEscapePanic.onEscape=[this] { stopAll(); };
+    // A child JUCE MenuWindow is prepared while its tracked parent is
+    // still modal. Do not attach to unrelated popup windows using Theme.
+    theme.onPopupWindowPrepared=[this](juce::Component& newWindow) {
+        if (operatorPopupEscapePanic.tracks(
+                juce::Component::getCurrentlyModalComponent()))
+            operatorPopupEscapePanic.attach(&newWindow);
+    };
     setLookAndFeel(&theme); setWantsKeyboardFocus(true); setSize(1440,900);
     for (juce::Component* c : std::initializer_list<juce::Component*>{&openButton,&saveButton,&newButton,&addRowButton,&addColumnButton,
          &goButton,&panicButton,&deviceButton,&controlButton,&collapseAllButton,&inspectorSideTab,
@@ -499,6 +506,7 @@ MainComponent::MainComponent(bool startAudio) {
 MainComponent::~MainComponent() {
     // The popup may outlive its asynchronous action callback. Remove the
     // listener before destruction invalidates the owning MainComponent.
+    theme.onPopupWindowPrepared={};
     operatorPopupEscapePanic.detach();
     stopTimer(); engine.panic(); chooser.reset();
     // Cancel in-flight background decoding before destroying UI/engine state.
@@ -1289,14 +1297,15 @@ void MainComponent::showOperatorMenu(int index) {
                 safe->dispatchOperatorMenu(chosen/100-1,chosen%100);
             }
         });
-    // JUCE 8.0.12 creates/enters the MenuWindow synchronously even though
-    // selection results arrive asynchronously. Never attach the listener to
-    // another already-modal component. Nested popup windows have their
-    // own peer and focus and remain a separate RQ (issue #191).
+    // JUCE creates the root MenuWindow synchronously. Child windows are
+    // attached in Theme::preparePopupMenuWindow only when their modal parent
+    // is already tracked. No global keyboard hook and no popup polling.
     if (!legacyPreferences) {
         auto* openedModal=juce::Component::getCurrentlyModalComponent();
-        if (openedModal && openedModal!=previousModal)
+        if (openedModal && openedModal!=previousModal) {
+            operatorPopupEscapePanic.detach(); // a newly opened root tree
             operatorPopupEscapePanic.attach(openedModal);
+        }
     }
 }
 
