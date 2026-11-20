@@ -1,6 +1,6 @@
 # RQ-UX04B-01 — PANIC sul primo Escape del menu File nativo JUCE
 
-**Data** 2026-11-20 · **Base** `main@621bbedb9974aa08735bb6435d5959e4581ed795`, app v0.9.89 · **Target** v0.9.90 · **PR** [#221](https://github.com/Askeladd22/The_Cuelist/pull/221) (draft) · **Formato** .cuelist JSON v10 invariato.
+**Data** 2026-11-20 · **Base** `main@621bbedb9974aa08735bb6435d5959e4581ed795`, app v0.9.89 · **Target** v0.9.90 · **PR** [#221](https://github.com/Askeladd22/The_Cuelist/pull/221) (**merged** in main@e19901514899a960735f6e5c400bacf16ef84159) · **Formato** .cuelist JSON v10 invariato.
 
 ## Scenario operativo e impatto
 
@@ -42,14 +42,14 @@ Un operatore con una scena LIVE apre il menu File nativo per salvare/aprire. Dur
 
 | Gate | Riferimento | Esito |
 |---|---|---|
-| TDD RED test-only `abb209e4` | [Windows CI 44772996671](https://github.com/Askeladd22/The_Cuelist/actions/runs/44772996671), pending alla stesura | ND, da controllare |
-| Guard versioni test-only | [run 44772996626](https://github.com/Askeladd22/The_Cuelist/actions/runs/44772996626) | ND, da controllare |
-| CodeQL test-only | [run 44772996539](https://github.com/Askeladd22/The_Cuelist/actions/runs/44772996539) | ND |
-| GREEN source + exact-head checks | Commit/CI da riportare dopo il fix | ND |
+| TDD RED test-only `abb209e4` | [Windows CI 44772996671](https://github.com/Askeladd22/The_Cuelist/actions/runs/44772996671) | **FAIL atteso:** 421.018 asserzioni, 1 test fallito: primo Esc chiude File senza PANIC |
+| Guard versioni test-only | [run 44772996626](https://github.com/Askeladd22/The_Cuelist/actions/runs/44772996626) | **PASS** |
+| CodeQL test-only | [run 44772996539](https://github.com/Askeladd22/The_Cuelist/actions/runs/44772996539) | **CANCELLED** dopo aggiornamenti successivi, non PASS |
+| GREEN source + exact-head checks | PR head `f2ffb739`: [Windows CI 44773805428](https://github.com/Askeladd22/The_Cuelist/actions/runs/44773805428), [Version guard 44773805242](https://github.com/Askeladd22/The_Cuelist/actions/runs/44773805242), [CodeQL 44773805376](https://github.com/Askeladd22/The_Cuelist/actions/runs/44773805376) | **Windows/CTest PASS:** 421.196 asserzioni, 0 errori; **guard PASS**; CodeQL in verifica al controllo |
 | Windows reale con tasto Esc fisico, focus e menu aperto | UAT con show fittizio, output disconnessi/sicuri | NOT RUN |
 | Windows DPI 100/125/150, Narrator e IME | Operatore di test | NOT RUN |
 | Audio/MIDI/OSC/LTC su banco hardware isolato e misure latenza | UAT fisica separata | NOT RUN |
 
 **Rollback:** revert della singola PR #221; versione riallineata al successivo main e nessuna migrazione .cuelist.
 
-**Stato:** PLAN (test-first) attivo; APPLY/UNIFY attendono risultati verificabili. Nessun merge automatico.
+**Stato:** PLAN/APPLY/UNIFY della PR #221 completati per il codice e CTest; PR #221 successivamente mergiata in main. CodeQL finale verificato separatamente; hardware e focus fisico restano gate aperti in issue #191. Non dichiarare ready-for-LIVE.
