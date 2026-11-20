@@ -13,9 +13,31 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.93] - 2026-11-20
+
+**RQ-UX04B-04 — Primo Esc nel sottomenu JUCE della barra More (PR draft / test-first).**
+
+### Scenario, ipotesi e perimetro
+- Il menu principale More a 1180×820 e' protetto in v0.9.92; quando si apre una delle categorie raggruppate, JUCE 8.0.12 crea un `MenuWindow` figlio e lo rende modale su un peer differente. L'attuale listener PANIC e' registrato solamente al root. Ipotesi testabile: il primo Esc nel **sottomenu** chiude il menu senza inoltrare PANIC.
+- Test RED: click sul vero bottone More, `ComponentPeer::handleKeyPress(downKey/rightKey)` per aprire il primo sottomenu, poi Esc sul peer del **figlio**; non chiamare direttamente `MainComponent::keyPressed`. Se non si apre un peer figlio, il test e' un problema di strumentazione, non prova di safety.
+- Intervento scoped committato: `Theme::preparePopupMenuWindow` riconosce finestre figlie solo quando il modal owner e' gia' un menu operatore tracciato; lo stesso listener `OperatorMenuEscapePanic` resta associato sia al parent sia ai child con riferimenti `SafePointer`, senza nuovi hook globali, polling o cambio playback. **RED/GREEN da verificare nei log sullo SHA finale.**
+
+### Evidenza test-first misurata
+- **RED reale:** test-only `00343b8961e608f94514db2abef6c67cf1d3491f`, [Windows run #44788777815](https://github.com/Askeladd22/The_Cuelist/actions/runs/44788777815): **421.075 asserzioni / un FAIL atteso**. Il sottomenu More si e' aperto tramite il suo vero peer JUCE, ma Escape e' stato consumato senza PANIC.
+- Implementazione C++: un solo `OperatorMenuEscapePanic`, tracciamento parent/child con `SafePointer`, eliminazione delle reference scadute per la navigazione ripetuta e callback `Theme::preparePopupMenuWindow` limitata ai menu il cui modal parent e' gia' tracciato. La regressione Left→parent e' inclusa.
+- **GREEN CTest e CodeQL:** ND fino a CI conclusa sul commit finale. Test fisico su tastiera Windows, DSP/audio e dispositivi esterni **NOT RUN**.
+
+### Gate/rollback
+- TDD RED→GREEN con Windows Release/CTest, CodeQL C++, VERSION/CMake/CHANGELOG allineati sullo SHA finale. L'Esc deve conservare la chiusura standard JUCE, e il ritorno dal figlio al root con Freccia Sinistra non deve perdere la protezione Esc. Click fuori/cancel non devono attivare PANIC.
+- Nessuna modifica a GO, STOP, PANIC button, VIEW/LIVE, cue matrix, Undo/Redo, Control Map, Timeline, Mixer, Audio/MIDI/OSC/LTC, o `.cuelist` JSON v10.
+- Scope iniziale di test: sottomenu More aperto via tastiera su un layout compatto; gli altri popup contestuali, finestre modali e l'hardware sono gate separati. Tasto Windows fisico, DPI 100/125/150, Narrator/IME e arresto output esterno **ND**. Rollback: revert di una PR piccola, nessun merge automatico.
+
 ## [0.9.92] - 2026-11-20
 
-**RQ-UX04B-03 — Primi Esc nei menu superiori Devices / View / More (test-first, PR draft).**
+**Risultato verificato:** RED [Windows #44784721956](https://github.com/Askeladd22/The_Cuelist/actions/runs/44784721956) = 421.055 asserzioni / 1 FAIL atteso; GREEN sul PR head `76cc3146` [Windows #44786205882](https://github.com/Askeladd22/The_Cuelist/actions/runs/44786205882) = **421.245 asserzioni / 0 FAIL**, UX04B-03 PASS. Guard versione [#44786205878](https://github.com/Askeladd22/The_Cuelist/actions/runs/44786205878) PASS. CodeQL C++ [#44786205915](https://github.com/Askeladd22/The_Cuelist/actions/runs/44786205915) in esecuzione all'ultimo controllo. Merge effettivo [PR #223](https://github.com/Askeladd22/The_Cuelist/pull/223), `main@507e796d13ae97bf4a4daa01edcda6b0b50a923e`. Banco fisico ND.
+
+
+**RQ-UX04B-03 — Primi Esc nei menu superiori Devices / View / More (PR #223 integrata).**
 
 ### Scenario e ipotesi
 - JUCE 8.0.12 `PopupMenu::MenuWindow` consuma Esc per chiudere la finestra modale. La v0.9.91 copre File/Edit/Show/Cuelists/Guide, ma non il primo livello Devices/View/More, che e' anch'esso una finestra modale nativa.
