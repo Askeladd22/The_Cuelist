@@ -70,10 +70,14 @@ void midiSessionPolicyTests() {
         const auto release=ControlEvent{"selected",ControlKind::note,1,64,0,true};
         check(!edges.recordAndWasDown(press) && edges.recordAndWasDown(press),
               "Pre-disconnect held note fixture failed");
+        const ControlEvent heldOsc{"/show/go",ControlKind::osc,1,0,127,false};
+        check(!edges.recordAndWasDown(heldOsc),"Pre-disconnect held OSC fixture failed");
         input.ingestForTest(juce::MidiMessage::noteOn(1,64,(juce::uint8)127));
         input.ingestForTest(juce::MidiMessage::controllerEvent(1,8,127));
         input.disconnect(); // Matches actual unplug/change-of-input cleanup.
-        edges.clear();
+        edges.clearMidi(); // A MIDI device change must not reset OSC edge state.
+        check(edges.recordAndWasDown(heldOsc),
+              "MIDI reconnect silently re-armed an already-held OSC GO");
         ControlEvent received;
         check(!input.poll(received),"Stale pre-disconnect messages remained in the MIDI queue");
         check(!edges.recordAndWasDown(press),

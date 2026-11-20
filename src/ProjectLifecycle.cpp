@@ -87,6 +87,9 @@ void MainComponent::showDiagnostics() {
                     stats.midiLateOver10ms==0?Status::neutral:Status::caution}
             }},
             {"OSC",{
+                {"Input edge tracker",physicalEdges.oscTrackingSaturated() ?
+                    "OVERLOADED - re-arm in Settings" : "READY",
+                    physicalEdges.oscTrackingSaturated() ? Status::negative : Status::neutral},
                 {"UDP packets sent",count(stats.oscSent)},
                 {"UDP drops / send failures",count(stats.oscDropped),
                     drops(stats.oscDropped)},

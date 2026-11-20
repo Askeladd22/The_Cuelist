@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.81] - 2026-11-20
+
+**RQ-SEC-001: bounded OSC input-edge tracking (security and LIVE safety).**
+
+### Corretto
+- Lo stato dei controlli OSC mantenuti premuti e limitato a 4096 identita; le release non lasciano identita inattive in memoria.
+- Dopo un overflow OSC, nuovi ingressi OSC non possono generare un nuovo GO/PANIC fino al riarmo esplicito delle porte tramite Settings, anche se si libera spazio: evita che un comando rifiutato, ancora tenuto premuto, diventi un nuovo GO. Il riarmo richiede che l'operatore rilasci prima i controlli OSC.
+- La riconnessione MIDI cancella solo gli stati MIDI: non sblocca un overload OSC e non interrompe i controlli OSC gia mantenuti premuti. Diagnostics mostra l'overload e l'azione di recupero.
+- Invariati Control Map, GO/STOP/PANIC, schema JSON v10 e callback audio.
+
+### Test e limiti
+- Test TDD RED confermato sul commit dc34e436: Windows Release/CTest ha fallito sul controllo dei 100.000 indirizzi OSC unici (run 44707138683), con 420.904 asserzioni e un test fallito come previsto.
+- Windows Release/CTest GREEN sul commit codice 1209af6a (run 44708146121): 421.008 asserzioni, 0 test falliti; compilazione e artifact screenshot nativi in CI. Qualsiasi commit successivo richiede verifica sul relativo SHA.
+- Nessun collaudo su dispositivo MIDI/OSC/LTC esterno; DPI nativo su PC di spettacolo ND. La compilazione segnala C4456 in Timeline.cpp:409 (file non modificato da questo intervento), da verificare separatamente. Nessuna certificazione LIVE.
+
 ## [0.9.80] - 2026-11-16
 
 **RQ-TIMELINE-AUDIO-TRIM: limiti di trascinamento per clip inferiori a 10 ms.**

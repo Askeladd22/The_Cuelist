@@ -43,6 +43,7 @@ bool MainComponent::configureOscInputPorts(const juce::String& value) {
     }
     if (ports.empty()) {
         oscInput.stopListening();
+        physicalEdges.resetOsc(); // Explicit operator disable clears the latch.
         if (appPreferences) appPreferences->setValue("oscInputPorts","");
         show.controls.oscInputPort=0;dirty=true;
         status="OSC input disabled.";repaint();return true;
@@ -51,6 +52,9 @@ bool MainComponent::configureOscInputPorts(const juce::String& value) {
         status="One or more OSC ports are unavailable; previous listeners retained.";
         repaint();return false;
     }
+    // An explicit successful Apply in Settings re-arms OSC input after a
+    // capacity overflow. Automatic MIDI reconnection cannot do so.
+    physicalEdges.resetOsc();
     juce::StringArray strings;
     for (int port:ports) strings.add(juce::String(port));
     if (appPreferences) appPreferences->setValue("oscInputPorts",strings.joinIntoString(","));
@@ -125,7 +129,7 @@ void MainComponent::toggleAdditionalMidiInput(const juce::String& id) {
     for (const auto& entry:additionalMidiInputs) saved.add(entry.first);
     if (appPreferences)
         appPreferences->setValue("additionalMidiInputIds",saved.joinIntoString("|"));
-    physicalEdges.clear();controlMapping.clearPickup();repaint();
+    physicalEdges.clearMidi();controlMapping.clearPickup();repaint();
 }
 juce::Result MainComponent::selectControlInput(const juce::String& id) {
     auto extra=std::find_if(additionalMidiInputs.begin(),additionalMidiInputs.end(),
@@ -139,7 +143,7 @@ juce::Result MainComponent::selectControlInput(const juce::String& id) {
             appPreferences->setValue("additionalMidiInputIds",saved.joinIntoString("|"));
     }
     auto result=midiInput.connect(id);
-    physicalEdges.clear();controlMapping.clearPickup();
+    physicalEdges.clearMidi();controlMapping.clearPickup();
     // Preserve an explicitly selected disconnected identifier, never silently
     // switch to the first available device.
     show.controls.midiInputId=id;
@@ -569,7 +573,12 @@ bool MainComponent::setControlColumnPriority(int column,int priority) {
 void MainComponent::dispatchControl(const ControlEvent& input) {
     // Record even unmatched notes and CC releases, including across a GO
     // that switches the effective Control Set.
+    const bool wasOscOverloaded=physicalEdges.oscTrackingSaturated();
     const bool wasDown=physicalEdges.recordAndWasDown(input);
+    if (!wasOscOverloaded && physicalEdges.oscTrackingSaturated()) {
+        status="OSC input overloaded: new OSC GO/PANIC blocked. Re-apply OSC ports in Settings.";
+        repaint();
+    }
     // Hardware MIDI events have already been copied to the UI thread.
     // Pickup compares against the physical value expected for the current
     // actual target. No mutation of show happens in a MIDI callback.

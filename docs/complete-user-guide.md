@@ -74,7 +74,7 @@ The **Help** button in the top toolbar opens a menu with **Guide** and **About T
 
 - **Undo/Redo** use one bounded edit history across supported Show changes (cue/column structure, cell and row properties, Master/mixer adjustments and MIDI/OSC gestures). Changing VIEW tabs and GO/Stop/PANIC transport commands are not history actions. Undo of a change to the LIVE sequence stops playback for safety; undo limited to a different VIEW retains LIVE.
 - **CPU/RAM** report system-level usage, not per-plugin or per-clip estimates. The two usage values and their horizontal meters have separate aligned positions; unsupported telemetry displays N/A.
-- **MIDI RX/TX** indicate local traffic; **OSC TX** indicates local transmission. OSC RX remains inactive because a native OSC input endpoint is not implemented.
+- **MIDI RX/TX** indicate local traffic; **OSC TX** indicates local transmission and **OSC RX** indicates UDP messages received on explicitly enabled listening ports. OSC RX does not verify sender identity or downstream delivery.
 - **Audio Available** reports local device availability, not an assertion that speakers or downstream equipment are functioning.
 
 ### 3.3 Cue grid, Inspector, mixer and Timeline
@@ -121,6 +121,12 @@ as a substitute. Settings → OSC displays the local IP and lets you
 configure up to 16 distinct listening UDP ports separated by commas.
 An empty setting explicitly disables OSC input. Quick Learn never enables
 an OSC listener behind your back; configure the ports first.
+If Diagnostics shows **OSC input edge tracker: OVERLOADED**, new OSC GO/PANIC
+inputs are blocked for safety while the existing held controls remain tracked.
+Disconnect untrusted senders and release any held OSC buttons, then use
+Settings → OSC → Apply to re-arm the listener. MIDI controller operation stays
+independent; reconnecting a MIDI device does not clear the OSC overload.
+Configure OSC input only on a trusted and isolated control network.
 Settings → Audio Devices opens the existing JUCE selector (and stops playback
 as before). The Clock submenu switches between the 24-hour and 12-hour
 display formats.

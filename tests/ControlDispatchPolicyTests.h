@@ -43,6 +43,60 @@ void controlDispatchPolicyTests() {
         check(!edges.recordAndWasDown(cc),"Rearmed CC did not generate an edge");
     });
 
+    test("OSC address flood cannot re-arm GO or exhaust physical edge identities",[] {
+        PhysicalControlEdges edges;
+        const ControlEvent midiGo{"footswitch",ControlKind::note,1,64,127,false};
+        const ControlEvent oscGo{"/show/go",ControlKind::osc,1,0,127,false};
+        check(!edges.recordAndWasDown(midiGo),"First MIDI GO press was already held");
+        check(!edges.recordAndWasDown(oscGo),"First OSC GO press was already held");
+
+        // Exercises the actual dispatch policy on the UI thread, not UDP timing.
+        // The listener bounds packet size, but previously not unique address state.
+        int newlyAccepted=0;
+        for (int n=0;n<100000;++n) {
+            const ControlEvent unexpected{"/noise/"+juce::String(n),
+                ControlKind::osc,1,0,127,false};
+            if (!edges.recordAndWasDown(unexpected)) ++newlyAccepted;
+        }
+        check(newlyAccepted<=4095,
+            "Unique OSC presses bypassed bounded physical-edge tracking");
+        check(edges.oscTrackingSaturated(),
+            "Capacity exhaustion was not latched for a safe manual re-arm");
+        check(edges.recordAndWasDown(midiGo),
+            "OSC flood lost the held MIDI GO debounce state");
+        check(edges.recordAndWasDown(oscGo),
+            "OSC flood re-armed an already-held mapped GO");
+
+        const ControlEvent unknown{"/new/command",ControlKind::osc,1,0,127,false};
+        check(edges.recordAndWasDown(unknown),
+            "A new OSC transport press was accepted while tracking was saturated");
+        auto release=oscGo; release.value=0; release.isNoteOff=true;
+        check(edges.recordAndWasDown(release),"Held OSC GO release was forgotten");
+        // A rejected still-held source must NOT become a fresh GO just because
+        // some different tracked OSC source released a slot.
+        check(edges.recordAndWasDown(unknown),
+            "Rejected held OSC became a rising edge when capacity became available");
+        auto ignoredRelease=unknown; ignoredRelease.value=0; ignoredRelease.isNoteOff=true;
+        check(!edges.recordAndWasDown(ignoredRelease),
+            "Untracked OSC release invented a held button or a new state slot");
+        check(edges.recordAndWasDown(unknown),
+            "An untracked OSC source bypassed the sticky overload latch");
+
+        edges.clearMidi(); // MIDI reconnect must not re-arm held network GO.
+        check(edges.oscTrackingSaturated() && edges.recordAndWasDown(unknown),
+            "MIDI-only reset incorrectly re-armed blocked OSC GO");
+        check(!edges.recordAndWasDown(midiGo),
+            "MIDI-only reset left a stale held MIDI button");
+        edges.resetOsc(); // Explicit successful Apply in OSC Settings.
+        check(!edges.oscTrackingSaturated() && !edges.recordAndWasDown(unknown),
+            "Operator re-arm did not restore a fresh OSC rising edge");
+        check(edges.recordAndWasDown(unknown),
+            "Repeated OSC press after re-arm generated another rising edge");
+        edges.clear();
+        check(!edges.recordAndWasDown(oscGo) && !edges.recordAndWasDown(midiGo),
+            "Explicit full input reset did not clear both held-state sets");
+    });
+
     test("pickup current-target normalization honors curve/invert and stable ID",[] {
         auto show=makeShow();
         addColumn(show,ColumnType::audio,"Other audio");
