@@ -24,7 +24,9 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ### Test e limiti
 - Regressione per address OSC ASCII oltre il limite, variante UTF-8 multibyte, conservazione della semantica di input non valido e invio valido in loopback.
-- Verifiche Windows Release/CTest, versione/changelog e red-green da registrare sui relativi SHA. UDP write riuscito non certifica ricezione remota; banco hardware e ASan/CodeQL non eseguiti.
+- TDD RED: CI Windows sul commit 18acbd9b (run 44711085424), 420.920 asserzioni e un test fallito come previsto sull'accettazione di un indirizzo OSC troppo lungo.
+- TDD GREEN: CI Windows sul commit ee5a7ff7 (run 44711908286), **421.017 asserzioni, zero test falliti**; test ASCII/UTF-8 fuori limite e pacchetto valido da 1.024 byte ricevuto su UDP loopback. Version guard e artefatti screenshot CI PASS; verifica del successivo SHA documentale separata.
+- Una scrittura UDP riuscita non certifica ricezione remota; banco hardware, DPI manuale e ASan/CodeQL non eseguiti. Warning MSVC C4456 preesistente in Timeline.cpp:409.
 
 ## [0.9.81] - 2026-11-20
 
