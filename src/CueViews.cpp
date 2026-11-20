@@ -1089,6 +1089,26 @@ juce::String PinnedColumnHeaders::armedDeleteHintForWidth(int headerWidth) {
     }
     return "D"; // pathological widths; never elide the confirmation key
 }
+namespace {
+juce::String keyboardSafetyFooterForWidth(int headerWidth) {
+    // Preserve the two show-critical key reminders before the secondary
+    // Shift+F10 exit hint. JUCE drawText() ellipsizes long captions by default.
+    // Use the same shaped font metrics as the actual native paint operation.
+    constexpr float labelInsetsAndSafety=24.0f;
+    const auto available=juce::jmax(0.0f,(float)headerWidth-labelInsetsAndSafety);
+    const auto displayFont=font(10.0f,true);
+    for (const char* candidate : {
+             "ESC  PANIC    SPACE  GO    SHIFT+F10  EXIT",
+             "ESC PANIC   SPACE GO",
+             "ESC PANIC",
+             "ESC"}) {
+        if (juce::GlyphArrangement::getStringWidth(displayFont,candidate)<=available)
+            return candidate;
+    }
+    return "ESC";
+}
+} // namespace
+
 void PinnedColumnHeaders::paint(juce::Graphics& g) {
     // The grid owns all header drawing. Clip to the fixed 72px strip and
     // translate by precisely the horizontal scroll offset so the headers
@@ -1134,7 +1154,7 @@ void PinnedColumnHeaders::paint(juce::Graphics& g) {
                 rename+"   "+left+"   "+right+"   4 "+fold+"   5 Delete";
         label(g,actions,{10,27,getWidth()-20,19},11,
               owner.columnKeyboardDeleteArmed ? palette::red : palette::muted,true);
-        label(g,"ESC  PANIC    SPACE  GO    SHIFT+F10  EXIT",
+        label(g,keyboardSafetyFooterForWidth(getWidth()),
               {10,49,getWidth()-20,17},10,palette::standby,true);
     }
     g.setColour(palette::line);

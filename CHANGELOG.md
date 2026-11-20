@@ -13,6 +13,20 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.89] - 2026-11-20
+
+**RQ-UX03G — leggibilita' dei comandi di emergenza nella barra delle azioni colonna (PR #220, draft).**
+
+### Obiettivo UX / sicurezza operativa
+- Nella testata colonna JUCE a 1180×820, la terza riga con Escape/PANIC, Space/GO e Shift+F10/Exit puo' essere troncata. Il test di regressione nativo verifica il testo compatto completo `ESC PANIC   SPACE GO` senza ellissi, mantenendo tutte le scorciatoie esistenti.
+- Su testate sufficientemente ampie deve restare visibile anche `SHIFT+F10 EXIT`; la descrizione accessibile mantiene comunque la guida integrale.
+- **Ambito:** solo paint/guida testuale della barra delle azioni colonna. Nessuna modifica a keyboard dispatch, processo di Delete 5 poi D, GO/STOP/PANIC, VIEW/LIVE, cue matrix, media, OSC/MIDI/LTC o schema .cuelist v10.
+
+### QA / gate
+- Il primo run test-only `976b13f5` e' stato bloccato dal version guard, prima di CTest (**non** era RED). **RED reale** sullo SHA pre-fix `c4a24409`: [Windows run 44760054171](https://github.com/Askeladd22/The_Cuelist/actions/runs/44760054171), **421.007 asserzioni, esattamente 1 test fallito**, UX03G footer JUCE troncato; UX03F Delete PASS. **GREEN** dopo il fix `ac12a7e0`: [Windows Release/CTest 44760974355](https://github.com/Askeladd22/The_Cuelist/actions/runs/44760974355) sullo SHA `afa10eb0`, **421.190 asserzioni, 0 fallimenti**, test nativo compact/wide UX03G PASS, upload screenshot nativi PASS.
+- [Version guard 44760974527](https://github.com/Askeladd22/The_Cuelist/actions/runs/44760974527) PASS su `afa10eb0`. [CodeQL 44760974461](https://github.com/Askeladd22/The_Cuelist/actions/runs/44760974461) in corso alla stesura, alert SARIF **ND**. Eventuali ulteriori commit solo documentali devono essere verificati sul proprio SHA. Test a DPI fisici 100/125/150%, Narrator/IME e banco Audio/MIDI/OSC/LTC: **ND / NOT RUN**.
+- Nessun merge automatico, reversibile con revert della singola PR.
+
 ## [0.9.88] - 2026-11-20
 
 **RQ-QA-008: riduzione del rumore diagnostico MSVC e test nativo delle automazioni OSC nella Timeline.**
