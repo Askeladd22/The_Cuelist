@@ -42,4 +42,13 @@ Su un workspace 1180×820, l'operatore apre il pulsante **More** mentre un altro
 
 **Rollback:** revert della sola PR #224; nessun merge automatico. I sottomenu piu' profondi, menu contestuali, AlertWindow/DialogWindow, e test fisico restano in #191 finche' non sono verificati con evidenza distinta.
 
-**Stato:** test di riproduzione committato; esecuzione Windows e RED/GREEN ancora ND. Non dichiarare ready-for-LIVE.
+## Implementazione candidata e copertura
+
+- `src/Theme.h`: hook nativo `preparePopupMenuWindow` inoltra una callback opzionale, senza cambiare paint, dimensioni o palette. La chiamata e' sul thread UI durante la costruzione del MenuWindow.
+- `src/MainComponent.cpp`: la callback del Theme chiama `operatorPopupEscapePanic.attach` **solo se il modal component attivo e' gia' tracciato**. La registrazione alla root viene azzerata solo quando apre una nuova root, non quando appare un child; nel distruttore la callback Theme e' rimossa prima del detach.
+- `src/MainComponent.h`: un solo `OperatorMenuEscapePanic` conserva una lista di `SafePointer<juce::Component>` ai popup aperti. `detach()` rimuove i listener ancora vivi. Esc inoltra PANIC una sola volta e restituisce `false` per lasciare invariato il dismiss nativo. Un child chiuso con Left non invalida la protezione root.
+- `tests/UiRefinementTests.h`: nuovo test UX04B-04 child Esc via peer; test UX04B-04 child Left→root Esc senza PANIC erroneo su Left. Restano UX04B-01/02/03 e la regressione negativa dismiss/reopen.
+
+**Red-team ulteriore:** una popup non collegata aperta *mentre* un menu operatore e' modale e' un controesempio teorico per il solo controllo del modal owner; il sistema modale normalmente blocca l'input concorrente, ma una callback programmata potrebbe produrla. Non dichiarare isolamento formalmente provato dal test More. Test aggiuntivi su popup asincroni e submenu profondi richiesti prima di allargare il perimetro.
+
+**Stato:** test-only e patch C++ separati e committati; RED/ GREEN Windows sul child e CodeQL sullo SHA finale ancora ND finche' i job non sono conclusi e letti. Non dichiarare ready-for-LIVE.
