@@ -25,7 +25,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ### Test e limiti
 - Test TDD RED confermato sul commit dc34e436: Windows Release/CTest ha fallito sul controllo dei 100.000 indirizzi OSC unici (run 44707138683), con 420.904 asserzioni e un test fallito come previsto.
-- Regression GREEN del commit finale, verifica di reconnect MIDI, Diagnostics e controllo hardware da registrare separatamente; nessuna certificazione LIVE o prova su interfacce esterne.
+- Windows Release/CTest GREEN sul commit codice 1209af6a (run 44708146121): 421.008 asserzioni, 0 test falliti; compilazione e artifact screenshot nativi in CI. Qualsiasi commit successivo richiede verifica sul relativo SHA.
+- Nessun collaudo su dispositivo MIDI/OSC/LTC esterno; DPI nativo su PC di spettacolo ND. La compilazione segnala C4456 in Timeline.cpp:409 (file non modificato da questo intervento), da verificare separatamente. Nessuna certificazione LIVE.
 
 ## [0.9.80] - 2026-11-16
 

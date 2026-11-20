@@ -32,10 +32,14 @@ Hypothesis: at most 4096 simultaneously held OSC identities can be tracked, and 
 | Gate | Verification | Status |
 | --- | --- | --- |
 | TDD-RED | Windows Release/CTest on dc34e436: regression fails only on capacity assertion, 420904 assertions, one failed test. https://github.com/Askeladd22/The_Cuelist/actions/runs/44707138683 | FAIL AS EXPECTED |
-| TDD-GREEN | Windows Release/CTest on fixed PR SHA | NOT RUN |
-| VERSION | CI version/changelog validator on fixed PR SHA | NOT RUN |
-| STATIC | Review source, diff, tests and invariants on pinned SHA | NOT RUN |
+| TDD-GREEN | Windows Release/CTest on source commit 1209af6aae2465e91ecb951ea31bcd80bcca8bbb: 421008 assertions, zero failures. https://github.com/Askeladd22/The_Cuelist/actions/runs/44708146121 | PASS on source SHA; current PR SHA checked separately |
+| VERSION | GitHub version/changelog guard passed on commit 754ee04fe2a200d85bb004eaa22e8216ae4e8a9f; build job also passed version guard on 1209af6 | PASS on listed SHAs; latest SHA checked separately |
+| STATIC | Manual Trail of Bits C++ review of ControlDispatchPolicy, OSC/MIDI input lifecycle and PR diff; CMake/test/docs consistency checked. No automatic parser, CodeQL, ASan or full-repo audit. MSVC C4456 in unmodified Timeline.cpp:409 remains follow-up. | SCOPED REVIEW ONLY (automated coverage ND) |
 | HARDWARE | OSC network flood with MIDI desk, physical GO/PANIC, DPI screenshots and LTC/audio bench | ND — NOT RUN |
+
+## PAUL UNIFY — scoped evidence and residual gates
+
+The changed code and deterministic tests were compared with the approved RQ acceptance criteria. The original 100000-address test failed on the pre-fix code (TDD RED) and passed on the fixed code (TDD GREEN) in real Windows CI. The implementation partitions held MIDI and OSC state, makes OSC overflow sticky, permits explicit operator re-arm, preserves `.cuelist` v10 and does not touch the audio callback. Since later documentation commits exist, **the GitHub checks on the eventual final PR SHA must still be consulted**; avoid promoting this intermediate source SHA to an unconditional LIVE claim. Manual UDP flood through an actual network, MIDI desk, DPI inspection and receiver LTC/audio bench remain ND. Branch and draft PR #210 are reversible and must not merge automatically.
 
 ## Rollback and remaining risks
 
