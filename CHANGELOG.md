@@ -18,6 +18,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 **RQ-UI-007: Master 0.0 dB, ricerca di una sovrapposizione dipendente dallo stato JUCE.**
 
 ### QA / osservabilita UI
+- Corretto l'overlay QUICK LEARN: la scritta `LEARN` non copre piu Limiter (105×31) e Pan (43×43), mentre rimane su GO/PANIC (152×48) e sui fader alti. Il bordo indicatore e il click per scegliere la destinazione sono invariati; nessun cambio al Control Map o ai parametri audio.
+- Aggiunto test grafico JUCE che verifica l'assenza di pixel del testo nell'interno di hotspot compatti, con presenza della dicitura sui controlli alti. Le immagini native precedenti mostravano chiaramente `LEARN` sopra `Limit`.
 - Aggiunte 16 catture native JUCE in CI a 1180×820 e 1647×895: Master inattivo, richiesta di focus, MIDI Learn e OSC Learn, nelle palette Industrial Orange e Legacy. Le catture non sono screenshot di un desktop Windows ai diversi DPI reali.
 - Aggiunte verifiche geometriche sui controlli Master e sull'hit target Quick Learn: il testo del gain non deve essere invaso dai controlli Pan/Mute/Output/Limiter; l'overlay Learn resta volutamente esteso all'intero fader quando attivo.
 - Il normale screenshot Windows 0.9.85 e 0.9.86 a 1180×820 mostrava 0 pixel cambiati nell'area del Master nonostante la nuova fascia opaca. La sovrapposizione della foto dell'operatore non e' ancora riprodotta: non si dichiara un fix non dimostrato.

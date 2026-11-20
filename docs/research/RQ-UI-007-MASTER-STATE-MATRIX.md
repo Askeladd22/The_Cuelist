@@ -16,6 +16,14 @@ The user supplied no full-frame metadata or 100/125/150% DPI measurements; do no
 
 **Counterexamples:** font fallback/OS IME, desktop tooltip or another application window captured over the Master; a different local build than main; Windows display scaling versus JUCE offscreen raster; runtime animation and popup windows not included in `createComponentSnapshot`. An offscreen focus request is not a validated physical keyboard focus or DPI test.
 
+## Additional native defect found: compact Learn caption collision
+
+Native Windows [run 44743772383](https://github.com/Askeladd22/The_Cuelist/actions/runs/44743772383) **PASS** at source SHA `968ba7a0e4a5abf8a0911d00becb5dc1ae4579a5`: **421,167 assertions, zero failures**, 53 native JUCE images uploaded, including 16 newly captured states. Manual inspection of those images at both 1180 and 1647, with Industrial and Legacy palettes, found a second, independently reproduced UX defect: `QuickLearnHotspot::paint` prints `LEARN` inside a 31px-high Limiter target and a 43px-high Pan target, overwriting the actual Limit/Pan glyph and value. The operator's **small dark rounded block behind 0.0 dB still did not reproduce**; do not conflate the two findings.
+
+**Measurable focused fix:** only draw the interior LEARN caption when both width>=40px and height>=48px. The 48px GO/PANIC hotspots preserve the text; the 135+px GainMeterFader hotspot does as well. The 31px Limiter and 43px Pan retain the same coloured border and click target without covering labels. No new components, no rerouting or changes to the Control Map.
+
+**Red-team:** verify JUCE paint pixels in compact surfaces have no high-opacity interior text after fix while GO/PANIC/faders still contain the label; see `tests/UtilityPolishTests.h`. Existing screenshots from 0.9.87 pre-fix are the observed visual RED evidence. Physical Windows scaling and control accessibility remain separate.
+
 ## APPLY scope and test plan
 Add a small real-JUCE, nonmodal fixture to the existing `tests/Tests.cpp` visual QA section:
 - Two logical window sizes 1180×820, 1647×895
@@ -29,7 +37,8 @@ Add a small real-JUCE, nonmodal fixture to the existing `tests/Tests.cpp` visual
 | Gate | Method | Status |
 | --- | --- | --- |
 | RED for screenshot anomaly | Actual user state not reproducible from existing idle fixture; no speculative failing assertion | ND |
-| Geometry and state fixtures | Native JUCE Windows Release/CTest on PR head | NOT RUN |
+| Geometry and state fixtures | Native JUCE Windows CTest run 44743772383 on SHA 968ba7a0: 421167 assertions, zero failures, 16 states | PASS on initial diagnostic SHA; fix SHA pending |
+| Compact Learn overlay test | Native JUCE hotspot pixel alpha on 105x31 Limiter / 43x43 Pan versus 152x48 GO/PANIC / 82x135 fader | RUN pending on fixed SHA |
 | Native artifact images | Upload and inspect 16 PNG states; determine whether dark overlay reproduces | NOT RUN |
 | CodeQL and version guard | Exact SHA on PR | NOT RUN |
 | Real desktop at 100/125/150% DPI | Windows operator manual testing | ND |
