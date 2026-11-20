@@ -1,9 +1,11 @@
 #include "ControlOutputRouter.h"
 #include <cmath>
 #include <cstring>
+#include <utility>
 
 namespace cuelist {
-ControlOutputRouter::ControlOutputRouter():juce::Thread("Control OSC output") {startThread();}
+ControlOutputRouter::ControlOutputRouter(std::function<void()> probe)
+    : juce::Thread("Control OSC output"), beforeWriteProbe(std::move(probe)) {startThread();}
 ControlOutputRouter::~ControlOutputRouter() {
     signalThreadShouldExit(); notify(); stopThread(-1);
 }
@@ -20,11 +22,17 @@ bool ControlOutputRouter::sendOscFloat(const juce::String& host,int port,
     if (queue.size()>=maxQueue) {
         dropped.fetch_add(1,std::memory_order_relaxed); return false;
     }
-    queue.push_back({host,address,port,value});
+    // Queue admission and PANIC invalidation share queueLock.
+    queue.push_back({host,address,port,value,
+                     cancelEpoch.load(std::memory_order_relaxed)});
     notify(); return true;
 }
 void ControlOutputRouter::clear() {
-    const juce::ScopedLock guard(queueLock); queue.clear();
+    const juce::ScopedLock guard(queueLock);
+    // Clear both queued work and any worker-owned packet that has not yet
+    // crossed the final pre-write gate. Never wait for a network send.
+    cancelEpoch.fetch_add(1,std::memory_order_release);
+    queue.clear();
 }
 void ControlOutputRouter::run() {
     juce::DatagramSocket udp(false);
@@ -39,6 +47,13 @@ void ControlOutputRouter::run() {
         OscValue argument; argument.type=OscValueType::decimal; argument.decimal=p.decimal;
         event.arguments.push_back(std::move(argument));
         auto bytes=encodeOscMessage(event);
+        // Test-only staging hook: create a deterministic pause after dequeue
+        // and encoding, before the irrevocable OS UDP write.
+        if (beforeWriteProbe) beforeWriteProbe();
+        // A packet that was dequeued before PANIC must not be submitted to
+        // UDP afterwards. Writes already started cannot be recalled.
+        if (p.epoch!=cancelEpoch.load(std::memory_order_acquire))
+            continue; // Intentional PANIC cancellation is not a send failure.
         if (!bytes.empty() && bytes.size()<=1024 &&
             udp.write(p.host,p.port,bytes.data(),(int)bytes.size())==(int)bytes.size())
             sent.fetch_add(1,std::memory_order_relaxed);
