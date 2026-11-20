@@ -287,6 +287,8 @@ void uiRefinementTests() {
         Theme theme;
         juce::TextButton sample;
         juce::ComboBox combo;
+        check(theme.getPopupMenuFont().getHeightInPoints()>=10.5f,
+              "Operator popup captions are below the readable 10.5pt baseline");
         check(theme.getPopupMenuFont().getTypefaceName().containsIgnoreCase("Exo") &&
               theme.getTextButtonFont(sample,24).getHeightInPoints()>=10.0f &&
               theme.getTextButtonFont(sample,32).getTypefaceName().containsIgnoreCase("Hind") &&
