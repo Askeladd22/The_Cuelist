@@ -347,7 +347,7 @@ void controlColumnTests() {
 
         check(input.startListening(ports.front()),
               "OSC input could not rebind the port after shutdown");
-        auto sendControl=[&](const juce::String& address,float value) {
+        auto sendControl=[&](const juce::String& address,float value,int expectedValue) {
             OscEvent event;event.address=address;
             OscValue arg;arg.type=OscValueType::decimal;arg.decimal=value;
             event.arguments.push_back(arg);
@@ -360,12 +360,13 @@ void controlColumnTests() {
             for (int i=0;i<100;++i) {
                 if (input.poll(received))
                     return received.deviceId==address && received.kind==ControlKind::osc &&
-                           received.channel==1 && received.number==0;
+                           received.channel==1 && received.number==0 &&
+                           received.value==expectedValue;
                 juce::Thread::sleep(5);
             }
             return false;
         };
-        check(sendControl("/restarted",0.5f),
+        check(sendControl("/restarted",0.5f,64),
               "OSC receiver lost real UDP control events after shutdown/restart");
 
         // A failed reconfiguration must restore the previous working port.
@@ -375,7 +376,7 @@ void controlColumnTests() {
               "OSC reconfiguration succeeded despite a port already occupied");
         check(input.ports().size()==1 && input.port()==ports.front(),
               "Failed OSC reconfiguration discarded the previous port");
-        check(sendControl("/restored",0.75f),
+        check(sendControl("/restored",0.75f,95),
               "OSC previous listener stopped working after a failed reconfiguration");
         input.stopListening();
         check(input.ports().empty(),
