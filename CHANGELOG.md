@@ -22,6 +22,11 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 - Test RED: click sul vero bottone More, `ComponentPeer::handleKeyPress(downKey/rightKey)` per aprire il primo sottomenu, poi Esc sul peer del **figlio**; non chiamare direttamente `MainComponent::keyPressed`. Se non si apre un peer figlio, il test e' un problema di strumentazione, non prova di safety.
 - Intervento scoped committato: `Theme::preparePopupMenuWindow` riconosce finestre figlie solo quando il modal owner e' gia' un menu operatore tracciato; lo stesso listener `OperatorMenuEscapePanic` resta associato sia al parent sia ai child con riferimenti `SafePointer`, senza nuovi hook globali, polling o cambio playback. **RED/GREEN da verificare nei log sullo SHA finale.**
 
+### Evidenza test-first misurata
+- **RED reale:** test-only `00343b8961e608f94514db2abef6c67cf1d3491f`, [Windows run #44788777815](https://github.com/Askeladd22/The_Cuelist/actions/runs/44788777815): **421.075 asserzioni / un FAIL atteso**. Il sottomenu More si e' aperto tramite il suo vero peer JUCE, ma Escape e' stato consumato senza PANIC.
+- Implementazione C++: un solo `OperatorMenuEscapePanic`, tracciamento parent/child con `SafePointer`, eliminazione delle reference scadute per la navigazione ripetuta e callback `Theme::preparePopupMenuWindow` limitata ai menu il cui modal parent e' gia' tracciato. La regressione Left→parent e' inclusa.
+- **GREEN CTest e CodeQL:** ND fino a CI conclusa sul commit finale. Test fisico su tastiera Windows, DSP/audio e dispositivi esterni **NOT RUN**.
+
 ### Gate/rollback
 - TDD RED→GREEN con Windows Release/CTest, CodeQL C++, VERSION/CMake/CHANGELOG allineati sullo SHA finale. L'Esc deve conservare la chiusura standard JUCE, e il ritorno dal figlio al root con Freccia Sinistra non deve perdere la protezione Esc. Click fuori/cancel non devono attivare PANIC.
 - Nessuna modifica a GO, STOP, PANIC button, VIEW/LIVE, cue matrix, Undo/Redo, Control Map, Timeline, Mixer, Audio/MIDI/OSC/LTC, o `.cuelist` JSON v10.
