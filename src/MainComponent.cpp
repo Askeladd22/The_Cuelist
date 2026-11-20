@@ -1175,7 +1175,7 @@ void MainComponent::showOperatorMenu(int index) {
         case 4: { // Devices: full legacy MIDI/OSC controls, not "Settings".
             m.addItem(base+1,"Audio Devices...");
             juce::PopupMenu midiIn;
-            midiIn.addSectionHeader("MIDI INPUT — ENABLE");
+            midiIn.addSectionHeader("MIDI INPUT - ENABLE");
             midiIn.addItem(10000,"Disable main MIDI input",true,
                            show.controls.midiInputId.isEmpty());
             for (int i=0;i<inputs.size() && i<100;++i) {
@@ -1187,7 +1187,7 @@ void MainComponent::showOperatorMenu(int index) {
             m.addSubMenu("MIDI Inputs",midiIn);
 
             juce::PopupMenu midiOut;
-            midiOut.addSectionHeader("MIDI OUTPUT — ENABLE");
+            midiOut.addSectionHeader("MIDI OUTPUT - ENABLE");
             for (int i=0;i<outputs.size() && i<100;++i) {
                 const auto& device=outputs.getReference(i);
                 const bool enabled=!appPreferences ||
@@ -1224,7 +1224,7 @@ void MainComponent::showOperatorMenu(int index) {
             // identical menu command only adds operator noise.
             m.addSeparator();
             juce::PopupMenu appearanceMenu;
-            appearanceMenu.addItem(base+20,"Legacy — Graphite / Copper",true,
+            appearanceMenu.addItem(base+20,"Legacy - Graphite / Copper",true,
                 appearanceTheme()==palette::Appearance::legacy);
             appearanceMenu.addItem(base+21,"Industrial Orange",true,
                 appearanceTheme()==palette::Appearance::industrialOrange);

@@ -51,7 +51,7 @@ class NativeOperatorMenuParity(unittest.TestCase):
         self.assertIn('midiOut.addSectionHeader("MIDI OUTPUT - ENABLE")', devices)
         self.assertIn('"Legacy - Graphite / Copper"', view)
         for group in (devices, view):
-            self.assertNotIn("\\u2014", group, "Dash must not depend on a font fallback")
+            self.assertNotIn(chr(0x2014), group, "Dash must not depend on a font fallback")
         self.assertIn('m.addSubMenu("MIDI Inputs",midiIn)', devices)
         self.assertIn('m.addSubMenu("MIDI Outputs",midiOut', devices)
 

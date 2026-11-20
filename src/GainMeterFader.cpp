@@ -158,6 +158,18 @@ void GainMeterFader::paint(juce::Graphics& g) {
     g.setFont(font(11.0f));
     g.drawText("L",14,(int)bottom+3,12,14,juce::Justification::centred,false);
     g.drawText("R",29,(int)bottom+3,12,14,juce::Justification::centred,false);
+    // The 82px pinned Master shares its lower edge with nearby utility
+    // controls. Keep a dedicated opaque readout strip so the gain value
+    // cannot visually merge with adjacent fader-scale artwork. Column
+    // faders use their existing readable-scale mode unchanged.
+    if (!columnReadableScale) {
+        const auto readout=juce::Rectangle<float>(
+            2.0f,(float)getHeight()-25.0f,(float)getWidth()-4.0f,23.0f);
+        g.setColour(palette::panel);
+        g.fillRect(readout);
+        g.setColour(palette::line.withAlpha(.45f));
+        g.drawRect(readout,1.0f);
+    }
     g.setColour(palette::text);
     const int valueY=getHeight()-22;
     if (gainDb==silenceDb) {
