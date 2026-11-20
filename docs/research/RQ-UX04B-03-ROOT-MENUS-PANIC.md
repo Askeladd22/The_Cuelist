@@ -4,7 +4,7 @@
 
 ## Scenario / rischio operativo
 
-Durante una scena LIVE l'operatore apre il menu superiore Devices, View o More (quest'ultimo su layout compatti). Un primo Esc inteso come PANIC viene intercettato da `juce::PopupMenu` invece di raggiungere il trasporto. Il menu puo' scomparire, ma audio/MIDI/OSC/LTC possono ancora proseguire. Il problema e' *ipotizzato per queste tre categorie* dalla sorgente upstream e va confermato con RED reale. Le altre cinque categorie superiori sono gia' protette dalla v0.9.91.
+Durante una scena LIVE l'operatore apre il menu superiore Devices, View o More (quest'ultimo su layout compatti). Un primo Esc inteso come PANIC viene intercettato da `juce::PopupMenu` invece di raggiungere il trasporto. Il menu puo' scomparire, ma audio/MIDI/OSC/LTC possono ancora proseguire. Il problema e' stato **confermato in test peer JUCE** sul baseline v0.9.91; non e' ancora riprodotto con un tasto fisico Windows. Le altre cinque categorie superiori sono gia' protette dalla v0.9.91.
 
 **Rischio:** safety UX alto se il primo Esc e' interpretato come arresto globale; il software non deve generare un falso PANIC su un click fuori o un menu chiuso normalmente. Gli output fisici non sono misurati dal test di peer JUCE.
 
@@ -27,8 +27,8 @@ Durante una scena LIVE l'operatore apre il menu superiore Devices, View o More (
 
 | Gate | Criterio | Evidenza |
 |---|---|---|
-| AC-1 RED | Il primo Esc simulato tramite peer sul livello root Devices/View/More non fa PANIC con codice vecchio | `8320875e`, Windows run da verificare |
-| AC-2 GREEN | Il medesimo test fa PANIC per tutte e tre le categorie (Devices/View a 1920, More a 1180), con `encodeShow`, LIVE/VIEW, NEXT invariati | Windows CTest commit codice-fix |
+| AC-1 RED | Il primo Esc simulato tramite peer sul livello root Devices/View/More non fa PANIC con codice vecchio | **FAIL atteso** su `8320875e`: [Windows CI #44784721956](https://github.com/Askeladd22/The_Cuelist/actions/runs/44784721956), **421.055 asserzioni, 1 test fallito** (`UX04B-03 ... Escape skipped PANIC`); build C++ riuscita |
+| AC-2 GREEN | Il medesimo test fa PANIC per tutte e tre le categorie (Devices/View a 1920, More a 1180), con `encodeShow`, LIVE/VIEW, NEXT invariati | Patch `b8e603c6`, [Windows #44785528703](https://github.com/Askeladd22/The_Cuelist/actions/runs/44785528703); final docs-head [#44785586925](https://github.com/Askeladd22/The_Cuelist/actions/runs/44785586925) in esecuzione all'ultimo controllo |
 | AC-3 regression | I cinque menu preesistenti, la chiusura click/non-Esc e il riarmo File rimangono invariati | test UX04B-01, UX04B-02 e UX04B-03 |
 | AC-4 engineering | Un solo `KeyListener`, `SafePointer` per menu, detach al shutdown, nessun hook globale o modifica di threads real-time | Review manuale C++ e CI |
 | AC-5 release | VERSION.txt / CMake project VERSION 0.9.92 / CHANGELOG; CodeQL / Windows CTest sull'ultimo SHA | GitHub Actions |
@@ -47,7 +47,7 @@ PAUL (PLAN→APPLY→UNIFY), SEED (app deep quality gate), Trail of Bits C++ Rev
 | Esc da sottomenu Devices/View/More, popup contestuali e dialoghi | **NOT COVERED** |
 | UI DPI 100%,125%,150%, accessibilita' Narrator e IME | **NOT RUN** |
 | Misura con oscilloscopio/loopback e dispositivi reali Audio/MIDI/OSC/LTC | **NOT RUN** |
-| Test Windows/CTest CodeQL sul PR head esatto | **ND**, da aggiornare dopo i risultati |
+| Test Windows/CTest CodeQL sul PR head esatto | [Windows #44785586925](https://github.com/Askeladd22/The_Cuelist/actions/runs/44785586925), [CodeQL #44785586934](https://github.com/Askeladd22/The_Cuelist/actions/runs/44785586934) in corso; [version guard #44785586984](https://github.com/Askeladd22/The_Cuelist/actions/runs/44785586984) **PASS** sul commit di codice + guida |
 
 **Rollback:** revert della sola PR #223 su feature branch; no merge automatico. Nessun cambiamento di schema JSON v10 o protocolli di output.
 
