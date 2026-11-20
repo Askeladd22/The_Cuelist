@@ -34,10 +34,11 @@ Nel pannello nativo JUCE `PinnedColumnHeaders`, aperto tramite Shift+F10 durante
 | Gate | Evidenza | Esito |
 | --- | --- | --- |
 | Test-only `976b13f5` | [Windows run 44759807800](https://github.com/Askeladd22/The_Cuelist/actions/runs/44759807800): il versioning guard ha fermato il job prima di CTest | BLOCKED (non RED) |
-| Pre-fix con versione `c4a24409` | [Windows run 44760054171](https://github.com/Askeladd22/The_Cuelist/actions/runs/44760054171); test UX03G aggiunto, sorgente paint originale | PENDING (RED da verificare su log) |
+| Pre-fix con versione `c4a24409` | [Windows run 44760054171](https://github.com/Askeladd22/The_Cuelist/actions/runs/44760054171); Release/CTest **421.007 asserzioni, 1 test fallito**: `UX03G real JUCE compact footer clips PANIC/GO or adds ellipsis`. Preesistente UX03F PASS. | FAIL AS EXPECTED / RED riprodotto |
 | Version guard pre-fix | [run 44760054225](https://github.com/Askeladd22/The_Cuelist/actions/runs/44760054225) | PASS |
-| C++ source post-fix `ac12a7e0` | selettore messaggi con metriche JUCE | Windows CTest/CodeQL da verificare |
-| Screenshot nativi compact/wide, PDF o manuali | confronto del test offscreen con immagini generiche CI | NOT YET VERIFIED |
+| C++ source post-fix `ac12a7e0` | [Windows Release/CTest 44760974355](https://github.com/Askeladd22/The_Cuelist/actions/runs/44760974355), document head `afa10eb0`: **421.190 asserzioni, 0 fallimenti**, UX03G PASS, 100% CTest PASS, screenshot artifact upload PASS. [Version guard 44760974527](https://github.com/Askeladd22/The_Cuelist/actions/runs/44760974527): PASS. | GREEN / PASS sullo SHA verificato |
+| Screenshot nativi compact/wide | Il test JUCE verifica pixel per pixel la riga footer a 1180×820 e 1920×1080; il workflow ha caricato gli artefatti native-workspace-previews. Le singole PNG e il comportamento desktop a DPI fisici non sono stati rivisti manualmente in questo ciclo. | Test bitmap PASS; review PNG / DPI fisico ND |
+| CodeQL C++ | [run 44760974461](https://github.com/Askeladd22/The_Cuelist/actions/runs/44760974461) sullo SHA `afa10eb0`; analisi SARIF/alert da riscontrare separatamente | IN PROGRESS al momento della stesura |
 | Windows fisico 100/125/150 DPI, Narrator, IME, tastiera, periferiche Audio/MIDI/OSC/LTC e timing | banco non collegato a questa sessione | ND / NOT RUN |
 
 ## Rischio e rollback
