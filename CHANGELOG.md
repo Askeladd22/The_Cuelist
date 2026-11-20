@@ -13,6 +13,21 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.85] - 2026-11-20
+
+**RQ-SEC-005: uscita cooperativa del listener OSC e ripristino sicuro delle porte.**
+
+### Affidabilita
+- Prima di fermare il thread di ricezione OSC, i socket UDP vengono chiusi con `DatagramSocket::shutdown()` e mantenuti validi in memoria finche il thread termina; eliminato il precedente `stopThread(1000)` che poteva terminare forzatamente il worker.
+- Il fallimento di `startThread()` non viene piu riportato come configurazione di ascolto riuscita: vengono liberate le risorse e tentato il ripristino delle porte precedenti.
+- Nessun cambiamento al formato `.cuelist` JSON v10, al listener/protocollo OSC in ingresso, al motore audio, GO/STOP/PANIC, VIEW/LIVE o UI JUCE.
+
+### Test e limiti
+- Aggiunta prova UDP reale Windows di 16 porte, stop cooperativo con soglia CI 3000 ms, riavvio, ricezione OSC e conservazione del listener dopo rifiuto di porte duplicate. L'esclusivita di porte gia occupate non e' garantita da JUCE/Windows.
+- Il rischio originale di timeout/terminazione forzata e' stato individuato da audit del contratto JUCE, **non riprodotto in un crash**. RED non forzato per non uccidere intenzionalmente un thread in CI. Le prime CI Windows 44728131774 e 44728365029 fallivano per una falsa assunzione del test sull'esclusivita di una porta UDP, poi corretta senza alterare la politica di riuso.
+- Windows Release/CTest **PASS** sul commit codice da997936, [run 44729568289](https://github.com/Askeladd22/The_Cuelist/actions/runs/44729568289): **421.068 asserzioni, zero test falliti**; prova OSC su 16 porte e successivo riavvio PASS, upload screenshot nativi PASS. VERSION/CMake/CHANGELOG guard PASS sullo stesso SHA (run 44729568113); eventuale commit documentale finale richiede verifica sul suo SHA.
+- CodeQL e triage alert da verificare sull'ultimo SHA; nessuna certificazione di assenza vulnerabilita. L'uscita cooperativa evita il kill forzato ma non costituisce una garanzia assoluta di latenza se il sistema operativo non risponde. Banco hardware e p95/p99 stop lato operatore: ND. Warning MSVC C4456 preesistente su Timeline.cpp:409.
+
 ## [0.9.84] - 2026-11-20
 
 **RQ-SEC-004: automated CodeQL C++ security analysis on Windows.**

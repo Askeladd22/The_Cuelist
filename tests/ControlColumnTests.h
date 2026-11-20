@@ -2,6 +2,9 @@
 #include "MainComponent.h"
 #include "ControlMapping.h"
 #include <limits>
+#include <memory>
+#include <vector>
+#include <algorithm>
 #include "ControlPresetArchive.h"
 
 void controlColumnTests() {
@@ -313,6 +316,70 @@ void controlColumnTests() {
         check(!OscControlInput::decode(malformed,sizeof(malformed),packet) ||
               packet.address[0]=='/',
               "Malformed OSC packet caused invalid memory access");
+    });
+    test("OSC input listener stops cooperatively across 16 ports and restarts cleanly",[] {
+        // Reserve real ephemeral UDP ports at once, then release before the
+        // receiver binds them. This exercises the supported 16-port maximum.
+        std::vector<int> ports;
+        std::vector<std::unique_ptr<juce::DatagramSocket>> reservations;
+        for (int i=0;i<16;++i) {
+            auto socket=std::make_unique<juce::DatagramSocket>(false);
+            check(socket->bindToPort(0),"Could not reserve an ephemeral OSC test port");
+            const int port=socket->getBoundPort();
+            check(port>0 && std::find(ports.begin(),ports.end(),port)==ports.end(),
+                  "OSC test could not obtain distinct ephemeral ports");
+            ports.push_back(port);
+            reservations.push_back(std::move(socket));
+        }
+        reservations.clear();
+        OscControlInput input;
+        check(input.startListeningPorts(ports),
+              "OSC input failed to open sixteen independent UDP listeners");
+        check(input.ports()==ports && input.port()==ports.front(),
+              "OSC input lost its active multi-port configuration");
+        const double start=juce::Time::getMillisecondCounterHiRes();
+        input.stopListening();
+        const double elapsed=juce::Time::getMillisecondCounterHiRes()-start;
+        check(elapsed<3000.0,
+              "OSC sixteen-port cooperative shutdown exceeded 3000 ms in CI");
+        check(input.ports().empty() && input.port()==0,
+              "OSC shutdown retained a stale listening port");
+
+        check(input.startListening(ports.front()),
+              "OSC input could not rebind the port after shutdown");
+        auto sendControl=[&](const juce::String& address,float value,int expectedValue) {
+            OscEvent event;event.address=address;
+            OscValue arg;arg.type=OscValueType::decimal;arg.decimal=value;
+            event.arguments.push_back(arg);
+            const auto bytes=encodeOscMessage(event);
+            juce::DatagramSocket sender(false);
+            check(sender.write("127.0.0.1",ports.front(),bytes.data(),
+                               (int)bytes.size())==(int)bytes.size(),
+                  "Could not send test OSC datagram after listener restart");
+            ControlEvent received;
+            for (int i=0;i<100;++i) {
+                if (input.poll(received))
+                    return received.deviceId==address && received.kind==ControlKind::osc &&
+                           received.channel==1 && received.number==0 &&
+                           received.value==expectedValue;
+                juce::Thread::sleep(5);
+            }
+            return false;
+        };
+        check(sendControl("/restarted",0.5f,64),
+              "OSC receiver lost real UDP control events after shutdown/restart");
+
+        // Validate rejection of an unambiguously invalid configuration.
+        // Occupying an OSC UDP port does NOT guarantee bind failure on Windows.
+        check(!input.startListeningPorts({ports.front(),ports.front()}),
+              "OSC reconfiguration accepted a duplicate input port");
+        check(input.ports().size()==1 && input.port()==ports.front(),
+              "Rejected OSC configuration discarded the previous port");
+        check(sendControl("/restored",0.75f,95),
+              "OSC previous listener stopped working after rejected configuration");
+        input.stopListening();
+        check(input.ports().empty(),
+              "OSC input retained ports after final cooperative shutdown");
     });
     test("Abstract function preserves MIDI destination when local fader changes",[] {
         ControlSettings settings;

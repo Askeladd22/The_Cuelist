@@ -94,7 +94,15 @@ public:
             }
             listeningPorts=requested;
             sockets=std::move(result);
-            startThread();
+            // Do not claim a port is listening if the OS could not start
+            // the receiver thread. Keep the original rollback path available.
+            if (!startThread()) {
+                for (auto& socket:sockets)
+                    if (socket) socket->shutdown();
+                sockets.clear();
+                listeningPorts.clear();
+                return false;
+            }
             return true;
         };
         if (bindPorts(unique)) return true;
@@ -103,7 +111,13 @@ public:
     }
     void stopListening() {
         signalThreadShouldExit();
-        stopThread(1000);
+        // DatagramSocket::shutdown() aborts a blocked read/write without
+        // destroying the socket object while the worker may still use it.
+        for (auto& socket:sockets)
+            if (socket) socket->shutdown();
+        // The timed JUCE stopThread(1000) forcibly kills an unresponsive
+        // worker. Never free the sockets until the receiver has joined.
+        stopThread(-1);
         sockets.clear();
         listeningPorts.clear();
         readIndex.store(0);writeIndex.store(0);
