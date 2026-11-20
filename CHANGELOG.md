@@ -23,7 +23,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 - **Non coperti:** sottomenu Devices/View/More (peer e focus distinti), Settings legacy, popup riga/cella, Control Map, OSC/MIDI editor, Timeline e AlertWindow/DialogWindow. Nessun hook globale, sostituzione GUI o modifica engine.
 
 ### Gate
-- RED Windows CTest sul codice v0.9.91 prima di toccare il listener; soltanto dopo RED la patch minima estende il listener esistente ai tre menu superiori. GREEN Windows Release/CTest e CodeQL sull'esatto SHA finale, guard versioni.
+- **RED misurato:** test-only `8320875e`, [Windows run #44784721956](https://github.com/Askeladd22/The_Cuelist/actions/runs/44784721956), compilazione riuscita, **421.055 asserzioni / 1 fallimento atteso** `UX04B-03 top-level Devices/View/More Escape skipped PANIC`.
+- **Patch C++ minima** `b8e603c6`: riusa il listener, rinominato `RootOperatorPopupEscapePanic`, anche nei root Devices/View/More. Test GREEN e CodeQL sul codice corretto ancora da verificare; [Windows run #44785586925](https://github.com/Askeladd22/The_Cuelist/actions/runs/44785586925), [CodeQL #44785586934](https://github.com/Askeladd22/The_Cuelist/actions/runs/44785586934) avviati; version guard [#44785586984](https://github.com/Askeladd22/The_Cuelist/actions/runs/44785586984) PASS sullo SHA pre-documentazione.
 - Tastiera fisica Windows, Focus/IME/Narrator e DPI 100/125/150, tempo arresto reale Audio/MIDI/OSC/LTC su banco esterno: **ND / NOT RUN** e non equivalenti alla CI. Rischi residui documentati nell'issue #191.
 - Nessuna alterazione a Undo/Redo, PANIC button, GO, STOP, VIEW/LIVE, Control Map, Timeline, Mixer/Master e formato progetto JSON v10. Rollback con revert della singola PR, nessun merge automatico.
 
