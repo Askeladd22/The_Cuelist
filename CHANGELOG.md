@@ -23,7 +23,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 - Non e' stata modificata alcuna API, il router OSC, il motore audio/MIDI/LTC, GO/STOP/PANIC, VIEW/LIVE, gli editor, il Mixer o la UI del Master.
 
 ### Gate e limiti
-- Verificare su Windows Release che l'avviso C4456 di `src/Timeline.cpp:409` scompaia e che CTest/CodeQL/verifica VERSION-CMake-CHANGELOG passino sull'esatto SHA. La soppressione di un warning non costituisce di per se' prova di correggere un comportamento dello spettacolo.
+- Windows Release/CTest **PASS** sullo SHA codice `806d9ac7`: [run 44754748213](https://github.com/Askeladd22/The_Cuelist/actions/runs/44754748213), **421.177 asserzioni, 0 fallimenti**. Il nuovo test OSC Timeline in secondi e beat e' PASS; nessuna occorrenza C4456 nei log Windows, senza disattivare gli avvisi MSVC. Upload degli screenshot nativi PASS.
+- Controllo VERSION/CMake/CHANGELOG **PASS** sullo SHA codice [run 44754748268](https://github.com/Askeladd22/The_Cuelist/actions/runs/44754748268). CodeQL e triage alert devono essere verificati separatamente; eventuale commit solo documentale richiede nuovo controllo del suo SHA. Non si presume un bug di playback o di sincronismo risolto.
 - Il riquadro scuro accanto al Master 0.0 dB originale resta non riprodotto, issue #217. Banco hardware esterno, verifica DPI 100/125/150% e sincronismo a valle di OSC/MIDI: ND.
 
 ## [0.9.87] - 2026-11-20
