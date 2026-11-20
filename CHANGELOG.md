@@ -13,6 +13,19 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.87] - 2026-11-20
+
+**RQ-UI-007: Master 0.0 dB, ricerca di una sovrapposizione dipendente dallo stato JUCE.**
+
+### QA / osservabilita UI
+- Aggiunte 16 catture native JUCE in CI a 1180×820 e 1647×895: Master inattivo, richiesta di focus, MIDI Learn e OSC Learn, nelle palette Industrial Orange e Legacy. Le catture non sono screenshot di un desktop Windows ai diversi DPI reali.
+- Aggiunte verifiche geometriche sui controlli Master e sull'hit target Quick Learn: il testo del gain non deve essere invaso dai controlli Pan/Mute/Output/Limiter; l'overlay Learn resta volutamente esteso all'intero fader quando attivo.
+- Il normale screenshot Windows 0.9.85 e 0.9.86 a 1180×820 mostrava 0 pixel cambiati nell'area del Master nonostante la nuova fascia opaca. La sovrapposizione della foto dell'operatore non e' ancora riprodotta: non si dichiara un fix non dimostrato.
+- Nessuna modifica a runtime audio/MIDI/OSC/LTC, menu e controlli, GO/STOP/PANIC, VIEW/LIVE, progetto .cuelist schema JSON v10 e layout del Master.
+
+### Gate
+- Necessario Windows Release/CTest e versione su SHA esatto; CodeQL e triage alert separati. Immagini native prodotte in CI da ispezionare prima di ogni intervento grafico. Verifica a 100/125/150% DPI su desktop Windows e banco hardware: ND.
+
 ## [0.9.86] - 2026-11-20
 
 **RQ-UI-006: native Devices/View submenu glyphs and Master Audio gain readout.**

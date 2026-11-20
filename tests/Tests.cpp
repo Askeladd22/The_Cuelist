@@ -469,6 +469,98 @@ int main() {
             }
         };
         savePreview("interface-preview.png");
+        test("RQ-UI-007: capture real Master idle and Quick Learn overlay states", [&] {
+            // The operator's 0.0 dB collision was not visible in the usual
+            // idle preview. Compare the same JUCE component hierarchy before
+            // assuming an opaque repaint fixes an unknown overlay.
+            for (const auto size:std::initializer_list<juce::Point<int>>{
+                     {1180,820},{1647,895}}) {
+                MainComponent lab(false);
+                lab.setSize(size.x,size.y);
+                const auto originalAppearance=lab.appearanceTheme();
+                const float gainBefore=lab.show.masterGain;
+                const int liveBefore=lab.liveCuelistIndex();
+                const int cueBefore=lab.nextCueIndex();
+                for(const auto appearance:{
+                        palette::Appearance::industrialOrange,
+                        palette::Appearance::legacy}) {
+                    lab.setAppearanceTheme(appearance);
+                    const auto themeId=appearance==palette::Appearance::legacy
+                        ? juce::String("legacy") : juce::String("industrial");
+                    auto* mixer=cueViewFixtures::find<ColumnUtilities>(lab);
+                    check(mixer!=nullptr,
+                          "RQ-UI-007 real pinned Master utility panel missing");
+                    if(!mixer) continue;
+                    auto* gain=dynamic_cast<GainMeterFader*>(
+                        controlsV3::named(*mixer,"masterAudioDb"));
+                    auto* hotspot=dynamic_cast<QuickLearnHotspot*>(
+                        controlsV3::named(*mixer,"quickLearnMasterGain"));
+                    check(gain && hotspot &&
+                          gain->getWidth()==MasterAudioLayout::atHeight(
+                              mixer->getHeight()).fader.getWidth(),
+                          "RQ-UI-007 native gain or Learn hotspot missing");
+                    if(!gain || !hotspot) continue;
+                    // Other real Master controls must NOT overlap the numeric
+                    // readout, even though the selected Learn target is
+                    // intentionally an overlay across the entire gain fader.
+                    const auto readout=gain->getBounds().withTop(
+                        gain->getBottom()-25);
+                    for(const char* control:{
+                            "masterPan","masterMute","masterMainOutput",
+                            "masterSafetyLimiter"}) {
+                        auto* sibling=controlsV3::named(*mixer,control);
+                        check(sibling && !sibling->getBounds().intersects(readout),
+                              "RQ-UI-007 another Master control overlaps gain text");
+                    }
+                    const auto capture=[&](const juce::String& state) {
+                        const auto shot=lab.createComponentSnapshot(
+                            lab.getLocalBounds());
+                        check(shot.isValid() && shot.getWidth()==size.x &&
+                              shot.getHeight()==size.y,
+                              "RQ-UI-007 native screenshot dimensions invalid");
+                        if(!shot.isValid()) return;
+                        const auto name=juce::String("interface-rqui007-master-")
+                            +themeId+"-"+state+"-"+juce::String(size.x)+".png";
+                        auto stream=folder.getChildFile(name).createOutputStream();
+                        check(stream!=nullptr,
+                              "RQ-UI-007 could not save native JUCE snapshot");
+                        if(stream) {
+                            stream->setPosition(0);stream->truncate();
+                            check(juce::PNGImageFormat{}.writeImageToStream(
+                                      shot,*stream),
+                                  "RQ-UI-007 PNG screenshot encoding failed");
+                        }
+                    };
+                    check(!hotspot->isVisible() && !lab.isQuickLearnActive(),
+                          "RQ-UI-007 idle Gain Learn hotspot unexpectedly visible");
+                    capture("idle");
+                    gain->grabKeyboardFocus();
+                    // A headless component may not acquire OS keyboard focus:
+                    // this artifact records the request, not confirmed DPI/UI focus.
+                    capture("focus-request");
+                    lab.beginQuickLearn(false);
+                    check(lab.isQuickLearnActive() && hotspot->isVisible() &&
+                          hotspot->getBounds()==gain->getBounds(),
+                          "RQ-UI-007 MIDI Learn changed its Master hit target");
+                    capture("midi-learn");
+                    lab.beginQuickLearn(true);
+                    check(lab.isQuickLearnActive() && hotspot->isVisible() &&
+                          hotspot->getBounds()==gain->getBounds(),
+                          "RQ-UI-007 OSC Learn changed its Master hit target");
+                    capture("osc-learn");
+                    lab.beginQuickLearn(true); // same-mode click exits Learn
+                    check(!lab.isQuickLearnActive() && !hotspot->isVisible() &&
+                          std::abs(lab.show.masterGain-gainBefore)<.0001f &&
+                          lab.liveCuelistIndex()==liveBefore &&
+                          lab.nextCueIndex()==cueBefore,
+                          "RQ-UI-007 diagnostics changed Master gain or LIVE cue");
+                    lab.setAppearanceTheme(originalAppearance);
+                }
+            }
+            // The fixture manipulates application-level palette preferences,
+            // never serialized .cuelist data; restore the preview's palette.
+            preview.setAppearanceTheme(palette::Appearance::industrialOrange);
+        });
         // N4.2: snapshots of the real native Inspector and child controls.
         // Off-screen JUCE rasterization is NOT a Windows DPI test.
         preview.setSize(1180,820);
