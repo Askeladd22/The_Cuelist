@@ -42,6 +42,46 @@ void uiRefinementTests() {
         check(project && project->isEditableOnDoubleClick(),
               "Workspace project naming must remain in-place.");
     });
+    test("UX04B-01: File PopupMenu peer Escape invokes PANIC on first key",[] {
+        MainComponent ui(false);
+        ui.setSize(1647,900);
+        auto* file=dynamic_cast<juce::TextButton*>(
+            controlsV3::named(ui,"operatorMenuFile"));
+        check(file && file->isVisible() && static_cast<bool>(file->onClick),
+              "UX04B-01 native File menu button missing");
+        if (!file) return;
+        const auto projectBefore=encodeShow(ui.show);
+        const auto liveBefore=ui.liveCuelistIndex();
+        const auto nextBefore=ui.nextCueIndex();
+        // Protect later CTest cases even when an assertion fails while a
+        // modal MenuWindow is active. Scope destruction runs before ui.
+        struct DismissPopup {
+            ~DismissPopup() { juce::PopupMenu::dismissAllActiveMenus(); }
+        } dismiss;
+        file->onClick(); // real production handler opens a JUCE PopupMenu
+        auto* modal=juce::Component::getCurrentlyModalComponent();
+        check(modal && modal!=&ui,
+              "UX04B-01 File menu did not create a real modal JUCE component");
+        if (!modal) return;
+        auto* peer=modal->getPeer();
+        check(peer!=nullptr,
+              "UX04B-01 File popup has no native ComponentPeer to dispatch keys");
+        if (!peer) return;
+        ui.engine.acknowledgedCueId.store(923);
+        // Deliberately dispatch through JUCE's actual peer path (and its
+        // registered KeyListeners). Calling ui.keyPressed(Esc) directly
+        // bypasses the PopupMenu focus owner and is an invalid regression.
+        const bool handled=peer->handleKeyPress(
+            juce::KeyPress(juce::KeyPress::escapeKey));
+        check(handled,"UX04B-01 MenuWindow did not consume first Escape");
+        check(ui.engine.acknowledgedCueId.load()==0,
+              "UX04B-01 first Esc dismissed File menu but skipped PANIC");
+        check(encodeShow(ui.show)==projectBefore &&
+              ui.liveCuelistIndex()==liveBefore &&
+              ui.nextCueIndex()==nextBefore,
+              "UX04B-01 modal Esc modified Show, VIEW/LIVE or armed GO");
+    });
+
     test("UX04D: project name Label Escape cancels and triggers PANIC",[] {
         // This is a JUCE Label::TextEditor listener callback-contract test,
         // not a physical Escape-key delivery/latency test on Windows.
