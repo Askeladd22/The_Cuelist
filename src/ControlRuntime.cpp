@@ -654,7 +654,7 @@ void MainComponent::dispatchControl(const ControlEvent& input) {
             const auto& col=show.columns[(size_t)i];
             if (!controlOutput.sendOscFloat(col.oscHost,col.oscPort,
                 binding.oscAddress,action->scaled))
-                status="OSC control: invalid destination or queue full.";
+                status="OSC control: invalid destination, oversized packet or queue full.";
         }
     }
     if(historySuppressedChanged) {

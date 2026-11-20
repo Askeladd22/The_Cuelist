@@ -4,6 +4,8 @@
 #include "MidiInputManager.h"
 #include "ControlOutputRouter.h"
 #include <limits>
+#include <array>
+#include <cstring>
 
 void controlMappingV10Tests() {
     test("unconfigured abstract outputs remain inert and preserve stable IDs",[] {
@@ -191,6 +193,32 @@ void controlMappingV10Tests() {
               "OSC validation counted Unicode characters instead of UTF-8 bytes");
         check(output.droppedCount()==0,
               "Rejected OSC input was incorrectly counted as a queued output drop");
+    });
+    test("OSC Control Map output sends the maximum valid float packet on loopback",[] {
+        juce::DatagramSocket receiver(false);
+        check(receiver.bindToPort(0),"Control OSC loopback receiver did not bind");
+        const int port=receiver.getBoundPort();
+        check(port>0,"Control OSC loopback receiver has no local port");
+        // 1015 ASCII bytes: 1016 padded address + 4 typetag + 4 float = 1024.
+        const auto address="/"+juce::String::repeatedString("a",1014);
+        ControlOutputRouter output;
+        check(output.sendOscFloat("127.0.0.1",port,address,0.5f),
+              "Maximum valid Control Map OSC float packet was rejected");
+        check(receiver.waitUntilReady(true,1500)==1,
+              "Valid Control Map OSC packet not received on local UDP loopback");
+        std::array<char,1024> wire{};
+        const int received=receiver.read(wire.data(),(int)wire.size(),false);
+        OscEvent expected;expected.address=address;
+        OscValue argument;argument.type=OscValueType::decimal;argument.decimal=0.5f;
+        expected.arguments.push_back(argument);
+        const auto encoded=encodeOscMessage(expected);
+        check(received==1024 && encoded.size()==1024 &&
+              std::memcmp(wire.data(),encoded.data(),encoded.size())==0,
+              "Control Map OSC float packet was truncated or encoded differently");
+        for (int tries=0;tries<100 && output.sentCount()==0;++tries)
+            juce::Thread::sleep(2);
+        check(output.sentCount()==1 && output.droppedCount()==0,
+              "Valid loopback OSC packet was reported as failed or not counted");
     });
     test("hardware CC, notes and bend are accepted and bounded off the UI thread",[] {
         MidiInputManager input;
