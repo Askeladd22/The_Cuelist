@@ -1,0 +1,53 @@
+name: C++ security analysis (CodeQL)
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# CodeQL publishes findings to GitHub's Code Scanning service.
+# This permission is limited to this security-specific workflow.
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+concurrency:
+  group: codeql-cpp-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-cpp:
+    name: CodeQL C++ manual Windows build
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CMAKE_GENERATOR: Visual Studio 17 2022
+      CMAKE_GENERATOR_PLATFORM: x64
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          # The build never needs authenticated Git writes or fetches.
+          # Do not persist the GITHUB_TOKEN for CMake or other build scripts.
+          persist-credentials: false
+
+      # A native JUCE/MSVC build is necessary for accurate C++ extraction.
+      # GitHub C++ autobuild does not reliably discover scripts/build.ps1.
+      - name: Initialize CodeQL C++
+        uses: github/codeql-action/init@v4
+        with:
+          languages: c-cpp
+          build-mode: manual
+          queries: security-extended
+
+      - name: Build native app and run regression tests
+        shell: powershell
+        run: .\scripts\build.ps1
+
+      - name: Analyze C++ and publish Code Scanning results
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:c-cpp
