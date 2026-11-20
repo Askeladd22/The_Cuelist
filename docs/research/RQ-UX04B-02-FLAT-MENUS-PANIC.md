@@ -1,6 +1,6 @@
 # RQ-UX04B-02 — Esc/PANIC nel menu Edit/Show/Cuelists/Guide
 
-**Baseline verificata:** `main@e19901514899a960735f6e5c400bacf16ef84159`, v0.9.90 · **Target:** v0.9.91 · **PR:** [#222 (draft)](https://github.com/Askeladd22/The_Cuelist/pull/222) · **Schema:** `.cuelist` JSON v10 invariato.
+**Baseline verificata:** `main@e19901514899a960735f6e5c400bacf16ef84159`, v0.9.90 · **Target:** v0.9.91 · **PR:** [#222 (merged)](https://github.com/Askeladd22/The_Cuelist/pull/222), `main@5539d885e74b244a7fe8f54f0b78948b16a316e7` · **Schema:** `.cuelist` JSON v10 invariato.
 
 ## Scenario operativo
 
@@ -44,7 +44,7 @@ Un operatore apre un menu superiore con voci di editing/gestione durante LIVE, p
 |---|---|---|
 | Windows test-only RED | `33b8b4c9` / [44775466385](https://github.com/Askeladd22/The_Cuelist/actions/runs/44775466385) | **FAIL atteso:** 421.024 asserzioni / 1 FAIL mirato |
 | Windows Release/CTest source | `a2381474` / [44775956715](https://github.com/Askeladd22/The_Cuelist/actions/runs/44775956715); `019cd87c` / [44776093554](https://github.com/Askeladd22/The_Cuelist/actions/runs/44776093554) | **PASS** per 5 menu: 421.220 asserzioni / 0 FAIL; anche negativa cancellazione/riapertura **PASS**: 421.227 asserzioni / 0 FAIL |
-| HEAD docs + regressione cancellazione `d609f8d3`: Windows [44776449887](https://github.com/Askeladd22/The_Cuelist/actions/runs/44776449887), CodeQL [44776449893](https://github.com/Askeladd22/The_Cuelist/actions/runs/44776449893), version guard [44776449911](https://github.com/Askeladd22/The_Cuelist/actions/runs/44776449911) | **Guard PASS**, Windows/CodeQL in verifica; recheck sull'ultimo commit dopo aggiornamenti doc |
+| Final PR head `fa1889b9`: Windows [44777424844](https://github.com/Askeladd22/The_Cuelist/actions/runs/44777424844), CodeQL [44777424749](https://github.com/Askeladd22/The_Cuelist/actions/runs/44777424749), version guard [44777424676](https://github.com/Askeladd22/The_Cuelist/actions/runs/44777424676) | **Windows / CodeQL / guard PASS**; benchmark fisico ancora NOT RUN |
 | Tastiera fisica + menu e sottomenu con stato LIVE | PC Windows / show di prova | NON ESEGUITO |
 | DPI 100/125/150, Narrator, IME | Test fisici Windows | NON ESEGUITO |
 | Audio/MIDI/OSC/LTC esterni, latenza PANIC misurata | Banco isolato e hardware reale | NON ESEGUITO |
