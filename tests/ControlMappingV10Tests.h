@@ -178,6 +178,20 @@ void controlMappingV10Tests() {
                 std::numeric_limits<float>::infinity()),"Infinite OSC value accepted");
         check(output.droppedCount()==0,"Invalid sends incorrectly filled output queue");
     });
+    test("OSC Control Map output rejects packets exceeding bounded UDP payload",[] {
+        ControlOutputRouter output;
+        // Float OSC: 4-byte-padded address + 4-byte typetag + 4-byte float.
+        // A 1016-byte UTF-8 OSC address produces a packet larger than 1024.
+        const auto oversized="/"+juce::String::repeatedString("a",1015);
+        check(!output.sendOscFloat("127.0.0.1",9000,oversized,0.5f),
+              "Oversize mapped OSC event was accepted but can never be transmitted");
+        const auto multiByte="/"+juce::String::repeatedString(
+            juce::String::fromUTF8("\xC3\xA9"),508);
+        check(!output.sendOscFloat("127.0.0.1",9000,multiByte,0.5f),
+              "OSC validation counted Unicode characters instead of UTF-8 bytes");
+        check(output.droppedCount()==0,
+              "Rejected OSC input was incorrectly counted as a queued output drop");
+    });
     test("hardware CC, notes and bend are accepted and bounded off the UI thread",[] {
         MidiInputManager input;
         input.ingestForTest(juce::MidiMessage::controllerEvent(3,21,127));

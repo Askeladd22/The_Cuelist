@@ -13,6 +13,19 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.82] - 2026-11-20
+
+**RQ-OBS-002: observability and bounded packet validation for Control Map OSC output.**
+
+### Corretto
+- Il percorso dei Control Mapping OSC rifiuta prima dell'accodamento i messaggi float che non possono rispettare il limite dei pacchetti UDP OSC di 1024 byte, contando i byte UTF-8 (non i caratteri).
+- I fallimenti reali della scrittura UDP e gli invii OSC del router di controllo vengono contabilizzati e mostrati nei Diagnostics accanto agli eventi OSC della Timeline, con contatori separati e totali locali.
+- Nessuna modifica a GO/STOP/PANIC, snapshot audio, protocollo OSC dei messaggi validi, routing, schema JSON .cuelist v10 o callback realtime.
+
+### Test e limiti
+- Regressione per address OSC ASCII oltre il limite, variante UTF-8 multibyte, conservazione della semantica di input non valido e invio valido in loopback.
+- Verifiche Windows Release/CTest, versione/changelog e red-green da registrare sui relativi SHA. UDP write riuscito non certifica ricezione remota; banco hardware e ASan/CodeQL non eseguiti.
+
 ## [0.9.81] - 2026-11-20
 
 **RQ-SEC-001: bounded OSC input-edge tracking (security and LIVE safety).**
