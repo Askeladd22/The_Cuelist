@@ -60,6 +60,8 @@ void controlDispatchPolicyTests() {
         }
         check(newlyAccepted<=4095,
             "Unique OSC presses bypassed bounded physical-edge tracking");
+        check(edges.oscTrackingSaturated(),
+            "Capacity exhaustion was not latched for a safe manual re-arm");
         check(edges.recordAndWasDown(midiGo),
             "OSC flood lost the held MIDI GO debounce state");
         check(edges.recordAndWasDown(oscGo),
@@ -70,13 +72,29 @@ void controlDispatchPolicyTests() {
             "A new OSC transport press was accepted while tracking was saturated");
         auto release=oscGo; release.value=0; release.isNoteOff=true;
         check(edges.recordAndWasDown(release),"Held OSC GO release was forgotten");
-        check(!edges.recordAndWasDown(unknown),
-            "An OSC slot was not released for a later legitimate press");
+        // A rejected still-held source must NOT become a fresh GO just because
+        // some different tracked OSC source released a slot.
         check(edges.recordAndWasDown(unknown),
-            "Repeated held OSC press unexpectedly created a second GO");
+            "Rejected held OSC became a rising edge when capacity became available");
+        auto ignoredRelease=unknown; ignoredRelease.value=0; ignoredRelease.isNoteOff=true;
+        check(!edges.recordAndWasDown(ignoredRelease),
+            "Untracked OSC release invented a held button or a new state slot");
+        check(edges.recordAndWasDown(unknown),
+            "An untracked OSC source bypassed the sticky overload latch");
+
+        edges.clearMidi(); // MIDI reconnect must not re-arm held network GO.
+        check(edges.oscTrackingSaturated() && edges.recordAndWasDown(unknown),
+            "MIDI-only reset incorrectly re-armed blocked OSC GO");
+        check(!edges.recordAndWasDown(midiGo),
+            "MIDI-only reset left a stale held MIDI button");
+        edges.resetOsc(); // Explicit successful Apply in OSC Settings.
+        check(!edges.oscTrackingSaturated() && !edges.recordAndWasDown(unknown),
+            "Operator re-arm did not restore a fresh OSC rising edge");
+        check(edges.recordAndWasDown(unknown),
+            "Repeated OSC press after re-arm generated another rising edge");
         edges.clear();
         check(!edges.recordAndWasDown(oscGo) && !edges.recordAndWasDown(midiGo),
-            "Explicit input reset did not clear both OSC and MIDI held states");
+            "Explicit full input reset did not clear both held-state sets");
     });
 
     test("pickup current-target normalization honors curve/invert and stable ID",[] {
