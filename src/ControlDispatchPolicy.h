@@ -1,19 +1,24 @@
 #pragma once
 #include "ShowModel.h"
-#include <map>
+#include <cstddef>
 #include <optional>
+#include <set>
 
 namespace cuelist {
 
 // UI-thread physical-edge state, kept separate from binding and preset IDs.
 // Record *all* events including unmatched releases, so a cue change cannot
 // interpret an already-held GO/PANIC button as a fresh press.
+// A saturated OSC tracker treats NEW presses as already held (fail closed for
+// GO/PANIC). MIDI state is isolated so network traffic cannot evict its edges.
 class PhysicalControlEdges final {
 public:
     bool recordAndWasDown(const ControlEvent& event);
-    void clear() noexcept { pressed.clear(); }
+    void clear() noexcept { heldMidi.clear(); heldOsc.clear(); }
 private:
-    std::map<juce::String,bool> pressed;
+    static constexpr std::size_t maxHeldOsc = 4096;
+    // Only physically pressed identities need storage: release erases a key.
+    std::set<juce::String> heldMidi, heldOsc;
 };
 
 // Model-only dispatch decisions. These neither enqueue output nor modify the
