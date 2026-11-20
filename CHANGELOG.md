@@ -13,9 +13,29 @@ certifichino tutte le milestone riportate**; le etichette storiche
 indicano versioni di sviluppo presenti nei commit, non distribuzioni
 pubbliche. I particolari di ogni intervento sono nell'appendice.
 
+## [0.9.91] - 2026-11-20
+
+**RQ-UX04B-02 — First Escape under flat top-level JUCE operator menus (draft / test-first).**
+
+### Scenario, hypothesis and scope
+- Existing v0.9.90 File menu first-Esc PANIC fix is limited to `operatorMenuFile`. Other *flat* top-level menus (`Edit`, `Show`, `Cuelists`, `Guide`) use the same modal JUCE `MenuWindow`; test whether first Escape dismisses them without calling `stopAll()`.
+- Add a test exercising actual topbar `TextButton::onClick` then `ComponentPeer::handleKeyPress(Escape)` on its JUCE modal menu; prove fail-first on main 0.9.90 then GREEN after minimal reuse of the existing scoped `KeyListener`.
+- No change for `Devices`, `View`, `More`, legacy Preferences, menus with submenus, other context menus or modal dialogs. No global keyboard hook or mock UI. These require separate tests.
+
+### Gates and operator risk
+- Preserve normal menu cancellation/selection, LIVE/VIEW, GO/PANIC, Undo/Redo, native JUCE, Control Map, Audio/MIDI/OSC/LTC, and .cuelist JSON v10. Record red/green Windows Release/CTest, CodeQL and version guard on exact head.
+- **Physical first Escape on Windows, submenu focus, DPI/Narrator/IME, Audio/MIDI/OSC/LTC hardware latency = NOT RUN / ND**; do not treat simulated peer tests as live certification.
+- Rollback: revert only this small PR without data migration; no automatic merge.
+
+### Verifiche misurate (non equivalenti a collaudo fisico)
+- **RED** (pre-fix `33b8b4c9`): [Windows run 44775466385](https://github.com/Askeladd22/The_Cuelist/actions/runs/44775466385) -> 421.024 asserzioni, 1 fallimento mirato `UX04B-02: top-level operator menu consumed Escape without PANIC`.
+- **GREEN primo codice** (`a2381474`): [Windows run 44775956715](https://github.com/Askeladd22/The_Cuelist/actions/runs/44775956715) -> 421.220 asserzioni, 0 fallimenti, Windows Release/CTest 1/1. Verificati con peer nativo File/Edit/Show/Cuelists/Guide; regression supplementare per cancellazione popup/riapertura aggiunta successivamente, quindi non coperta da questo run.
+- **GREEN regressioni complete** (`019cd87c`): [Windows run 44776093554](https://github.com/Askeladd22/The_Cuelist/actions/runs/44776093554) -> 421.227 asserzioni, 0 fallimenti; `UX04B-01`, `UX04B-02` (quattro menu semplici) e test negativo di cancellazione/riapertura popup tutti PASS.
+- **Final-head CI**: [Windows 44776449887](https://github.com/Askeladd22/The_Cuelist/actions/runs/44776449887), [CodeQL 44776449893](https://github.com/Askeladd22/The_Cuelist/actions/runs/44776449893) in corso al controllo; [version guard 44776449911](https://github.com/Askeladd22/The_Cuelist/actions/runs/44776449911) PASS. Allineare gli SHA dopo ulteriori sole modifiche documentali. Collaudo tastiera OS e banco esterno: **ND**.
+
 ## [0.9.90] - 2026-11-20
 
-**RQ-UX04B-01 — File menu PopupMenu: primo Esc e inoltro PANIC (PR in bozza, test-first).**
+**RQ-UX04B-01 — File menu PopupMenu: primo Esc inoltra PANIC (PR #221 integrata).**
 
 ### Scenario e obiettivo
 - Il menu File della barra superiore usa JUCE 8.0.12 `PopupMenu::showMenuAsync`: il codice MenuWindow intercetta Escape e chiude il menu senza inoltrare l'evento alla root di The CUElist. Ipotesi testabile: il primo Esc deve invocare `stopAll()` oltre a conservare la chiusura del menu.
@@ -23,7 +43,7 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 - Ambito intenzionalmente limitato al menu File di primo livello. Le altre finestre, i sottomenu, i popup contestuali e le modali di terze parti rimangono fuori scope; niente hook di sistema o sostituzione HTML/JUCE.
 
 ### Gate e compatibilita'
-- Richiesto RED Windows sul test nativo con il codice pre-fix; solo dopo RED, applicare la correzione minima e verificare GREEN Windows Release/CTest + CodeQL + controllo versione sull'ultimo SHA.
+- **RED effettivo** sul commit pre-fix `abb209e4` [Windows CI 44772996671](https://github.com/Askeladd22/The_Cuelist/actions/runs/44772996671): 421.018 asserzioni, esattamente 1 test fallito (`first Esc dismissed File menu but skipped PANIC`). **GREEN effettivo** su head PR `f2ffb739` [Windows CI 44773805428](https://github.com/Askeladd22/The_Cuelist/actions/runs/44773805428): 421.196 asserzioni, 0 fallimenti, CTest 1/1. [Version guard 44773805242](https://github.com/Askeladd22/The_Cuelist/actions/runs/44773805242) PASS; CodeQL [44773805376](https://github.com/Askeladd22/The_Cuelist/actions/runs/44773805376) in verifica all'ultimo controllo.
 - Nessuna modifica a Audio/MIDI/OSC/LTC, GO/STOP/PANIC esistenti fuori dal menu, Undo/Redo, Control Map, Timeline, Mixer, VIEW/LIVE e schema `.cuelist` JSON v10.
 - Tastiera Windows reale, popup sottomenu, loop output esterno, DPI 100/125/150 e tempi di arresto end-to-end: **ND / NON ESEGUITI**. Il test nativo non certifica uso LIVE. Rollback: revert della sola PR, nessun merge automatico.
 

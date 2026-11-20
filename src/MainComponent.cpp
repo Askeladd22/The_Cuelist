@@ -37,7 +37,7 @@ juce::String duration(double seconds) {
 }
 
 MainComponent::MainComponent(bool startAudio) {
-    filePopupEscapePanic.onEscape=[this] { stopAll(); };
+    operatorPopupEscapePanic.onEscape=[this] { stopAll(); };
     setLookAndFeel(&theme); setWantsKeyboardFocus(true); setSize(1440,900);
     for (juce::Component* c : std::initializer_list<juce::Component*>{&openButton,&saveButton,&newButton,&addRowButton,&addColumnButton,
          &goButton,&panicButton,&deviceButton,&controlButton,&collapseAllButton,&inspectorSideTab,
@@ -499,7 +499,7 @@ MainComponent::MainComponent(bool startAudio) {
 MainComponent::~MainComponent() {
     // The popup may outlive its asynchronous action callback. Remove the
     // listener before destruction invalidates the owning MainComponent.
-    filePopupEscapePanic.detach();
+    operatorPopupEscapePanic.detach();
     stopTimer(); engine.panic(); chooser.reset();
     // Cancel in-flight background decoding before destroying UI/engine state.
     projectLoader.reset();
@@ -1276,8 +1276,8 @@ void MainComponent::showOperatorMenu(int index) {
     } else populate(menu,index);
 
     auto safe=juce::Component::SafePointer<MainComponent>(this);
-    // Only the first-level File menu is in this experiment. Capturing the
-    // previous modal target prevents attaching to an unrelated dialog.
+    // Only first-level *flat* File/Edit/Show/Cuelists/Guide menus are covered.
+    // Capture the previous modal target to reject an unrelated dialog.
     auto* previousModal=juce::Component::getCurrentlyModalComponent();
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(target),
         [safe,inputs,outputs](int chosen) {
@@ -1290,11 +1290,14 @@ void MainComponent::showOperatorMenu(int index) {
         });
     // JUCE 8.0.12 creates/enters the MenuWindow synchronously even though
     // selection results arrive asynchronously. Never attach the listener to
-    // another already-modal component. Submenus remain a separate RQ.
-    if (!legacyPreferences && index==0) {
+    // another already-modal component. Devices/View/More and nested popup
+    // focus routes remain a separate RQ (issue #191).
+    const bool flatOperatorMenu=(index==0 || index==1 || index==2 ||
+                                 index==3 || index==6);
+    if (!legacyPreferences && flatOperatorMenu) {
         auto* openedModal=juce::Component::getCurrentlyModalComponent();
         if (openedModal && openedModal!=previousModal)
-            filePopupEscapePanic.attach(openedModal);
+            operatorPopupEscapePanic.attach(openedModal);
     }
 }
 
