@@ -2,6 +2,7 @@
 #include "OscClip.h"
 #include <juce_core/juce_core.h>
 #include <atomic>
+#include <cstdint>
 #include <deque>
 #include <functional>
 
@@ -23,11 +24,15 @@ private:
         juce::String host,address;
         int port=9000;
         float decimal=0;
+        std::uint64_t epoch=0; // generation of queue admission
     };
     juce::CriticalSection queueLock;
     std::deque<Packet> queue;
     std::atomic<int> dropped{0};
     std::atomic<uint64_t> sent{0};
+    // PANIC invalidates a packet even after the worker has dequeued it.
+    // There is no network/worker wait in clear() or in the audio callback.
+    std::atomic<std::uint64_t> cancelEpoch{0};
     static constexpr size_t maxQueue=512;
     std::function<void()> beforeWriteProbe;
     void run() override;
