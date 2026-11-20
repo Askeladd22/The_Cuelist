@@ -19,7 +19,7 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 
 ### Sicurezza e qualita
 - Nuovo workflow CodeQL C++ su pull request e push di `main` e avvio manuale, con build MSVC/JUCE reale `scripts/build.ps1` in modalita `manual`, query `security-extended` e pubblicazione dei risultati su GitHub Code Scanning.
-- Permessi GitHub Actions limitati a lettura dei sorgenti/actions e caricamento eventi di sicurezza; workflow indipendente dai test Windows esistenti.
+- Permessi GitHub Actions limitati a lettura dei sorgenti/actions e caricamento eventi di sicurezza; `actions/checkout@v4` usa `persist-credentials: false` per non conservare credenziali Git durante l'esecuzione della build; workflow indipendente dai test Windows esistenti.
 - Nessuna modifica ai sorgenti C++, runtime GO/STOP/PANIC, stato VIEW/LIVE, Audio/MIDI/OSC/LTC, UI nativa JUCE o schema `.cuelist` v10.
 
 ### QA e limiti

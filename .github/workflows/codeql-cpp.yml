@@ -29,6 +29,10 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          # The build never needs authenticated Git writes or fetches.
+          # Do not persist the GITHUB_TOKEN for CMake or other build scripts.
+          persist-credentials: false
 
       # A native JUCE/MSVC build is necessary for accurate C++ extraction.
       # GitHub C++ autobuild does not reliably discover scripts/build.ps1.
