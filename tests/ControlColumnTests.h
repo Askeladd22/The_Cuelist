@@ -369,15 +369,14 @@ void controlColumnTests() {
         check(sendControl("/restarted",0.5f,64),
               "OSC receiver lost real UDP control events after shutdown/restart");
 
-        // A failed reconfiguration must restore the previous working port.
-        juce::DatagramSocket blocked(false);
-        check(blocked.bindToPort(0),"Could not hold the conflicting OSC UDP port");
-        check(!input.startListeningPorts({ports.front(),blocked.getBoundPort()}),
-              "OSC reconfiguration succeeded despite a port already occupied");
+        // Validate rejection of an unambiguously invalid configuration.
+        // Occupying an OSC UDP port does NOT guarantee bind failure on Windows.
+        check(!input.startListeningPorts({ports.front(),ports.front()}),
+              "OSC reconfiguration accepted a duplicate input port");
         check(input.ports().size()==1 && input.port()==ports.front(),
-              "Failed OSC reconfiguration discarded the previous port");
+              "Rejected OSC configuration discarded the previous port");
         check(sendControl("/restored",0.75f,95),
-              "OSC previous listener stopped working after a failed reconfiguration");
+              "OSC previous listener stopped working after rejected configuration");
         input.stopListening();
         check(input.ports().empty(),
               "OSC input retained ports after final cooperative shutdown");

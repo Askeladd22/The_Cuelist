@@ -23,8 +23,8 @@ pubbliche. I particolari di ogni intervento sono nell'appendice.
 - Nessun cambiamento al formato `.cuelist` JSON v10, al listener/protocollo OSC in ingresso, al motore audio, GO/STOP/PANIC, VIEW/LIVE o UI JUCE.
 
 ### Test e limiti
-- Aggiunta prova UDP reale Windows di 16 porte, stop cooperativo con soglia CI 3000 ms, riavvio, ricezione OSC e rollback dopo porta occupata.
-- Il rischio originale di timeout/terminazione forzata e' stato individuato da audit del contratto JUCE, **non riprodotto in un crash**. RED non forzato per non uccidere intenzionalmente un thread in CI.
+- Aggiunta prova UDP reale Windows di 16 porte, stop cooperativo con soglia CI 3000 ms, riavvio, ricezione OSC e conservazione del listener dopo rifiuto di porte duplicate. L'esclusivita di porte gia occupate non e' garantita da JUCE/Windows.
+- Il rischio originale di timeout/terminazione forzata e' stato individuato da audit del contratto JUCE, **non riprodotto in un crash**. RED non forzato per non uccidere intenzionalmente un thread in CI. Le prime CI Windows 44728131774 e 44728365029 fallivano per una falsa assunzione del test sull'esclusivita di una porta UDP, poi corretta senza alterare la politica di riuso.
 - Test reali Windows Release/CTest e CodeQL da verificare sugli SHA esatti. L'uscita cooperativa evita il kill forzato ma non costituisce una garanzia assoluta di latenza se il sistema operativo non risponde. Banco hardware e p95/p99 stop lato operatore: ND.
 
 ## [0.9.84] - 2026-11-20
