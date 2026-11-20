@@ -13,12 +13,20 @@ namespace cuelist {
 // GO/PANIC). MIDI state is isolated so network traffic cannot evict its edges.
 class PhysicalControlEdges final {
 public:
+    // True means not a new accepted rising edge (already held, or OSC blocked).
     bool recordAndWasDown(const ControlEvent& event);
-    void clear() noexcept { heldMidi.clear(); heldOsc.clear(); }
+    void clearMidi() noexcept { heldMidi.clear(); }
+    // Called only by explicit OSC-port configuration, never by MIDI reconnect.
+    void resetOsc() noexcept { heldOsc.clear(); oscOverloaded=false; }
+    void clear() noexcept { clearMidi(); resetOsc(); }
+    bool oscTrackingSaturated() const noexcept { return oscOverloaded; }
 private:
     static constexpr std::size_t maxHeldOsc = 4096;
     // Only physically pressed identities need storage: release erases a key.
     std::set<juce::String> heldMidi, heldOsc;
+    // Sticky after overflow: admitting a rejected still-held OSC source as
+    // slots free could create an accidental GO without a physical new press.
+    bool oscOverloaded = false;
 };
 
 // Model-only dispatch decisions. These neither enqueue output nor modify the
